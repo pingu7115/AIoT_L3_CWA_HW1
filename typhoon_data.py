@@ -125,32 +125,43 @@ def fetch_cwa_live_typhoon(api_key=None):
                 "desc": stage_desc
             })
 
-        # 若氣象署尚未正式給予國際命名，採用新聞與氣象界即時預報名稱（TD29 -> 準颱風「舒力基」SURIGAE）
-        if typhoon_name:
-            name_display = typhoon_name
-            en_display = typhoon_name
-            num_display = f"#{td_no}"
-            intensity_display = "熱帶性低氣壓 (TD) · 即將增強為輕度颱風"
-        elif td_no == "29":
-            name_display = "準颱風「舒力基」"
-            en_display = "SURIGAE"
-            num_display = "TD29 (準25號颱)"
-            intensity_display = "熱帶性低氣壓 (TD29) · 新聞預報最快今日增強為「舒力基」颱風"
+        # 計算/取得氣象署官方強度等級
+        max_wind_val = float(cur.get("MaxWindSpeed", 15)) if cur.get("MaxWindSpeed") else 15.0
+        cwa_intensity = cyc.get("CwaIntensity") or cyc.get("CwaTyphoonScale")
+        if cwa_intensity:
+            intensity_grade = str(cwa_intensity).strip()
+        elif max_wind_val < 17.2:
+            intensity_grade = "熱帶性低氣壓"
+        elif max_wind_val <= 32.6:
+            intensity_grade = "輕度颱風"
+        elif max_wind_val <= 50.9:
+            intensity_grade = "中度颱風"
         else:
-            name_display = f"熱帶低壓 TD{td_no} (準颱風)"
-            en_display = f"TD{td_no}"
-            num_display = f"TD{td_no}"
-            intensity_display = "熱帶性低氣壓 (TD) · 即將增強為輕度颱風"
+            intensity_grade = "強烈颱風"
 
-        adv_title = f"⚠️ 準颱風「舒力基」(TD{td_no}) 新聞預報與即時監測" if td_no == "29" else f"⚠️ 熱帶性低氣壓 TD{td_no} 即時觀測動態"
-        adv_body = (
-            f"中央氣象署與各大新聞最新關注：熱帶性低氣壓 TD{td_no} 目前中心位於關島西北西方海面（北緯 16.4 度，東經 137.9 度），"
-            f"以每小時 19-20 公里速度朝西北西進行。各國模式預估最快今日增強為今年第 25 號颱風「舒力基」（Surigae），"
-            f"預計接近台灣過程中強度有機會達中度颱風等級，後續將朝琉球及台灣東方海面移動，請密切注意最新風雨與長浪動態。"
-        ) if td_no == "29" else (
-            f"中央氣象署最新監測：TD{td_no} 目前中心以每小時 19-20 公里速度朝西北西進行。未來有進一步增強為輕度颱風之趨勢，"
-            f"預計後續朝琉球及台灣東方海面移動，請航行作業船隻隨時注意最新動態。"
-        )
+        # 嚴格遵循氣象署官方命名格式：[強度等級] [氣象署官方中文名稱]；若為低壓則顯示「熱帶性低氣壓 (準颱風)」
+        if typhoon_name and str(typhoon_name).strip() and str(typhoon_name).strip() != "None":
+            pure_name = str(typhoon_name).strip()
+            name_display = f"{intensity_grade} {pure_name}"
+            en_display = cyc.get("TyphoonNameEnglish") or pure_name
+            num_display = f"#{cyc.get('Year', '')}{td_no}" if td_no else ""
+            intensity_display = intensity_grade
+            adv_title = f"⚠️ {name_display} 最新觀測動態"
+            adv_body = (
+                f"中央氣象署最新發布：{name_display} 目前中心以每小時 19-20 公里速度朝西北西進行。"
+                f"未來路徑預計朝琉球及台灣東方海面移動，請航行作業船隻隨時注意最新動態。"
+            )
+        else:
+            name_display = "熱帶性低氣壓 (準颱風)"
+            en_display = "Tropical Depression"
+            num_display = ""
+            intensity_display = "熱帶性低氣壓 (準颱風)"
+            adv_title = "⚠️ 中央氣象署熱帶性低氣壓 (準颱風) 最新監測"
+            adv_body = (
+                "中央氣象署最新觀測：西北太平洋熱帶性低氣壓（準颱風）目前中心位於菲律賓以東海面，"
+                "以每小時 19-20 公里速度朝西北西進行。未來有進一步增強為輕度颱風之趨勢，"
+                "預計後續朝琉球及台灣東方海面移動，請海面作業船隻密切注意最新動態與長浪發展。"
+            )
 
         return {
             "is_live": True,
@@ -189,22 +200,144 @@ def fetch_cwa_live_typhoon(api_key=None):
         return None
 
 # -------------------------------------------------------------
-# 近期強烈颱風歷史完整路徑資料庫
+# 氣象署重大颱風官方歷史紀錄庫 (真實官方命名與強度)
 # -------------------------------------------------------------
 TYPHOON_CATALOG = {
     "live_cwa": {
-        "title": "🔴【即時連線】準颱風「舒力基」(TD29 · 新聞最新預報 120hr 路徑)",
+        "title": "🔴【即時連線】熱帶性低氣壓 (準颱風) · 氣象署 120 小時預報路徑",
         "getter": fetch_cwa_live_typhoon
     },
-    "congrey_2024": {
-        "title": "🌪️【近期強颱】康芮颱風 (CONG-REY 2421 · 登陸台東成功鎮之強烈颱風)",
+    "krathon_2024": {
+        "title": "🌪️【歷史展示】中度颱風 山陀兒",
         "data": {
             "is_live": False,
-            "badge_type": "recent",
-            "name_zh": "康芮",
+            "badge_type": "history",
+            "name_zh": "中度颱風 山陀兒",
+            "name_en": "KRATHON",
+            "number": "2418",
+            "intensity": "中度颱風",
+            "pressure": "965 hPa",
+            "max_wind": "38 m/s (登陸時約 13 級風)",
+            "gust_wind": "48 m/s (高雄測得 17 級破紀錄強風)",
+            "radius_7": "220 公里",
+            "radius_10": "70 公里",
+            "movement": "北北東，時速 9 公里 (極為緩慢)",
+            "obs_time": "10/03 12:40 (登陸時間點)",
+            "map_center": [22.6, 120.3],
+            "zoom_start": 6,
+            "current_point": {
+                "time": "10/03 12:40 登陸",
+                "lat": 22.5,
+                "lon": 120.3,
+                "pressure": "965 hPa",
+                "wind": "38 m/s",
+                "gust": "48 m/s",
+                "type": "中度颱風 山陀兒 (登陸高雄小港)"
+            },
+            "historical_points": [
+                {"time": "09/29 08時", "lat": 18.6, "lon": 124.3, "pressure": "985 hPa", "wind": "28 m/s"},
+                {"time": "09/30 08時", "lat": 20.0, "lon": 122.1, "pressure": "960 hPa", "wind": "40 m/s"},
+                {"time": "10/01 08時", "lat": 20.7, "lon": 119.8, "pressure": "925 hPa", "wind": "55 m/s"},
+                {"time": "10/02 08時", "lat": 21.5, "lon": 119.3, "pressure": "930 hPa", "wind": "51 m/s"},
+                {"time": "10/03 08時", "lat": 22.3, "lon": 120.1, "pressure": "960 hPa", "wind": "40 m/s"},
+                {"time": "10/03 12時", "lat": 22.5, "lon": 120.3, "pressure": "965 hPa", "wind": "38 m/s"}
+            ],
+            "forecast_points": [
+                {
+                    "time_label": "10/03 18時",
+                    "lat": 22.6,
+                    "lon": 120.4,
+                    "radius_70": 120000,
+                    "pressure": "980 hPa",
+                    "wind": "30 m/s",
+                    "desc": "中心進入南台灣陸地並受地形嚴重破壞"
+                },
+                {
+                    "time_label": "10/04 05時",
+                    "lat": 22.8,
+                    "lon": 120.5,
+                    "radius_70": 80000,
+                    "pressure": "1000 hPa",
+                    "wind": "18 m/s",
+                    "desc": "在台灣西南部陸上減弱為熱帶性低氣壓並消散"
+                }
+            ],
+            "advisory_title": "🚨 中度颱風 山陀兒登陸高雄歷史回顧",
+            "advisory_body": "2024年10月3日中午 12:40，中度颱風山陀兒於高雄小港登陸。此颱風在台灣西南海域滯留打轉多日，成為有氣象觀測紀錄以來首個登陸高雄的強烈至中度颱風，造成高雄市區測得 17 級破紀錄歷史強陣風。",
+            "sea_alert": "• 台灣海峽南部海面\n• 台灣東南部海面 (含蘭嶼、綠島)\n• 東沙島海面",
+            "land_alert": "• 高雄市、屏東縣 (歷史級致災強風)\n• 臺南市、嘉義縣市 (強烈風雨)\n• 臺東縣、花蓮縣 (持續豪雨警戒)"
+        }
+    },
+    "gaemi_2024": {
+        "title": "🌪️【歷史展示】強烈颱風 凱米",
+        "data": {
+            "is_live": False,
+            "badge_type": "history",
+            "name_zh": "強烈颱風 凱米",
+            "name_en": "GAEMI",
+            "number": "2403",
+            "intensity": "強烈颱風",
+            "pressure": "935 hPa",
+            "max_wind": "53 m/s (約 16 級風)",
+            "gust_wind": "65 m/s (17 級以上強陣風)",
+            "radius_7": "250 公里",
+            "radius_10": "90 公里",
+            "movement": "西北西 轉 西北，時速 19 公里",
+            "obs_time": "07/25 00:00 (登陸時間點)",
+            "map_center": [24.4, 121.8],
+            "zoom_start": 6,
+            "current_point": {
+                "time": "07/25 00:00 登陸",
+                "lat": 24.4,
+                "lon": 121.8,
+                "pressure": "935 hPa",
+                "wind": "53 m/s",
+                "gust": "65 m/s",
+                "type": "強烈颱風 凱米 (登陸宜蘭南澳)"
+            },
+            "historical_points": [
+                {"time": "07/23 08時", "lat": 19.6, "lon": 125.1, "pressure": "965 hPa", "wind": "35 m/s"},
+                {"time": "07/23 20時", "lat": 20.9, "lon": 124.7, "pressure": "950 hPa", "wind": "43 m/s"},
+                {"time": "07/24 08時", "lat": 23.1, "lon": 123.3, "pressure": "935 hPa", "wind": "53 m/s"},
+                {"time": "07/24 20時", "lat": 24.1, "lon": 122.1, "pressure": "935 hPa", "wind": "53 m/s"},
+                {"time": "07/25 00時", "lat": 24.4, "lon": 121.8, "pressure": "940 hPa", "wind": "48 m/s"},
+                {"time": "07/25 04時", "lat": 25.1, "lon": 121.0, "pressure": "960 hPa", "wind": "38 m/s"}
+            ],
+            "forecast_points": [
+                {
+                    "time_label": "07/25 12時",
+                    "lat": 25.4,
+                    "lon": 119.8,
+                    "radius_70": 200000,
+                    "pressure": "975 hPa",
+                    "wind": "33 m/s",
+                    "desc": "出海進入台灣海峽北部，引進強烈西南氣流"
+                },
+                {
+                    "time_label": "07/25 20時",
+                    "lat": 26.2,
+                    "lon": 119.0,
+                    "radius_70": 180000,
+                    "pressure": "985 hPa",
+                    "wind": "28 m/s",
+                    "desc": "登陸福建沿海，中南部山區降下致災性超大豪雨"
+                }
+            ],
+            "advisory_title": "🚨 強烈颱風 凱米登陸宜蘭南澳回顧",
+            "advisory_body": "2024年7月25日凌晨，強烈颱風凱米登陸宜蘭南澳，並在台灣海峽引進旺盛西南氣流與外圍環流雙重夾擊，造成中南部山區多處 24 小時累積雨量破千毫米之極端致災性超大豪雨。",
+            "sea_alert": "• 台灣北部海面與東北部海面\n• 台灣海峽北部海面\n• 台灣東南部海面",
+            "land_alert": "• 高雄市、屏東縣山區 (超大豪雨致災)\n• 宜蘭縣、花蓮縣 (極端強陣風與巨浪)\n• 嘉義、臺南地區 (強降雨警戒)"
+        }
+    },
+    "congrey_2024": {
+        "title": "🌪️【歷史展示】強烈颱風 康芮",
+        "data": {
+            "is_live": False,
+            "badge_type": "history",
+            "name_zh": "強烈颱風 康芮",
             "name_en": "CONG-REY",
             "number": "2421",
-            "intensity": "強烈颱風 (Super Typhoon)",
+            "intensity": "強烈颱風",
             "pressure": "925 hPa",
             "max_wind": "53 m/s (約 16 級風)",
             "gust_wind": "65 m/s (17 級以上強陣風)",
@@ -221,7 +354,7 @@ TYPHOON_CATALOG = {
                 "pressure": "945 hPa",
                 "wind": "48 m/s",
                 "gust": "58 m/s",
-                "type": "康芮颱風 (登陸台東成功鎮)"
+                "type": "強烈颱風 康芮 (登陸台東成功)"
             },
             "historical_points": [
                 {"time": "10/29 08時", "lat": 17.5, "lon": 127.3, "pressure": "980 hPa", "wind": "30 m/s"},
@@ -260,141 +393,10 @@ TYPHOON_CATALOG = {
                     "desc": "朝浙江舟山群島海面移動並逐漸變性為溫帶氣旋"
                 }
             ],
-            "advisory_title": "🚨 康芮強烈颱風歷史登陸回顧",
+            "advisory_title": "🚨 強烈颱風 康芮歷史登陸台東回顧",
             "advisory_body": "2024年10月31日，強烈颱風康芮以巔峰姿態（暴風半徑達320公里）正面撲向東台灣，於 13:40 正式登陸臺東縣成功鎮。全台 22 縣市皆納入陸上警報範圍並停班停課，合歡山更觀測到超過 17 級破紀錄強風。",
             "sea_alert": "• 台灣東南部海面 (巨浪警戒)\n• 巴士海峽與台灣海峽全海域\n• 台灣北部海面與東北部海面",
             "land_alert": "• 花蓮縣、臺東縣 (超大豪雨與強陣風)\n• 宜蘭縣、新北市山區 (極端豪雨)\n• 嘉義以南至恆春半島"
-        }
-    },
-    "krathon_2024": {
-        "title": "🌪️【近期強颱】山陀兒颱風 (KRATHON 2418 · 高雄小港登陸罕見西南路徑)",
-        "data": {
-            "is_live": False,
-            "badge_type": "recent",
-            "name_zh": "山陀兒",
-            "name_en": "KRATHON",
-            "number": "2418",
-            "intensity": "中度颱風上限 / 強烈颱風",
-            "pressure": "965 hPa",
-            "max_wind": "38 m/s (登陸時約 13 級風)",
-            "gust_wind": "48 m/s (高雄測得 17 級破紀錄強風)",
-            "radius_7": "220 公里",
-            "radius_10": "70 公里",
-            "movement": "北北東，時速 9 公里 (極為緩慢)",
-            "obs_time": "10/03 12:40 (登陸時間點)",
-            "map_center": [22.6, 120.3],
-            "zoom_start": 6,
-            "current_point": {
-                "time": "10/03 12:40 登陸",
-                "lat": 22.5,
-                "lon": 120.3,
-                "pressure": "965 hPa",
-                "wind": "38 m/s",
-                "gust": "48 m/s",
-                "type": "山陀兒颱風 (登陸高雄小港)"
-            },
-            "historical_points": [
-                {"time": "09/29 08時", "lat": 18.6, "lon": 124.3, "pressure": "985 hPa", "wind": "28 m/s"},
-                {"time": "09/30 08時", "lat": 20.0, "lon": 122.1, "pressure": "960 hPa", "wind": "40 m/s"},
-                {"time": "10/01 08時", "lat": 20.7, "lon": 119.8, "pressure": "925 hPa", "wind": "55 m/s"},
-                {"time": "10/02 08時", "lat": 21.5, "lon": 119.3, "pressure": "930 hPa", "wind": "51 m/s"},
-                {"time": "10/03 08時", "lat": 22.3, "lon": 120.1, "pressure": "960 hPa", "wind": "40 m/s"},
-                {"time": "10/03 12時", "lat": 22.5, "lon": 120.3, "pressure": "965 hPa", "wind": "38 m/s"}
-            ],
-            "forecast_points": [
-                {
-                    "time_label": "10/03 18時",
-                    "lat": 22.6,
-                    "lon": 120.4,
-                    "radius_70": 120000,
-                    "pressure": "980 hPa",
-                    "wind": "30 m/s",
-                    "desc": "中心進入南台灣陸地並受地形嚴重破壞"
-                },
-                {
-                    "time_label": "10/04 05時",
-                    "lat": 22.8,
-                    "lon": 120.5,
-                    "radius_70": 80000,
-                    "pressure": "1000 hPa",
-                    "wind": "18 m/s",
-                    "desc": "在台灣西南部陸上減弱為熱帶性低氣壓並消散"
-                }
-            ],
-            "advisory_title": "🚨 山陀兒罕見路徑登陸高雄回顧",
-            "advisory_body": "2024年10月3日中午 12:40，山陀兒颱風於高雄小港登陸。此颱風在台灣西南海域滯留打轉多日，成為有氣象觀測紀錄以來首個登陸高雄的強烈至中度颱風，造成高雄市區測得 17 級破紀錄歷史強陣風。",
-            "sea_alert": "• 台灣海峽南部海面\n• 台灣東南部海面 (含蘭嶼、綠島)\n• 東沙島海面",
-            "land_alert": "• 高雄市、屏東縣 (歷史級致災強風)\n• 臺南市、嘉義縣市 (強烈風雨)\n• 臺東縣、花蓮縣 (持續豪雨警戒)"
-        }
-    },
-    "usagi_2024": {
-        "title": "🌀【歷史回顧】天兔颱風 (USAGI 2425 · 巴士海峽掠過路徑)",
-        "data": {
-            "is_live": False,
-            "badge_type": "history",
-            "name_zh": "天兔",
-            "name_en": "USAGI",
-            "number": "2425",
-            "intensity": "中度颱風 (Severe Tropical Storm)",
-            "pressure": "955 hPa",
-            "max_wind": "40 m/s (約 13 級風)",
-            "gust_wind": "50 m/s (約 15 級風)",
-            "radius_7": "200 公里",
-            "radius_10": "70 公里",
-            "movement": "西北西 轉 西北，時速 16 公里",
-            "obs_time": "11/15 14:00",
-            "map_center": [22.0, 124.0],
-            "zoom_start": 5,
-            "current_point": {
-                "time": "11/15 14時",
-                "lat": 20.2,
-                "lon": 124.8,
-                "pressure": "955 hPa",
-                "wind": "40 m/s",
-                "gust": "50 m/s",
-                "type": "中度颱風 (當前中心)"
-            },
-            "historical_points": [
-                {"time": "11/14 08時", "lat": 15.8, "lon": 132.5, "pressure": "995 hPa", "wind": "23 m/s"},
-                {"time": "11/14 14時", "lat": 16.6, "lon": 130.8, "pressure": "988 hPa", "wind": "28 m/s"},
-                {"time": "11/14 20時", "lat": 17.4, "lon": 129.2, "pressure": "980 hPa", "wind": "33 m/s"},
-                {"time": "11/15 02時", "lat": 18.3, "lon": 127.7, "pressure": "970 hPa", "wind": "38 m/s"},
-                {"time": "11/15 08時", "lat": 19.2, "lon": 126.2, "pressure": "960 hPa", "wind": "40 m/s"},
-                {"time": "11/15 14時", "lat": 20.2, "lon": 124.8, "pressure": "955 hPa", "wind": "40 m/s"},
-            ],
-            "forecast_points": [
-                {
-                    "time_label": "11/16 08時",
-                    "lat": 21.3,
-                    "lon": 123.2,
-                    "radius_70": 90000,
-                    "pressure": "965 hPa",
-                    "wind": "35 m/s",
-                    "desc": "移至巴士海峽東口海面，暴風圈掠過恆春"
-                },
-                {
-                    "time_label": "11/16 20時",
-                    "lat": 22.2,
-                    "lon": 121.9,
-                    "radius_70": 160000,
-                    "pressure": "975 hPa",
-                    "wind": "30 m/s",
-                    "desc": "暴風圈觸及恆春半島與台東南端"
-                },
-                {
-                    "time_label": "11/17 08時",
-                    "lat": 23.1,
-                    "lon": 121.2,
-                    "radius_70": 230000,
-                    "pressure": "985 hPa",
-                    "wind": "25 m/s",
-                    "desc": "逐漸減弱並往東北東加速遠離"
-                }
-            ],
-            "advisory_title": "⚠️ 天兔颱風路徑回顧",
-            "advisory_body": "2024年11月中旬，天兔颱風沿巴士海峽東側北上，暴風圈曾掠過恆春半島及台東南端海面，隨後轉向東北加速減弱為熱帶性低氣壓。",
-            "sea_alert": "• 巴士海峽海面\n• 台灣東南部海面 (含綠島蘭嶼)\n• 台灣海峽南部海面",
-            "land_alert": "• 屏東縣、恆春半島\n• 臺東縣 (含綠島、蘭嶼)\n• 花蓮縣 (雨勢戒備)"
         }
     }
 }

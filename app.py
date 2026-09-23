@@ -1151,7 +1151,7 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
         st.markdown("### 🗺️ 全台即時累積雨量測站分佈圖 (Station Point Map)")
         st.caption("無點陣圖遮蔽干擾，採用 CartoDB Positron 畫布底圖，依氣象署 O-A0002-001 即時測站觀測渲染莫蘭迪色標圓點。")
 
-        # 建立雨量專屬點狀地圖 (CartoDB positron: location=[23.7, 120.9], zoom_start=7.5)
+        # 建立雨量專屬點狀地圖 (location=[23.7, 120.9], zoom_start=7.5，乾淨無浮水印圖資)
         m_rain = folium.Map(
             location=[23.7, 120.9],
             zoom_start=7.5,
@@ -1162,7 +1162,8 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
             max_lat=26.5,
             min_lon=118.0,
             max_lon=122.5,
-            tiles="CartoDB positron"
+            tiles="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+            attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         )
 
         m_rain.get_root().header.add_child(folium.Element("""
@@ -1438,8 +1439,8 @@ else:
         with st.spinner("正在連線中央氣象署 API (W-C0034-005) 取得最新即時熱帶氣旋資料..."):
             cur_typhoon = get_cached_live_typhoon()
             if not cur_typhoon:
-                cur_typhoon = TYPHOON_CATALOG["congrey_2024"]["data"]
-                st.warning("⚠️ 即時氣象署連線稍有延遲，已切換至康芮強颱資料。")
+                cur_typhoon = TYPHOON_CATALOG["krathon_2024"]["data"]
+                st.warning("⚠️ 即時氣象署連線稍有延遲，已切換至中度颱風 山陀兒歷史展示資料。")
     else:
         cur_typhoon = TYPHOON_CATALOG[selected_ty_key]["data"]
 
@@ -1461,13 +1462,15 @@ else:
         </div>
         """, unsafe_allow_html=True)
     else:
+        en_str = f" ({cur_typhoon['name_en']})" if cur_typhoon.get('name_en') else ""
+        num_str = f" · 國際編號 #{cur_typhoon['number']}" if cur_typhoon.get('number') and cur_typhoon['number'] != '準颱風' else ""
         st.markdown(f"""
         <div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; box-shadow: 0 4px 12px rgba(60, 50, 40, 0.05);">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-size: 1.25rem;">📜</span>
                 <div>
-                    <div style="color: #2b303a; font-weight: 700; font-size: 0.92rem;">台灣重大颱風歷史路徑回顧模式 · {cur_typhoon['name_zh']}颱風 ({cur_typhoon['name_en']})</div>
-                    <div style="color: #6c757d; font-size: 0.8rem;">登陸時間節點：{cur_typhoon['obs_time']} · 國際編號 #{cur_typhoon['number']}</div>
+                    <div style="color: #2b303a; font-weight: 700; font-size: 0.92rem;">台灣重大颱風歷史路徑回顧模式 · {cur_typhoon['name_zh']}{en_str}</div>
+                    <div style="color: #6c757d; font-size: 0.8rem;">登陸時間節點：{cur_typhoon['obs_time']}{num_str}</div>
                 </div>
             </div>
             <div>
@@ -1479,11 +1482,13 @@ else:
     # 颱風即時資訊看板指標卡 (Morandi 溫潤色系)
     tc1, tc2, tc3, tc4 = st.columns(4)
     with tc1:
+        en_label = f" <span style='font-size: 1.05rem; color: #6c757d;'>({cur_typhoon['name_en']})</span>" if cur_typhoon.get('name_en') and cur_typhoon['name_en'] != 'Tropical Depression' else ""
+        num_caption = f"國際編號 #{cur_typhoon['number']} · " if cur_typhoon.get('number') and cur_typhoon['number'] != '準颱風' else ""
         st.markdown(f"""
         <div class="glass-card" style="border-top: 3px solid #b86b53;">
             <div class="metric-title">🌀 颱風名稱與強度</div>
-            <div class="metric-value" style="color: #b86b53; font-size: 1.85rem;">{cur_typhoon['name_zh']} <span style="font-size: 1.05rem; color: #6c757d;">({cur_typhoon['name_en']})</span></div>
-            <div class="metric-caption">國際編號 #{cur_typhoon['number']} · {cur_typhoon['intensity']}</div>
+            <div class="metric-value" style="color: #b86b53; font-size: 1.85rem;">{cur_typhoon['name_zh']}{en_label}</div>
+            <div class="metric-caption">{num_caption}{cur_typhoon['intensity']}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1658,6 +1663,9 @@ else:
             fill_opacity=1.0
         ).add_to(m_typhoon)
 
+        popup_en_str = f" ({cur_typhoon['name_en']})" if cur_typhoon.get('name_en') and cur_typhoon['name_en'] != 'Tropical Depression' else ""
+        popup_badge_str = f"#{cur_typhoon['number']}" if cur_typhoon.get('number') and cur_typhoon['number'] != '準颱風' else cur_typhoon['intensity']
+
         center_popup_html = f"""
         <div style="
             font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
@@ -1667,8 +1675,8 @@ else:
             line-height: 1.6;
         ">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 0, 0, 0.08); padding-bottom: 6px; margin-bottom: 8px;">
-                <span style="font-weight: 800; font-size: 16px; color: #b86b53;">🌀 {cur_typhoon['name_zh']} ({cur_typhoon['name_en']})</span>
-                <span style="font-size: 11px; padding: 2px 7px; border-radius: 999px; background: rgba(184,107,83,0.15); color: #b86b53; border: 1px solid #b86b53;">#{cur_typhoon['number']}</span>
+                <span style="font-weight: 800; font-size: 16px; color: #b86b53;">🌀 {cur_typhoon['name_zh']}{popup_en_str}</span>
+                <span style="font-size: 11px; padding: 2px 7px; border-radius: 999px; background: rgba(184,107,83,0.15); color: #b86b53; border: 1px solid #b86b53;">{popup_badge_str}</span>
             </div>
             <div style="font-size: 13px; color: #2b303a;">
                 <div>⏱️ <b>定位時間</b>：{cur_typhoon['obs_time']}</div>
