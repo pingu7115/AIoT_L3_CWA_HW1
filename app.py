@@ -637,7 +637,7 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
         st.markdown(f"""
         <div class="glass-card" style="border-top: 3px solid #5c7c8a;">
             <div class="metric-title">❄️ 今日最低溫 (MinT)</div>
-            <div class="metric-value" style="color: #5c7c8a;"><span style="font-size: 1.6rem; vertical-align: middle;">{icon}</span> {today_min}°C</div>
+            <div class="metric-value" style="color: #5c7c8a;">{today_min}°C</div>
             <div class="metric-caption">清晨夜間低溫 · {selected_region}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -910,6 +910,7 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
             if not w:
                 continue
             avg_t = round((w["maxt"] + w["mint"]) / 2, 1)
+            icon, condition = get_weather_icon(w["mint"], w["maxt"])
             cat = get_temp_category(avg_t)
             color = cat["color"]
             is_cur = (c_name == selected_region or c_name.replace("臺", "台") == selected_region.replace("臺", "台"))
@@ -921,17 +922,21 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
                 color: #FFFFFF;
                 font-weight: 800;
                 font-size: 11px;
-                padding: 2px 5px;
-                border-radius: 12px;
-                text-align: center;
+                padding: 2px 7px;
+                border-radius: 999px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 3px;
+                white-space: nowrap;
                 box-shadow: 0 2px 8px rgba(60, 50, 40, 0.25);
                 border: {badge_border};
-                width: 42px;
-                margin-left: -21px;
+                min-width: 52px;
+                margin-left: -26px;
                 margin-top: -10px;
                 cursor: pointer;
                 letter-spacing: -0.2px;
-            ">{avg_t}°</div>
+            "><span style="font-size: 10.5px; line-height: 1;">{icon}</span><span>{avg_t}°</span></div>
             """
             folium.Marker(
                 location=coords,
