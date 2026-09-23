@@ -1617,7 +1617,7 @@ else:
             tooltip="🚨 官方預報路徑"
         ).add_to(m_typhoon)
 
-        # 4. 70% 潛勢機率圈 (70% Probability Circles) 與 預報時間藥丸標籤 (DivIcon pills)
+        # 4. 70% 潛勢機率圈 (70% Probability Circles) 與 預報節點颱風眼 (直接整合定位資訊卡，無額外按鈕)
         for fp in cur_typhoon["forecast_points"]:
             f_coord = [fp["lat"], fp["lon"]]
             
@@ -1631,41 +1631,42 @@ else:
                 fill=True,
                 fill_color="#b86b53",
                 fill_opacity=0.12,
-                tooltip=f"⭕ 70% 潛勢暴風圈 ({fp['time_label']})<br>半徑: {int(fp['radius_70']/1000)} 公里 | 氣壓: {fp['pressure']}"
+                tooltip=f"⭕ 70% 潛勢暴風圈 ({fp['time_label']}) · 半徑: {int(fp['radius_70']/1000)} 公里"
             ).add_to(m_typhoon)
 
-            # 節點實心圓
+            fp_popup_html = f"""
+            <div style="
+                font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+                min-width: 230px;
+                color: #2b303a;
+                padding: 4px;
+                line-height: 1.6;
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 0, 0, 0.08); padding-bottom: 6px; margin-bottom: 8px;">
+                    <span style="font-weight: 800; font-size: 15px; color: #b86b53;">⏱️ {fp['time_label']} 氣象預報點</span>
+                    <span style="font-size: 11px; padding: 2px 7px; border-radius: 999px; background: rgba(184,107,83,0.15); color: #b86b53; border: 1px solid #b86b53;">預報路徑</span>
+                </div>
+                <div style="font-size: 13px; color: #2b303a;">
+                    <div>📍 <b>預報座標</b>：北緯 {fp['lat']}°，東經 {fp['lon']}°</div>
+                    <div>📉 <b>預測氣壓</b>：{fp['pressure']}</div>
+                    <div>💨 <b>預測風速</b>：{fp['wind']}</div>
+                    <div>⭕ <b>70% 潛勢圈半徑</b>：{int(fp['radius_70']/1000)} 公里</div>
+                    <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed rgba(0,0,0,0.08); font-size: 12px; color: #6c757d;">🧭 {fp.get('desc', '')}</div>
+                </div>
+            </div>
+            """
+
+            # 預報節點實心圓 (整合預報資訊卡片至颱風眼中，直接點擊開啟)
             folium.CircleMarker(
                 location=f_coord,
-                radius=5,
+                radius=6,
                 color="#b86b53",
-                weight=2,
+                weight=2.2,
                 fill=True,
                 fill_color="#ffffff",
-                fill_opacity=0.95
-            ).add_to(m_typhoon)
-
-            # 預報時間標籤藥丸 (DivIcon Pill - Morandi Light Palette)
-            pill_html = f"""
-            <div style="
-                background: rgba(255, 255, 255, 0.95);
-                border: 1.5px solid #b86b53;
-                color: #b86b53;
-                font-weight: 700;
-                font-size: 11px;
-                padding: 2px 7px;
-                border-radius: 999px;
-                white-space: nowrap;
-                box-shadow: 0 2px 8px rgba(60, 50, 40, 0.15);
-                margin-left: 9px;
-                margin-top: -10px;
-                letter-spacing: -0.2px;
-            ">{fp['time_label']}</div>
-            """
-            folium.Marker(
-                location=f_coord,
-                icon=folium.DivIcon(html=pill_html),
-                tooltip=f"預報時間: {fp['time_label']} · {fp.get('desc', '')}"
+                fill_opacity=0.95,
+                popup=folium.Popup(fp_popup_html, max_width=300),
+                tooltip=f"⏱️ 預報節點: {fp['time_label']} · {fp.get('desc', '')} (點擊查看定位卡)"
             ).add_to(m_typhoon)
 
         # 5. 當前中心 (Current Center): 莫蘭迪同心光環與詳細 HTML 資訊卡片 (直接點擊圓圈開啟)
