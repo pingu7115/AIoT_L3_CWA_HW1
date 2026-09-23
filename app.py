@@ -438,8 +438,8 @@ with col_map:
         max_lat=26.5,
         min_lon=118.0,
         max_lon=122.5,
-        tiles="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-        attr=" "
+        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+        attr="Esri"
     )
 
     # 徹底移除地圖上的任何版權/浮水印 (Leaflet & CARTO 標籤)
