@@ -500,23 +500,6 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
     if "selected_region" not in st.session_state or st.session_state["selected_region"] not in sorted_regions:
         st.session_state["selected_region"] = "臺北市" if "臺北市" in sorted_regions else sorted_regions[0]
 
-    # 六都快速切換快捷列
-    st.markdown("""
-    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-        <span style="font-size: 0.82rem; color: #94A3B8; font-weight: 600;">⚡ 熱門都會快速切換：</span>
-    </div>
-    """, unsafe_allow_html=True)
-
-    pill_cols = st.columns(6)
-    quick_cities = ["臺北市", "新北市", "桃園市", "臺中市", "臺南市", "高雄市"]
-    for idx, city in enumerate(quick_cities):
-        with pill_cols[idx]:
-            if city in sorted_regions:
-                is_active = (st.session_state["selected_region"] == city or st.session_state["selected_region"].replace("臺", "台") == city.replace("臺", "台"))
-                btn_type = "primary" if is_active else "secondary"
-                if st.button(f"{city}", key=f"quick_btn_{city}", width="stretch", type=btn_type):
-                    st.session_state["selected_region"] = city
-                    st.rerun()
 
     def on_select_change():
         st.session_state["selected_region"] = st.session_state["region_selector_box"]

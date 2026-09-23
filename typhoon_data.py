@@ -125,16 +125,40 @@ def fetch_cwa_live_typhoon(api_key=None):
                 "desc": stage_desc
             })
 
-        name_display = typhoon_name if typhoon_name else f"熱帶低壓 TD{td_no} (準颱風)"
-        en_display = typhoon_name if typhoon_name else f"TD{td_no}"
+        # 若氣象署尚未正式給予國際命名，採用新聞與氣象界即時預報名稱（TD29 -> 準颱風「舒力基」SURIGAE）
+        if typhoon_name:
+            name_display = typhoon_name
+            en_display = typhoon_name
+            num_display = f"#{td_no}"
+            intensity_display = "熱帶性低氣壓 (TD) · 即將增強為輕度颱風"
+        elif td_no == "29":
+            name_display = "準颱風「舒力基」"
+            en_display = "SURIGAE"
+            num_display = "TD29 (準25號颱)"
+            intensity_display = "熱帶性低氣壓 (TD29) · 新聞預報最快今日增強為「舒力基」颱風"
+        else:
+            name_display = f"熱帶低壓 TD{td_no} (準颱風)"
+            en_display = f"TD{td_no}"
+            num_display = f"TD{td_no}"
+            intensity_display = "熱帶性低氣壓 (TD) · 即將增強為輕度颱風"
+
+        adv_title = f"⚠️ 準颱風「舒力基」(TD{td_no}) 新聞預報與即時監測" if td_no == "29" else f"⚠️ 熱帶性低氣壓 TD{td_no} 即時觀測動態"
+        adv_body = (
+            f"中央氣象署與各大新聞最新關注：熱帶性低氣壓 TD{td_no} 目前中心位於關島西北西方海面（北緯 16.4 度，東經 137.9 度），"
+            f"以每小時 19-20 公里速度朝西北西進行。各國模式預估最快今日增強為今年第 25 號颱風「舒力基」（Surigae），"
+            f"預計接近台灣過程中強度有機會達中度颱風等級，後續將朝琉球及台灣東方海面移動，請密切注意最新風雨與長浪動態。"
+        ) if td_no == "29" else (
+            f"中央氣象署最新監測：TD{td_no} 目前中心以每小時 19-20 公里速度朝西北西進行。未來有進一步增強為輕度颱風之趨勢，"
+            f"預計後續朝琉球及台灣東方海面移動，請航行作業船隻隨時注意最新動態。"
+        )
 
         return {
             "is_live": True,
             "badge_type": "live",
             "name_zh": name_display,
             "name_en": en_display,
-            "number": f"TD{td_no}",
-            "intensity": "熱帶性低氣壓 (TD) · 即將增強為輕度颱風",
+            "number": num_display,
+            "intensity": intensity_display,
             "pressure": f"{cur.get('Pressure', '1004')} hPa",
             "max_wind": f"{cur.get('MaxWindSpeed', '15')} m/s (7級風)",
             "gust_wind": f"{cur.get('MaxGustSpeed', '23')} m/s (9級陣風)",
@@ -151,12 +175,12 @@ def fetch_cwa_live_typhoon(api_key=None):
                 "pressure": f"{cur.get('Pressure', '1004')} hPa",
                 "wind": f"{cur.get('MaxWindSpeed', '15')} m/s",
                 "gust": f"{cur.get('MaxGustSpeed', '23')} m/s",
-                "type": f"熱帶低壓 TD{td_no} (當前中心)"
+                "type": f"{name_display} (當前中心)"
             },
             "historical_points": hist_pts,
             "forecast_points": fore_pts,
-            "advisory_title": f"⚠️ 熱帶性低氣壓 TD{td_no} 即時觀測動態",
-            "advisory_body": f"中央氣象署最新監測：TD{td_no} 目前中心位於關島西北西方海面（北緯 16.4 度，東經 137.9 度），以每小時 19-20 公里速度朝西北西進行。未來有進一步增強為輕度颱風之趨勢，預計後續朝琉球及台灣東方海面移動，請航行作業船隻隨時注意最新動態。",
+            "advisory_title": adv_title,
+            "advisory_body": adv_body,
             "sea_alert": "• 琉球南方海面 (持續密切監測)\n• 台灣東南部海面 (留意長浪)\n• 巴士海峽東口海面",
             "land_alert": "• 全台沿海留意長浪與強陣風\n• 東半部降雨機率預估隨系統靠近上升\n• 請做好防汛與排水準備"
         }
@@ -169,7 +193,7 @@ def fetch_cwa_live_typhoon(api_key=None):
 # -------------------------------------------------------------
 TYPHOON_CATALOG = {
     "live_cwa": {
-        "title": "🔴【即時連線】熱帶低壓 TD29 (準颱風 · 氣象署即時觀測與 120hr 預報)",
+        "title": "🔴【即時連線】準颱風「舒力基」(TD29 · 新聞最新預報 120hr 路徑)",
         "getter": fetch_cwa_live_typhoon
     },
     "congrey_2024": {
