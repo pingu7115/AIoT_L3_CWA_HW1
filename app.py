@@ -1500,14 +1500,24 @@ else:
     # 颱風即時資訊看板指標卡 (Morandi 溫潤色系)
     tc1, tc2, tc3, tc4 = st.columns(4)
     with tc1:
-        if cur_typhoon.get("is_live"):
-            en_str = f" <span style='font-size: 1.05rem; color: #6c757d;'>({cur_typhoon['name_en']})</span>" if cur_typhoon.get('name_en') else ""
-            ty_title_display = f"🌀 {cur_typhoon['name_zh']}{en_str}"
-            ty_cap_display = "氣象署公布預報 · 即將增強為第 25 號颱風 (準颱風)"
+        raw_zh = cur_typhoon.get("name_zh", "").strip()
+        raw_en = cur_typhoon.get("name_en", "").strip()
+        clean_num = str(cur_typhoon.get("number", "")).strip().lstrip("#")
+        # 確保氣象署官方中文名稱始終優先，英文代號僅在非重複時作為輔助標籤顯示
+        if raw_en and raw_en.upper() not in raw_zh.upper() and raw_en.lower() not in ["none", "null", "tropical depression"]:
+            en_str = f" <span style='font-size: 1.05rem; color: #6c757d;'>({raw_en})</span>"
         else:
-            en_label = f" <span style='font-size: 1.05rem; color: #6c757d;'>({cur_typhoon['name_en']})</span>" if cur_typhoon.get('name_en') else ""
-            ty_title_display = f"🌀 {cur_typhoon['name_zh']}{en_label}"
-            num_caption = f"國際編號 #{cur_typhoon['number']} · " if cur_typhoon.get('number') else ""
+            en_str = ""
+        ty_title_display = f"🌀 {raw_zh}{en_str}"
+
+        if cur_typhoon.get("is_live"):
+            if "熱帶" in cur_typhoon.get("intensity", ""):
+                ty_cap_display = f"氣象署公布預報 · 即將增強為第 {clean_num or '25'} 號颱風 (準颱風)"
+            else:
+                num_cap = f"國際編號 #{clean_num} · " if clean_num and clean_num != "準颱風" else ""
+                ty_cap_display = f"中央氣象署最新發布 · {num_cap}{cur_typhoon['intensity']}"
+        else:
+            num_caption = f"國際編號 #{clean_num} · " if clean_num else ""
             ty_cap_display = f"{num_caption}{cur_typhoon['intensity']}"
 
         st.markdown(f"""
@@ -1680,16 +1690,13 @@ else:
             fill_opacity=0.25
         ).add_to(m_typhoon)
 
-        is_td_system = cur_typhoon.get("is_live") or any(k in str(cur_typhoon.get('name_zh', '')) for k in ["熱帶低壓", "熱帶性低氣壓", "準颱風"])
-        popup_en_str = f" ({cur_typhoon['name_en']})" if cur_typhoon.get('name_en') and cur_typhoon['name_en'] != 'Tropical Depression' else ""
-        if is_td_system:
-            popup_header_title = f"🌀 {cur_typhoon['name_zh']}{popup_en_str}"
-            popup_badge_str = "準25號颱" if cur_typhoon.get("is_live") else "準颱風"
-            marker_tooltip = f"🌀 {cur_typhoon['name_zh']} (點擊展開詳細氣象定位卡)"
-        else:
-            popup_header_title = f"🌀 {cur_typhoon['name_zh']}{popup_en_str}"
-            popup_badge_str = f"#{cur_typhoon['number']}" if cur_typhoon.get('number') and cur_typhoon['number'] != '準颱風' else cur_typhoon['intensity']
-            marker_tooltip = f"🌀 {cur_typhoon['name_zh']} (點擊展開詳細氣象定位卡)"
+        raw_zh = cur_typhoon.get("name_zh", "").strip()
+        raw_en = cur_typhoon.get("name_en", "").strip()
+        clean_num = str(cur_typhoon.get("number", "")).strip().lstrip("#")
+        popup_en_str = f" ({raw_en})" if raw_en and raw_en.upper() not in raw_zh.upper() and raw_en.lower() not in ["none", "null", "tropical depression"] else ""
+        popup_header_title = f"🌀 {raw_zh}{popup_en_str}"
+        popup_badge_str = f"#{clean_num}" if clean_num and clean_num != '準颱風' else cur_typhoon.get("intensity", "颱風")
+        marker_tooltip = f"🌀 {raw_zh} (點擊展開詳細氣象定位卡)"
 
         center_popup_html = f"""
         <div style="
