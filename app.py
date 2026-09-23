@@ -172,6 +172,14 @@ st.markdown("""
         padding-top: 2rem;
         padding-bottom: 3rem;
     }
+
+    /* 徹底隱藏任何浮水印、頁尾、Leaflet 標籤與選單圖示 */
+    #MainMenu { visibility: hidden !important; }
+    footer { visibility: hidden !important; display: none !important; }
+    header { visibility: hidden !important; }
+    .viewerBadge_container__1QSob { display: none !important; }
+    .leaflet-control-attribution { display: none !important; }
+    .leaflet-control-scale { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -419,7 +427,7 @@ with col_map:
     st.markdown("### 🗺️ 全台 22 縣市 GeoJSON 面狀熱力地圖")
     st.caption("透過 GeoJSON 縣市輪廓進行面狀著色（Choropleth），並鎖定台灣視角，避免拖曳出界。")
 
-    # 1. 建立地圖實例：嚴格鎖定台灣視角 (Zoom: 7~10, max_bounds=True)
+    # 1. 建立地圖實例：嚴格鎖定台灣視角 (Zoom: 7~10, max_bounds=True, 無浮水印)
     m = folium.Map(
         location=[23.7, 120.9],
         zoom_start=7.3,
@@ -431,8 +439,18 @@ with col_map:
         min_lon=118.0,
         max_lon=122.5,
         tiles="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-        attr='&copy; <a href="https://carto.com/">CARTO</a>'
+        attr=" "
     )
+
+    # 徹底移除地圖上的任何版權/浮水印 (Leaflet & CARTO 標籤)
+    m.get_root().header.add_child(folium.Element("""
+    <style>
+        .leaflet-control-attribution {
+            display: none !important;
+            visibility: hidden !important;
+        }
+    </style>
+    """))
 
     # 2. 載入並套用台灣各縣市 GeoJSON 輪廓著色
     if os.path.exists(GEOJSON_FILE):
@@ -643,13 +661,4 @@ st.dataframe(
     }
 )
 
-# -------------------------------------------------------------
-# 頁尾
-# -------------------------------------------------------------
-st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
-st.markdown("""
-<div style="text-align: center; color: #64748B; font-size: 0.82rem; padding: 20px 0; border-top: 1px solid rgba(255,255,255,0.06);">
-    AIoT HW10 · Taiwan Weather Forecast Dashboard · Inspired by Windy & CWA Open Data<br/>
-    全台 22 縣市 GeoJSON 輪廓著色 · 資料庫架構: SQLite (data.db) · 前端框架: Streamlit & Folium
-</div>
-""", unsafe_allow_html=True)
+st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
