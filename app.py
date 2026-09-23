@@ -620,13 +620,15 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
     week_max = df_forecast["maxt"].max()
     week_min = df_forecast["mint"].min()
 
+    icon, condition = get_weather_icon(today_min, today_max)
+
     # 溫潤指標卡片 (Warm Beige & Morandi 色系)
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.markdown(f"""
         <div class="glass-card" style="border-top: 3px solid #b86b53;">
             <div class="metric-title">🔥 今日最高溫 (MaxT)</div>
-            <div class="metric-value" style="color: #b86b53;">{today_max}°C</div>
+            <div class="metric-value" style="color: #b86b53;">{today_max}°C <span style="font-size: 1.6rem; vertical-align: middle;">{icon}</span></div>
             <div class="metric-caption">日間高溫預測 · {selected_region}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -635,7 +637,7 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
         st.markdown(f"""
         <div class="glass-card" style="border-top: 3px solid #5c7c8a;">
             <div class="metric-title">❄️ 今日最低溫 (MinT)</div>
-            <div class="metric-value" style="color: #5c7c8a;">{today_min}°C</div>
+            <div class="metric-value" style="color: #5c7c8a;"><span style="font-size: 1.6rem; vertical-align: middle;">{icon}</span> {today_min}°C</div>
             <div class="metric-caption">清晨夜間低溫 · {selected_region}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -650,11 +652,10 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
         """, unsafe_allow_html=True)
 
     with c4:
-        icon, condition = get_weather_icon(today_min, today_max)
         st.markdown(f"""
         <div class="glass-card" style="border-top: 3px solid #6b8e73;">
             <div class="metric-title">🌡️ 體感環境指標</div>
-            <div class="metric-value" style="color: #6b8e73;">{icon} {today_avg}°C</div>
+            <div class="metric-value" style="color: #6b8e73;"><span style="font-size: 1.6rem; vertical-align: middle;">{icon}</span> {today_avg}°C</div>
             <div class="metric-caption">當日平均氣候: {condition}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -816,7 +817,7 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
                         </div>
                         <div style="font-size: 13.5px; margin-bottom: 3px; display: flex; align-items: baseline; gap: 4px;">
                             <span style="color: #6c757d;">🌡️ 均溫：</span>
-                            <b style="color: #2b303a; font-size: 16px; font-weight: 700;">{avg_t}°C</b>
+                            <b style="color: #2b303a; font-size: 16px; font-weight: 700;">{icon} {avg_t}°C</b>
                             <span style="color: #6c757d; font-size: 11.5px; margin-left: 2px;">({range_str})</span>
                         </div>
                         <div style="font-size: 13px; margin-bottom: 5px;">
@@ -841,7 +842,7 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
                             <h4 style="margin: 0; font-size: 17px; color: #2b303a;">📍 {c_name}</h4>
                             <span style="font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: {cat['color']}; color: #ffffff;">{cat['icon']} {cat['label']}</span>
                         </div>
-                        <p style="margin: 4px 0; font-size: 14px;">🌡️ 預測均溫：<b>{avg_t}°C</b></p>
+                        <p style="margin: 4px 0; font-size: 14px;">🌡️ 預測均溫：<b>{icon} {avg_t}°C</b></p>
                         <p style="margin: 4px 0; font-size: 14px;">🌤️ 天氣狀況：<b>{icon} {condition}</b></p>
                         <p style="margin: 4px 0; font-size: 14px;">📊 預報溫幅：<b>{range_str}</b></p>
                         <p style="margin: 4px 0; font-size: 13px; color: #6c757d;">⚖️ 日夜溫差：<b>{diff_t}°C</b></p>
@@ -950,7 +951,7 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
                         box-shadow: 0 4px 16px rgba(60, 50, 40, 0.1);
                     ">
                         <div style="font-weight: 700; color: #2b303a; margin-bottom: 4px;">📍 地區：{c_name}</div>
-                        <div>🌡️ 均溫：<b>{avg_t}°C</b> ({w['mint']}°C ~ {w['maxt']}°C)</div>
+                        <div>🌡️ 均溫：<b>{get_weather_icon(w['mint'], w['maxt'])[0]} {avg_t}°C</b> ({w['mint']}°C ~ {w['maxt']}°C)</div>
                         <div>🌤️ 預報：{get_weather_icon(w['mint'], w['maxt'])[0]} {get_weather_icon(w['mint'], w['maxt'])[1]}</div>
                     </div>
                     """,
@@ -1046,17 +1047,22 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
 
         st.altair_chart(chart, width="stretch")
 
+        max_idx = df_forecast["maxt"].idxmax()
+        min_idx = df_forecast["mint"].idxmin()
+        icon_w_max = get_weather_icon(df_forecast.loc[max_idx, "mint"], df_forecast.loc[max_idx, "maxt"])[0]
+        icon_w_min = get_weather_icon(df_forecast.loc[min_idx, "mint"], df_forecast.loc[min_idx, "maxt"])[0]
+
         st.markdown(f"""
         <div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 12px; padding: 14px 18px; margin-top: 10px; box-shadow: 0 4px 12px rgba(60, 50, 40, 0.05);">
             <div style="display: flex; justify-content: space-around; text-align: center;">
                 <div>
                     <div style="font-size: 0.75rem; color: #6c757d;">一週最高溫</div>
-                    <div style="font-size: 1.15rem; font-weight: 700; color: #b86b53;">{week_max} °C</div>
+                    <div style="font-size: 1.15rem; font-weight: 700; color: #b86b53;">{week_max} °C {icon_w_max}</div>
                 </div>
                 <div style="border-right: 1px solid rgba(0, 0, 0, 0.07);"></div>
                 <div>
                     <div style="font-size: 0.75rem; color: #6c757d;">一週最低溫</div>
-                    <div style="font-size: 1.15rem; font-weight: 700; color: #5c7c8a;">{week_min} °C</div>
+                    <div style="font-size: 1.15rem; font-weight: 700; color: #5c7c8a;">{icon_w_min} {week_min} °C</div>
                 </div>
                 <div style="border-right: 1px solid rgba(0, 0, 0, 0.07);"></div>
                 <div>
@@ -1073,14 +1079,14 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
     st.markdown(f"### 📋 {selected_region} 一週詳細數據記錄表 (SQL 查詢自 data.db)")
 
     table_df = df_forecast.copy()
-    table_df["日溫差 (°C)"] = (table_df["maxt"] - table_df["mint"]).round(1)
-    table_df["舒適度評估"] = table_df.apply(lambda r: get_weather_icon(r["mint"], r["maxt"])[1], axis=1)
+    table_df["最低氣溫 (MinT)"] = table_df.apply(lambda r: f"{get_weather_icon(r['mint'], r['maxt'])[0]} {r['mint']:.1f} °C", axis=1)
+    table_df["最高氣溫 (MaxT)"] = table_df.apply(lambda r: f"{r['maxt']:.1f} °C {get_weather_icon(r['mint'], r['maxt'])[0]}", axis=1)
+    table_df["日溫差 (°C)"] = (table_df["maxt"] - table_df["mint"]).round(1).astype(str) + " °C"
+    table_df["舒適度評估"] = table_df.apply(lambda r: f"{get_weather_icon(r['mint'], r['maxt'])[0]} {get_weather_icon(r['mint'], r['maxt'])[1]}", axis=1)
 
     table_df = table_df.rename(columns={
-        "dataDate": "預報日期",
-        "mint": "最低氣溫 (MinT °C)",
-        "maxt": "最高氣溫 (MaxT °C)"
-    })[["預報日期", "最低氣溫 (MinT °C)", "最高氣溫 (MaxT °C)", "日溫差 (°C)", "舒適度評估"]]
+        "dataDate": "預報日期"
+    })[["預報日期", "最低氣溫 (MinT)", "最高氣溫 (MaxT)", "日溫差 (°C)", "舒適度評估"]]
 
     st.dataframe(
         table_df,
@@ -1088,9 +1094,9 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
         hide_index=True,
         column_config={
             "預報日期": st.column_config.TextColumn("預報日期"),
-            "最低氣溫 (MinT °C)": st.column_config.NumberColumn("最低氣溫 (MinT)", format="%.1f °C"),
-            "最高氣溫 (MaxT °C)": st.column_config.NumberColumn("最高氣溫 (MaxT)", format="%.1f °C"),
-            "日溫差 (°C)": st.column_config.NumberColumn("日夜溫差", format="%.1f °C"),
+            "最低氣溫 (MinT)": st.column_config.TextColumn("最低氣溫 (MinT)"),
+            "最高氣溫 (MaxT)": st.column_config.TextColumn("最高氣溫 (MaxT)"),
+            "日溫差 (°C)": st.column_config.TextColumn("日夜溫差"),
             "舒適度評估": st.column_config.TextColumn("天氣狀態評估")
         }
     )
