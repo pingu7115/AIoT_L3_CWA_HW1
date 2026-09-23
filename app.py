@@ -59,7 +59,7 @@ def get_cached_rainfall():
 # 頁面配置 (Warm Beige Theme Default)
 # -------------------------------------------------------------
 st.set_page_config(
-    page_title="台灣氣象與颱風路徑動態儀表板 · Taiwan Weather & Typhoon Map",
+    page_title="台灣動態氣象資訊",
     page_icon="🌪️",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -440,7 +440,7 @@ def get_weather_icon(mint, maxt):
 st.markdown("""
 <div class="top-navbar">
     <div>
-        <h1 class="brand-title">🌪️ 台灣氣象與颱風路徑動態儀表板</h1>
+        <h1 class="brand-title">🌪️ 台灣動態氣象資訊</h1>
         <div class="brand-subtitle">中央氣象署 Open Data 全台 22 縣市即時預報 · 西北太平洋熱帶氣旋 70% 潛勢動態</div>
     </div>
     <div style="display: flex; gap: 10px; align-items: center;">
@@ -1668,10 +1668,10 @@ else:
                 tooltip=f"預報時間: {fp['time_label']} · {fp.get('desc', '')}"
             ).add_to(m_typhoon)
 
-        # 5. 當前中心 (Current Center): 莫蘭迪同心光環與詳細 HTML 資訊卡片
+        # 5. 當前中心 (Current Center): 莫蘭迪同心光環與詳細 HTML 資訊卡片 (直接點擊圓圈開啟)
         folium.CircleMarker(
             location=cur_pt,
-            radius=15,
+            radius=16,
             color="#b86b53",
             weight=2,
             fill=True,
@@ -1679,27 +1679,15 @@ else:
             fill_opacity=0.25
         ).add_to(m_typhoon)
 
-        folium.CircleMarker(
-            location=cur_pt,
-            radius=8,
-            color="#FFFFFF",
-            weight=2.5,
-            fill=True,
-            fill_color="#b86b53",
-            fill_opacity=1.0
-        ).add_to(m_typhoon)
-
         is_td_system = cur_typhoon.get("is_live") or any(k in str(cur_typhoon.get('name_zh', '')) for k in ["熱帶低壓", "熱帶性低氣壓", "準颱風"])
         popup_en_str = f" ({cur_typhoon['name_en']})" if cur_typhoon.get('name_en') and cur_typhoon['name_en'] != 'Tropical Depression' else ""
         if is_td_system:
             popup_header_title = f"🌀 {cur_typhoon['name_zh']}{popup_en_str}"
             popup_badge_str = "準25號颱" if cur_typhoon.get("is_live") else "準颱風"
-            center_badge_label = f"🌀 當前中心 ({cur_typhoon['name_zh']})"
             marker_tooltip = f"🌀 {cur_typhoon['name_zh']} (點擊展開詳細氣象定位卡)"
         else:
             popup_header_title = f"🌀 {cur_typhoon['name_zh']}{popup_en_str}"
             popup_badge_str = f"#{cur_typhoon['number']}" if cur_typhoon.get('number') and cur_typhoon['number'] != '準颱風' else cur_typhoon['intensity']
-            center_badge_label = f"🌀 當前中心 ({cur_typhoon['name_zh']})"
             marker_tooltip = f"🌀 {cur_typhoon['name_zh']} (點擊展開詳細氣象定位卡)"
 
         center_popup_html = f"""
@@ -1726,27 +1714,14 @@ else:
         </div>
         """
 
-        center_badge_html = f"""
-        <div style="
-            background: linear-gradient(135deg, #b86b53 0%, #c47d66 100%);
-            color: #FFFFFF;
-            font-weight: 800;
-            font-size: 11px;
-            padding: 3px 9px;
-            border-radius: 999px;
-            white-space: nowrap;
-            border: 2px solid #FFFFFF;
-            box-shadow: 0 2px 10px rgba(184, 107, 83, 0.45);
-            margin-left: 14px;
-            margin-top: -12px;
-            letter-spacing: -0.2px;
-            cursor: pointer;
-        ">{center_badge_label}</div>
-        """
-
-        folium.Marker(
+        folium.CircleMarker(
             location=cur_pt,
-            icon=folium.DivIcon(html=center_badge_html),
+            radius=9,
+            color="#FFFFFF",
+            weight=2.5,
+            fill=True,
+            fill_color="#b86b53",
+            fill_opacity=1.0,
             popup=folium.Popup(center_popup_html, max_width=320),
             tooltip=marker_tooltip
         ).add_to(m_typhoon)
