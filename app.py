@@ -2,18 +2,19 @@
 # -*- coding: utf-8 -*-
 """
 階段 4: 前端展示 (Presentation)
-app.py - 台灣即時氣象視覺化地圖 (全台 22 縣市 · 類 Windy 深色科技美學風格)
+app.py - 台灣全島 22 縣市即時氣象視覺化面狀熱力地圖 (類 Windy 風格)
 參考範例: https://taiwan-weather-map.vercel.app/
 
 【嚴格遵守作業規範】：
 1. 預報資料 100% 透過 SQL 查詢自本地 SQLite 資料庫 (data.db)，嚴禁前端直呼外部 API。
-2. 完整支援全台 22 縣市（基隆、雙北、桃園、新竹、苗栗、台中、彰化、南投、雲林、嘉義、台南、高雄、屏東、宜蘭、花蓮、台東、澎湖、金門、連江等）及大分區。
-3. 包含下拉選單 (st.selectbox)、一週最高/最低氣溫折線圖 (MaxT vs MinT)、一週預報詳細數據表。
-4. 進階加分項: Folium 台灣氣溫分級地圖 (類 Windy 深色底圖、全島 22 縣市發光氣溫標籤、漸層溫度標尺)。
+2. 完整支援全台 22 縣市，引入 GeoJSON 縣市輪廓邊界，實作「面狀熱力圖 (Choropleth/GeoJson)」區域著色。
+3. 地圖鎖定台灣視角 (Zoom: 7~10, max_bounds)，避免拖曳跑出場外。
+4. 下拉選單 (st.selectbox)、一週最高/最低氣溫折線圖 (MaxT vs MinT)、一週預報詳細數據表。
 """
 
 import os
 import sys
+import json
 import pandas as pd
 import streamlit as st
 import folium
@@ -34,6 +35,8 @@ from database import (
     DEFAULT_DB_PATH
 )
 from main import run_pipeline
+
+GEOJSON_FILE = "taiwan_counties.geojson"
 
 # -------------------------------------------------------------
 # 頁面配置 (Dark Theme Default)
@@ -173,9 +176,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 全台 22 縣市完整經緯度座標（涵蓋本島與外島全境）
+# 全台 22 縣市代表中心座標（用於懸浮數值標籤）
 # -------------------------------------------------------------
-ALL_COORDINATES = {
+COUNTY_CENTROIDS = {
     # 北部
     "基隆市": [25.1276, 121.7392],
     "臺北市": [25.0330, 121.5654],
@@ -203,7 +206,7 @@ ALL_COORDINATES = {
     "澎湖縣": [23.5711, 119.5793],
     "金門縣": [24.4493, 118.3766],
     "連江縣": [26.1558, 119.9288],
-    # 6 大分區
+    # 6 大分區備用
     "北部地區": [25.0330, 121.5654],
     "中部地區": [24.1477, 120.6736],
     "南部地區": [22.9997, 120.2270],
@@ -212,7 +215,6 @@ ALL_COORDINATES = {
     "金門馬祖地區": [24.4493, 118.3766],
 }
 
-# 優先排序列（22 縣市依地理從北到南、外島排序列）
 PREFER_ORDER = [
     "臺北市", "新北市", "基隆市", "桃園市", "新竹市", "新竹縣", "苗栗縣",
     "臺中市", "彰化縣", "南投縣", "雲林縣", "嘉義市", "嘉義縣",
@@ -280,8 +282,9 @@ with st.sidebar:
     st.markdown("""
     **作業規範符合度**：
     - ✅ **前端直連 API：0% (嚴格禁止)**
-    - ✅ **涵蓋全台 22 縣市與分區**
-    - ✅ **加分項：Folium 全島深色分級地圖**
+    - ✅ **涵蓋全台 22 縣市與 6 大分區**
+    - ✅ **GeoJSON 面狀熱力著色 (Choropleth)**
+    - ✅ **地圖視角鎖定 (7.0~10.0 Zoom Bounds)**
     """)
 
 # -------------------------------------------------------------
@@ -290,12 +293,12 @@ with st.sidebar:
 st.markdown("""
 <div class="top-navbar">
     <div>
-        <h1 class="brand-title">🌪️ 台灣全縣市即時氣象地圖</h1>
-        <div class="brand-subtitle">中央氣象署 Open Data 全台 22 縣市即時同步 · 類 Windy 深色互動風格儀表板</div>
+        <h1 class="brand-title">🌪️ 台灣全縣市即時氣象面狀地圖</h1>
+        <div class="brand-subtitle">中央氣象署 Open Data 全台 22 縣市即時同步 · 類 Windy 深色輪廓熱力儀表板</div>
     </div>
     <div style="display: flex; gap: 10px; align-items: center;">
         <span class="pill-badge green">● 資料來源: SQLite data.db</span>
-        <span class="pill-badge">🛰️ 全台 22 縣市覆蓋</span>
+        <span class="pill-badge">🗺️ GeoJSON 縣市邊界著色</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -308,7 +311,7 @@ if not all_db_regions:
     st.warning("⚠️ 目前資料庫中無氣象資料，請於側邊欄點選「執行後端 ETL 管線」以初始化資料庫。")
     st.stop()
 
-# 整理下拉選單選項順序（依地理優先排序）
+# 整理下拉選單選項順序
 sorted_regions = [r for r in PREFER_ORDER if r in all_db_regions]
 for r in all_db_regions:
     if r not in sorted_regions:
@@ -329,7 +332,7 @@ with col_select_a:
 with col_select_b:
     st.markdown(f"""
     <div style="padding-top: 28px; font-size: 0.9rem; color: #94A3B8;">
-        當前選定：<b style="color: #38BDF8; font-size: 1.05rem;">{selected_region}</b> · 未來 7 天預報資料由本地 SQLite 即時提供
+        當前選定：<b style="color: #38BDF8; font-size: 1.05rem;">{selected_region}</b> · 未來 7 天預報資料由本地 SQLite (data.db) 即時提供
     </div>
     """, unsafe_allow_html=True)
 
@@ -341,7 +344,7 @@ if df_forecast.empty:
     st.error(f"查無 {selected_region} 的預報資料。")
     st.stop()
 
-# 計算指標
+# 計算即時指標
 today_row = df_forecast.iloc[0]
 today_min = today_row["mint"]
 today_max = today_row["maxt"]
@@ -395,92 +398,130 @@ with c4:
 st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 主視覺雙欄：左側全島 22 縣市地圖 / 右側 7 天氣象趨勢折線圖
+# 主視覺雙欄：左側 GeoJSON 面狀熱力地圖 / 右側 7 天氣象趨勢折線圖
 # -------------------------------------------------------------
 col_map, col_chart = st.columns([1.2, 1])
 
+# 查詢全台最新一日各縣市氣象資料 (純 SQL)
+all_latest = get_all_latest_forecasts(DEFAULT_DB_PATH)
+latest_map_data = {item["regionName"]: item for item in all_latest}
+
+def resolve_weather(name):
+    if not name:
+        return None
+    if name in latest_map_data:
+        return latest_map_data[name]
+    # 處理 台 / 臺 異體字相容
+    alt = name.replace("臺", "台") if "臺" in name else name.replace("台", "臺")
+    return latest_map_data.get(alt)
+
 with col_map:
-    st.markdown("### 🗺️ 全台 22 縣市即時氣溫分級地圖 (類 Windy 風格)")
-    st.caption("深色底圖呈現全台 22 個縣市實測即時氣溫，點選縣市圓點可展開詳細卡片。")
+    st.markdown("### 🗺️ 全台 22 縣市 GeoJSON 面狀熱力地圖")
+    st.caption("透過 GeoJSON 縣市輪廓進行面狀著色（Choropleth），並鎖定台灣視角，避免拖曳出界。")
 
-    all_latest = get_all_latest_forecasts(DEFAULT_DB_PATH)
-
-    # 建立 Dark Matter 台灣全圖
+    # 1. 建立地圖實例：嚴格鎖定台灣視角 (Zoom: 7~10, max_bounds=True)
     m = folium.Map(
         location=[23.7, 120.9],
         zoom_start=7.3,
+        min_zoom=7,
+        max_zoom=10,
+        max_bounds=True,
+        min_lat=21.0,
+        max_lat=26.5,
+        min_lon=118.0,
+        max_lon=122.5,
         tiles="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
         attr='&copy; <a href="https://carto.com/">CARTO</a>'
     )
 
-    # 優先篩選 22 縣市呈現，避免與 6 大分區重疊
-    counties_in_db = [item for item in all_latest if "地區" not in item["regionName"]]
-    display_items = counties_in_db if len(counties_in_db) >= 10 else all_latest
+    # 2. 載入並套用台灣各縣市 GeoJSON 輪廓著色
+    if os.path.exists(GEOJSON_FILE):
+        with open(GEOJSON_FILE, "r", encoding="utf-8") as gf:
+            geojson_data = json.load(gf)
 
-    for item in display_items:
-        loc_name = item["regionName"]
-        coords = ALL_COORDINATES.get(loc_name)
-        if not coords:
-            continue
+        def style_fn(feature):
+            props = feature.get("properties", {})
+            c_name = props.get("COUNTYNAME") or props.get("name")
+            w = resolve_weather(c_name)
+            is_cur = False
+            if selected_region:
+                is_cur = (c_name == selected_region or (c_name and c_name.replace("臺", "台") == selected_region.replace("臺", "台")))
 
-        loc_avg = round((item["maxt"] + item["mint"]) / 2, 1)
-        loc_color = get_windy_temp_color(loc_avg)
-        is_selected = (loc_name == selected_region)
+            if w:
+                avg_t = (w["maxt"] + w["mint"]) / 2
+                color = get_windy_temp_color(avg_t)
+            else:
+                color = "#334155"
 
-        popup_html = f"""
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; width: 175px; padding: 6px; background: #0F172A; color: #F8FAFC; border-radius: 8px;">
-            <div style="font-weight: 700; font-size: 15px; margin-bottom: 4px; color: #38BDF8;">📍 {loc_name}</div>
-            <div style="font-size: 12px; color: #94A3B8; margin-bottom: 6px;">預報日期: {item['dataDate']}</div>
-            <div style="display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px;">
-                <span style="color: #F87171; font-weight: 600;">高溫 {item['maxt']}°C</span>
-                <span style="color: #38BDF8; font-weight: 600;">低溫 {item['mint']}°C</span>
-            </div>
-            <div style="font-size: 11px; color: #64748B; margin-top: 4px; text-align: center;">日均氣溫: {loc_avg}°C</div>
-        </div>
-        """
+            return {
+                "fillColor": color,
+                "color": "#38BDF8" if is_cur else "rgba(255, 255, 255, 0.4)",
+                "weight": 3.0 if is_cur else 1.2,
+                "fillOpacity": 0.78 if is_cur else 0.58,
+            }
 
-        folium.CircleMarker(
-            location=coords,
-            radius=18 if is_selected else 13,
-            color="#FFFFFF" if is_selected else loc_color,
-            weight=3 if is_selected else 1.5,
-            fill=True,
-            fill_color=loc_color,
-            fill_opacity=0.85 if is_selected else 0.65,
-            popup=folium.Popup(popup_html, max_width=250),
-            tooltip=f"{loc_name}: {item['mint']}°C ~ {item['maxt']}°C"
+        def highlight_fn(feature):
+            return {
+                "weight": 3.5,
+                "color": "#FFFFFF",
+                "fillOpacity": 0.85
+            }
+
+        # 縣市面狀圖層
+        folium.GeoJson(
+            geojson_data,
+            name="Taiwan Counties Boundary",
+            style_function=style_fn,
+            highlight_function=highlight_fn,
+            tooltip=folium.GeoJsonTooltip(
+                fields=["COUNTYNAME"],
+                aliases=["📍 縣市:"],
+                localize=True,
+                sticky=True,
+                style="background: #0F172A; color: #FFFFFF; font-family: sans-serif; font-size: 13px; padding: 6px 10px; border-radius: 6px; border: 1px solid #38BDF8;"
+            )
         ).add_to(m)
 
-        # 懸浮氣溫數值標記
-        badge_border = "2px solid #FFFFFF" if is_selected else "1px solid rgba(255,255,255,0.3)"
+    # 3. 疊加懸浮氣溫數值標記 (DivIcon)
+    for c_name, coords in COUNTY_CENTROIDS.items():
+        w = resolve_weather(c_name)
+        if not w:
+            continue
+        avg_t = round((w["maxt"] + w["mint"]) / 2, 1)
+        color = get_windy_temp_color(avg_t)
+        is_cur = (c_name == selected_region or c_name.replace("臺", "台") == selected_region.replace("臺", "台"))
+        
+        badge_border = "2px solid #FFFFFF" if is_cur else "1px solid rgba(255,255,255,0.3)"
         icon_html = f"""
         <div style="
-            background: {loc_color};
+            background: {color};
             color: #FFFFFF;
             font-weight: 700;
             font-size: 10px;
             padding: 1px 4px;
             border-radius: 10px;
             text-align: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.7);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.8);
             border: {badge_border};
-            width: 36px;
-            margin-left: -18px;
+            width: 38px;
+            margin-left: -19px;
             margin-top: -8px;
-        ">{loc_avg}°</div>
+            cursor: pointer;
+        ">{avg_t}°</div>
         """
         folium.Marker(
             location=coords,
-            icon=folium.DivIcon(html=icon_html)
+            icon=folium.DivIcon(html=icon_html),
+            tooltip=f"{c_name}: {w['mint']}°C ~ {w['maxt']}°C"
         ).add_to(m)
 
-    st_folium(m, width="100%", height=470)
+    st_folium(m, width="100%", height=480)
 
     # 底部 Windy 經典漸層溫度標尺
     st.markdown("""
     <div class="map-legend-panel">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-            <span style="font-size: 0.8rem; font-weight: 600; color: #94A3B8;">🌡️ 全台即時氣溫色階 (°C)</span>
+            <span style="font-size: 0.8rem; font-weight: 600; color: #94A3B8;">🌡️ 全台即時氣溫面狀色階 (°C)</span>
             <span style="font-size: 0.75rem; color: #64748B;">即時全島溫度漸層標尺</span>
         </div>
         <div class="windy-gradient-bar"></div>
@@ -609,6 +650,6 @@ st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
 st.markdown("""
 <div style="text-align: center; color: #64748B; font-size: 0.82rem; padding: 20px 0; border-top: 1px solid rgba(255,255,255,0.06);">
     AIoT HW10 · Taiwan Weather Forecast Dashboard · Inspired by Windy & CWA Open Data<br/>
-    涵蓋全台 22 縣市即時預報 · 資料庫架構: SQLite (data.db) · 前端框架: Streamlit & Folium
+    全台 22 縣市 GeoJSON 輪廓著色 · 資料庫架構: SQLite (data.db) · 前端框架: Streamlit & Folium
 </div>
 """, unsafe_allow_html=True)
