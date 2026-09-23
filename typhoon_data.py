@@ -152,7 +152,7 @@ def fetch_cwa_live_typhoon(api_key=None):
                 f"未來路徑預計朝琉球及台灣東方海面移動，請航行作業船隻隨時注意最新動態。"
             )
         else:
-            name_display = "熱帶性低氣壓 (準颱風)"
+            name_display = "🌀 熱帶性低氣壓 "
             en_display = "Tropical Depression"
             num_display = ""
             intensity_display = "熱帶性低氣壓 (準颱風)"
@@ -204,7 +204,7 @@ def fetch_cwa_live_typhoon(api_key=None):
 # -------------------------------------------------------------
 TYPHOON_CATALOG = {
     "live_cwa": {
-        "title": "🔴【即時連線】熱帶性低氣壓 (準颱風) · 氣象署 120 小時預報路徑",
+        "title": "🔴【即時連線】🌀 熱帶性低氣壓  · 氣象署 120 小時預報路徑",
         "getter": fetch_cwa_live_typhoon
     },
     "krathon_2024": {
