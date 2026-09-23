@@ -512,13 +512,13 @@ st.markdown("""
         <span style="font-size: 1.3rem;">🌐</span>
         <div>
             <div style="font-weight: 700; font-size: 0.95rem; color: #2b303a;">視覺化圖層切換 (Layer Selector)</div>
-            <div style="font-size: 0.8rem; color: #6c757d;">請點選切換「各縣市溫度分佈」、「全台即時累積雨量」或「颱風路徑與潛勢動態」</div>
+            <div style="font-size: 0.8rem; color: #6c757d;">請點選切換「各縣市溫度分佈」、「全台即時累積雨量圖」或「颱風路徑與潛勢動態」</div>
         </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-LAYER_OPTIONS = ["🌡️ 各縣市溫度分佈", "🌧️ 全台即時累積雨量", "🌀 颱風路徑動態"]
+LAYER_OPTIONS = ["🌡️ 各縣市溫度分佈", "🌧️ 全台即時累積雨量圖", "🌀 颱風路徑動態"]
 
 if "active_layer" not in st.session_state or st.session_state["active_layer"] not in LAYER_OPTIONS:
     st.session_state["active_layer"] = "🌡️ 各縣市溫度分佈"
@@ -1078,9 +1078,9 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
     st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
 
 # =============================================================
-# 圖層 2: 🌧️ 全台即時累積雨量 (Accumulated Precipitation View)
+# 圖層 2: 🌧️ 全台即時累積雨量圖 (Accumulated Precipitation View)
 # =============================================================
-elif selected_layer == "🌧️ 全台即時累積雨量":
+elif selected_layer == "🌧️ 全台即時累積雨量圖":
     with st.spinner("正在連線中央氣象署 API (O-A0040 / O-A0002) 取得全台累積雨量與測站資料..."):
         rain_data = get_cached_rainfall()
 
@@ -1149,13 +1149,13 @@ elif selected_layer == "🌧️ 全台即時累積雨量":
 
     with col_r_map:
         st.markdown("### 🗺️ 全台即時累積雨量熱力圖磚與觀測站")
-        st.caption("無浮水印 Esri Light 畫布底圖，套疊氣象署官方透明色斑推估熱力圖 (O-A0040-003) 與各縣市雨量站標記。")
+        st.caption("無浮水印 Esri Light 畫布底圖，套疊氣象署官方透明色斑推估熱力圖 (O-A0040-001/003) 與各縣市雨量站標記。")
 
-        # 建立雨量專屬地圖 (鎖定台灣視角 - Esri Light Gray Base)
+        # 建立雨量專屬地圖 (鎖定台灣視角: location=[23.7, 120.9], zoom_start=7)
         m_rain = folium.Map(
             location=[23.7, 120.9],
-            zoom_start=7.3,
-            min_zoom=7,
+            zoom_start=7,
+            min_zoom=6,
             max_zoom=10,
             max_bounds=True,
             min_lat=21.0,
@@ -1190,27 +1190,40 @@ elif selected_layer == "🌧️ 全台即時累積雨量":
                 }
             ).add_to(m_rain)
 
-        # 2. 疊加氣象署去背景透明累積雨量熱力圖磚 (ImageOverlay)
-        if rain_data.get("overlay_data_url"):
-            folium.raster_layers.ImageOverlay(
-                image=rain_data["overlay_data_url"],
-                bounds=rain_data["overlay_bounds"],
-                opacity=0.88,
-                name="累積雨量熱力圖"
-            ).add_to(m_rain)
+        # 2. 疊加氣象署全台累積雨量雷達圖 / QPESUMS (O-A0040-001 / O-A0040-003, bounds=[[21.8, 119.8], [25.4, 122.2]], opacity=0.7)
+        cwa_radar_overlay_url = rain_data.get("overlay_data_url") or "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0040-001.jpg"
+        folium.raster_layers.ImageOverlay(
+            image=cwa_radar_overlay_url,
+            bounds=[[21.8, 119.8], [25.4, 122.2]],
+            opacity=0.7,
+            name="全台即時累積雨量雷達推估圖"
+        ).add_to(m_rain)
 
-        # 3. 疊加主要雨量觀測站點 (CircleMarker)
+        # 3. 疊加主要雨量觀測站點 (CircleMarker: 0mm: transparent/light blue, >10mm: Morandi blue, >50mm: yellow, >130mm: orange/terracotta)
+        def get_morandi_station_color(val):
+            if val <= 0:
+                return "rgba(162, 196, 201, 0.45)" # 0mm: transparent/light blue
+            elif val < 10:
+                return "#7392a0"                  # 1~10mm: soft morandi blue
+            elif val < 50:
+                return "#5c7c8a"                  # >10mm: Morandi blue
+            elif val < 130:
+                return "#c49359"                  # >50mm: yellow
+            else:
+                return "#b86b53"                  # >130mm: orange/terracotta
+
         for stn in rain_data.get("top_stations", []):
-            if stn["rain_today"] <= 0:
-                continue
-            c_color = get_rain_color(stn["rain_today"])
+            rain_val = stn["rain_today"]
+            c_color = get_morandi_station_color(rain_val)
+            marker_radius = 5 if rain_val <= 0 else min(12, max(6, int(rain_val * 0.4 + 5)))
+
             stn_popup = f"""
             <div style="font-family: 'Outfit', 'Inter', sans-serif; padding: 4px; color: #2b303a; min-width: 190px;">
                 <div style="font-size: 14px; font-weight: 700; color: #2b303a; border-bottom: 1px solid rgba(0, 0, 0, 0.08); padding-bottom: 4px; margin-bottom: 6px;">
                     📍 {stn['county']} {stn['town']} · {stn['name']}
                 </div>
                 <div style="font-size: 13px; line-height: 1.6;">
-                    <div>🌧️ 本日累積雨量：<b style="color: #b86b53; font-size: 15px;">{stn['rain_today']} mm</b></div>
+                    <div>🌧️ 本日累積雨量：<b style="color: {c_color if rain_val > 0 else '#5c7c8a'}; font-size: 15px;">{rain_val} mm</b></div>
                     <div>⏱️ 過去 1 小時雨量：<b>{stn['past1hr']} mm</b></div>
                     <div>⏱️ 過去 24 小時雨量：<b>{stn['past24hr']} mm</b></div>
                     <div style="color: #6c757d; font-size: 11px; margin-top: 4px;">測站代號: {stn['station_id']} · 觀測時間: {stn['time']}</div>
@@ -1219,17 +1232,17 @@ elif selected_layer == "🌧️ 全台即時累積雨量":
             """
             folium.CircleMarker(
                 location=[stn["lat"], stn["lon"]],
-                radius=min(11, max(5, int(stn["rain_today"] * 0.5 + 4))),
-                color=c_color,
-                weight=2,
+                radius=marker_radius,
+                color=c_color if rain_val > 0 else "#7392a0",
+                weight=2 if rain_val > 0 else 1,
                 fill=True,
                 fill_color=c_color,
-                fill_opacity=0.9,
+                fill_opacity=0.85 if rain_val > 0 else 0.45,
                 popup=folium.Popup(stn_popup, max_width=260),
-                tooltip=f"📍 {stn['name']} ({stn['county']}) · 今日雨量: {stn['rain_today']} mm"
+                tooltip=f"📍 {stn['name']} ({stn['county']}) · 今日雨量: {rain_val} mm"
             ).add_to(m_rain)
 
-        # 4. 右上角氣象署標準雨量色階圖例 (浮動面板 - Morandi Light Palette)
+        # 4. 右上角標準雨量色階圖例 (浮動面板 - Morandi Light Palette)
         rain_legend_html = """
         <div id="rain-map-legend" style="
             position: absolute;
@@ -1245,21 +1258,18 @@ elif selected_layer == "🌧️ 全台即時累積雨量":
             color: #2b303a;
             box-shadow: 0 4px 16px rgba(60, 50, 40, 0.08);
             font-family: 'Outfit', 'Inter', sans-serif;
-            min-width: 145px;
+            min-width: 150px;
             pointer-events: auto;
         ">
             <div style="font-weight: 700; font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px;">
-                🌧️ 累積雨量圖例 (mm)
+                🌧️ 降雨級距與圖例 (mm)
             </div>
-            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11.5px;">
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #bbf1fa;"></span><span>1 ~ 6 mm</span></span><span style="color: #6c757d; font-size: 10px;">微量</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #5c7c8a;"></span><span>6 ~ 15 mm</span></span><span style="color: #5c7c8a; font-size: 10px; font-weight: 600;">小雨</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #6b8e73;"></span><span>15 ~ 30 mm</span></span><span style="color: #6b8e73; font-size: 10px; font-weight: 600;">中雨</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #c49359;"></span><span>30 ~ 50 mm</span></span><span style="color: #c49359; font-size: 10px; font-weight: 600;">較大雨</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #b86b53;"></span><span>50 ~ 80 mm</span></span><span style="color: #b86b53; font-size: 10px; font-weight: 600;">顯著</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #c47d66;"></span><span>80 ~ 130 mm</span></span><span style="color: #c47d66; font-size: 10px; font-weight: 600;">大雨</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #9a7b8e;"></span><span>130 ~ 200 mm</span></span><span style="color: #9a7b8e; font-size: 10px; font-weight: 600;">豪雨</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #8a4f58;"></span><span>&gt; 200 mm</span></span><span style="color: #8a4f58; font-size: 10px; font-weight: 600;">大豪雨</span></div>
+            <div style="display: flex; flex-direction: column; gap: 5px; font-size: 11.5px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: rgba(162, 196, 201, 0.7); border: 1px solid #7392a0;"></span><span>0 mm</span></span><span style="color: #6c757d; font-size: 10px;">尚未降雨</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #7392a0;"></span><span>&lt; 10 mm</span></span><span style="color: #7392a0; font-size: 10px; font-weight: 600;">零星微量</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #5c7c8a;"></span><span>&gt; 10 mm</span></span><span style="color: #5c7c8a; font-size: 10px; font-weight: 600;">莫蘭迪藍</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #c49359;"></span><span>&gt; 50 mm</span></span><span style="color: #c49359; font-size: 10px; font-weight: 600;">大雨黃標</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #b86b53;"></span><span>&gt; 130 mm</span></span><span style="color: #b86b53; font-size: 10px; font-weight: 600;">豪雨陶土</span></div>
             </div>
         </div>
         """
