@@ -40,6 +40,7 @@ from database import (
 )
 from main import run_pipeline
 from typhoon_data import fetch_cwa_live_typhoon, TYPHOON_CATALOG
+from rainfall_data import fetch_cwa_rainfall_data, get_rain_color
 
 GEOJSON_FILE = "taiwan_counties.geojson"
 
@@ -47,6 +48,11 @@ GEOJSON_FILE = "taiwan_counties.geojson"
 def get_cached_live_typhoon():
     """快取 5 分鐘避免頻繁呼叫 CWA API"""
     return fetch_cwa_live_typhoon()
+
+@st.cache_data(ttl=300)
+def get_cached_rainfall():
+    """快取 5 分鐘避免頻繁呼叫 CWA 雨量 API"""
+    return fetch_cwa_rainfall_data()
 
 # -------------------------------------------------------------
 # 頁面配置 (Dark Theme Default)
@@ -457,22 +463,26 @@ st.markdown("""
         <span style="font-size: 1.3rem;">🌐</span>
         <div>
             <div style="font-weight: 700; font-size: 0.95rem; color: #38BDF8;">視覺化圖層切換 (Layer Selector)</div>
-            <div style="font-size: 0.8rem; color: #94A3B8;">請點選切換「全台各縣市溫度分佈」或「西北太平洋颱風路徑與 70% 潛勢機率圈」</div>
+            <div style="font-size: 0.8rem; color: #94A3B8;">請點選切換「各縣市溫度分佈」、「全台即時累積雨量」或「颱風路徑與潛勢動態」</div>
         </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-if "active_layer" not in st.session_state:
+LAYER_OPTIONS = ["🌡️ 各縣市溫度分佈", "🌧️ 全台即時累積雨量", "🌀 颱風路徑動態"]
+
+if "active_layer" not in st.session_state or st.session_state["active_layer"] not in LAYER_OPTIONS:
     st.session_state["active_layer"] = "🌡️ 各縣市溫度分佈"
 
 def on_layer_change():
     st.session_state["active_layer"] = st.session_state["layer_radio_widget"]
 
+cur_layer_idx = LAYER_OPTIONS.index(st.session_state["active_layer"])
+
 selected_layer = st.radio(
     "請選擇欲展示之氣象圖層：",
-    options=["🌡️ 各縣市溫度分佈", "🌀 颱風路徑動態"],
-    index=0 if st.session_state.get("active_layer") == "🌡️ 各縣市溫度分佈" else 1,
+    options=LAYER_OPTIONS,
+    index=cur_layer_idx,
     horizontal=True,
     key="layer_radio_widget",
     on_change=on_layer_change
@@ -1019,7 +1029,256 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
     st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
 
 # =============================================================
-# 圖層 2: 🌀 颱風路徑動態 (Typhoon / Tropical Cyclone Forecast View)
+# 圖層 2: 🌧️ 全台即時累積雨量 (Accumulated Precipitation View)
+# =============================================================
+elif selected_layer == "🌧️ 全台即時累積雨量":
+    with st.spinner("正在連線中央氣象署 API (O-A0040 / O-A0002) 取得全台累積雨量與測站資料..."):
+        rain_data = get_cached_rainfall()
+
+    # 即時連線狀態橫幅
+    st.markdown(f"""
+    <div style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.25rem;">🌧️</span>
+            <div>
+                <div style="color: #38BDF8; font-weight: 700; font-size: 0.92rem;">中央氣象署 (CWA) 全台日累積雨量色斑熱力與即時測站觀測</div>
+                <div style="color: #94A3B8; font-size: 0.8rem;">資料集: O-A0040 (累積雨量圖) & O-A0002-001 (1,340 處雨量站) · 統計時段：<b>{rain_data['obs_period']}</b></div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <span class="pill-badge green">即時連線中</span>
+            <span class="pill-badge">雷達推估色斑</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 4 大指標卡片
+    rc1, rc2, rc3, rc4 = st.columns(4)
+    max_rain = rain_data["max_rain"]
+    max_station = rain_data["max_station"]
+    max_name = f"{max_station['name']} ({max_station['county']} {max_station['town']})" if max_station else "暫無降雨"
+
+    with rc1:
+        st.markdown(f"""
+        <div class="glass-card" style="border-top: 3px solid #38BDF8;">
+            <div class="metric-title">🌧️ 今日全台最高累積雨量</div>
+            <div class="metric-value" style="color: #38BDF8; font-size: 2.1rem;">{max_rain} <span style="font-size: 1.1rem; color: #94A3B8;">mm</span></div>
+            <div class="metric-caption">最高測站: {max_name}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with rc2:
+        st.markdown(f"""
+        <div class="glass-card" style="border-top: 3px solid {rain_data['advisory_color']};">
+            <div class="metric-title">⚠️ 降雨警戒狀態評估</div>
+            <div class="metric-value" style="color: {rain_data['advisory_color']}; font-size: 1.65rem;">{rain_data['advisory_title']}</div>
+            <div class="metric-caption">{rain_data['advisory_desc'][:30]}...</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with rc3:
+        st.markdown(f"""
+        <div class="glass-card" style="border-top: 3px solid #10B981;">
+            <div class="metric-title">📡 有降雨記錄測站數</div>
+            <div class="metric-value" style="color: #34D399; font-size: 2.1rem;">{rain_data['total_rainy_stations']} <span style="font-size: 1.1rem; color: #94A3B8;">/ {rain_data['total_stations']} 站</span></div>
+            <div class="metric-caption">全台自動雨量監測網即時回傳</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with rc4:
+        st.markdown(f"""
+        <div class="glass-card" style="border-top: 3px solid #F59E0B;">
+            <div class="metric-title">⏱️ 累積雨量統計時段</div>
+            <div class="metric-value" style="color: #FBBF24; font-size: 1.45rem;">本日即時統計</div>
+            <div class="metric-caption">{rain_data['obs_period']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
+
+    col_r_map, col_r_info = st.columns([1.35, 1])
+
+    with col_r_map:
+        st.markdown("### 🗺️ 全台即時累積雨量熱力圖磚與觀測站")
+        st.caption("無浮水印 Esri Dark 畫布底圖，套疊氣象署官方透明色斑推估熱力圖 (O-A0040-003) 與各縣市雨量站標記。")
+
+        # 建立雨量專屬地圖 (鎖定台灣視角)
+        m_rain = folium.Map(
+            location=[23.7, 120.9],
+            zoom_start=7.3,
+            min_zoom=7,
+            max_zoom=10,
+            max_bounds=True,
+            min_lat=21.0,
+            max_lat=26.5,
+            min_lon=118.0,
+            max_lon=122.5,
+            tiles="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            attr="Esri"
+        )
+
+        m_rain.get_root().header.add_child(folium.Element("""
+        <style>
+            .leaflet-control-attribution {
+                display: none !important;
+                visibility: hidden !important;
+            }
+        </style>
+        """))
+
+        # 1. 疊加台灣縣市淺色邊界輪廓
+        if os.path.exists(GEOJSON_FILE):
+            with open(GEOJSON_FILE, "r", encoding="utf-8") as gf:
+                geojson_data = json.load(gf)
+            folium.GeoJson(
+                geojson_data,
+                name="Counties",
+                style_function=lambda f: {
+                    "fillColor": "transparent",
+                    "color": "#475569",
+                    "weight": 1.2,
+                    "opacity": 0.6
+                }
+            ).add_to(m_rain)
+
+        # 2. 疊加氣象署去背景透明累積雨量熱力圖磚 (ImageOverlay)
+        if rain_data.get("overlay_data_url"):
+            folium.raster_layers.ImageOverlay(
+                image=rain_data["overlay_data_url"],
+                bounds=rain_data["overlay_bounds"],
+                opacity=0.88,
+                name="累積雨量熱力圖"
+            ).add_to(m_rain)
+
+        # 3. 疊加主要雨量觀測站點 (CircleMarker)
+        for stn in rain_data.get("top_stations", []):
+            if stn["rain_today"] <= 0:
+                continue
+            c_color = get_rain_color(stn["rain_today"])
+            stn_popup = f"""
+            <div style="font-family: 'Outfit', 'Inter', sans-serif; padding: 4px; color: #FFFFFF; min-width: 190px;">
+                <div style="font-size: 14px; font-weight: 700; color: #38BDF8; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 4px; margin-bottom: 6px;">
+                    📍 {stn['county']} {stn['town']} · {stn['name']}
+                </div>
+                <div style="font-size: 13px; line-height: 1.6;">
+                    <div>🌧️ 本日累積雨量：<b style="color: #F87171; font-size: 15px;">{stn['rain_today']} mm</b></div>
+                    <div>⏱️ 過去 1 小時雨量：<b>{stn['past1hr']} mm</b></div>
+                    <div>⏱️ 過去 24 小時雨量：<b>{stn['past24hr']} mm</b></div>
+                    <div style="color: #94A3B8; font-size: 11px; margin-top: 4px;">測站代號: {stn['station_id']} · 觀測時間: {stn['time']}</div>
+                </div>
+            </div>
+            """
+            folium.CircleMarker(
+                location=[stn["lat"], stn["lon"]],
+                radius=min(11, max(5, int(stn["rain_today"] * 0.5 + 4))),
+                color=c_color,
+                weight=2,
+                fill=True,
+                fill_color=c_color,
+                fill_opacity=0.9,
+                popup=folium.Popup(stn_popup, max_width=260),
+                tooltip=f"📍 {stn['name']} ({stn['county']}) · 今日雨量: {stn['rain_today']} mm"
+            ).add_to(m_rain)
+
+        # 4. 右上角氣象署標準雨量色階圖例 (浮動面板)
+        rain_legend_html = """
+        <div id="rain-map-legend" style="
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 10px 14px;
+            color: #F8FAFC;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.65);
+            font-family: 'Outfit', 'Inter', sans-serif;
+            min-width: 145px;
+            pointer-events: auto;
+        ">
+            <div style="font-weight: 700; font-size: 11px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px;">
+                🌧️ 累積雨量圖例 (mm)
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11.5px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #BBF1FA;"></span><span>1 ~ 6 mm</span></span><span style="color: #94A3B8; font-size: 10px;">微量</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #0284C7;"></span><span>6 ~ 15 mm</span></span><span style="color: #38BDF8; font-size: 10px;">小雨</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #16A34A;"></span><span>15 ~ 30 mm</span></span><span style="color: #34D399; font-size: 10px;">中雨</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #EAB308;"></span><span>30 ~ 50 mm</span></span><span style="color: #FBBF24; font-size: 10px;">較大雨</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #EA580C;"></span><span>50 ~ 80 mm</span></span><span style="color: #FB923C; font-size: 10px;">顯著</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #EF4444;"></span><span>80 ~ 130 mm</span></span><span style="color: #F87171; font-size: 10px;">大雨</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #9333EA;"></span><span>130 ~ 200 mm</span></span><span style="color: #C084FC; font-size: 10px;">豪雨</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #E11D48;"></span><span>&gt; 200 mm</span></span><span style="color: #FB7185; font-size: 10px;">大豪雨</span></div>
+            </div>
+        </div>
+        """
+        m_rain.get_root().html.add_child(folium.Element(rain_legend_html))
+
+        st_folium(m_rain, width="stretch", height=540)
+
+        st.markdown("""
+        <div class="map-legend-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #94A3B8;">
+                <span>💧 <b>資料來源</b>：中央氣象署雷達合成與雨量站推估 (O-A0040-003) · 點選各測站圓點可查看詳細雨量。</span>
+                <span style="color: #38BDF8; font-weight: 600;">每 10 分鐘同步更新</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_r_info:
+        st.markdown("### 📷 氣象署官方累積雨量圖 (O-A0040-002)")
+        st.caption("中央氣象署最新發布日累積雨量分佈圖檔（小間距）。")
+        
+        st.image(
+            rain_data["official_img_url"],
+            caption=f"中央氣象署日累積雨量圖 ({rain_data['obs_period']})",
+            width="stretch"
+        )
+
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+        st.markdown("#### 🏆 今日全台各測站累積雨量排行榜 (Top 10)")
+
+        top_rain_df = pd.DataFrame([
+            {
+                "排名": f"#{idx+1}",
+                "測站名稱": s["name"],
+                "縣市": s["county"],
+                "鄉鎮區": s["town"],
+                "本日累積 (mm)": s["rain_today"],
+                "過去1小時 (mm)": s["past1hr"]
+            }
+            for idx, s in enumerate(rain_data.get("top_stations", [])[:10])
+        ])
+
+        if not top_rain_df.empty:
+            st.dataframe(
+                top_rain_df,
+                width="stretch",
+                hide_index=True,
+                column_config={
+                    "排名": st.column_config.TextColumn("排名", width="small"),
+                    "測站名稱": st.column_config.TextColumn("測站"),
+                    "縣市": st.column_config.TextColumn("縣市"),
+                    "鄉鎮區": st.column_config.TextColumn("行政區"),
+                    "本日累積 (mm)": st.column_config.NumberColumn("累積雨量", format="%.1f mm"),
+                    "過去1小時 (mm)": st.column_config.NumberColumn("時雨量", format="%.1f mm")
+                }
+            )
+        else:
+            st.info("今日全台暫無測站測得累積雨量。")
+
+        st.markdown("""
+        <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 12px; margin-top: 10px; font-size: 0.82rem; color: #94A3B8;">
+            🛡️ <b>防汛安全提醒</b>：山區易受熱對流或地形抬升影響降雨，請留意短延時強降雨與溪水暴漲，外出建議隨身攜帶雨具。
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
+
+# =============================================================
+# 圖層 3: 🌀 颱風路徑動態 (Typhoon / Tropical Cyclone Forecast View)
 # =============================================================
 else:
     # 觀測目標切換器 (支援氣象署即時 API 與近期重大颱風)
