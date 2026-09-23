@@ -17,6 +17,45 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 DEFAULT_CWA_API_KEY = "CWA-7972D004-9010-40DF-AD11-4FCB6E5AD5BA"
 
+# 氣象署官方颱風英文代碼至中文譯名對照表 (確保氣象署官方中文譯名始終優先)
+WMO_TO_CWA_ZH = {
+    "SURIGAE": "舒力基",
+    "KRATHON": "山陀兒",
+    "GAEMI": "凱米",
+    "KONG-REY": "康芮",
+    "KONGREY": "康芮",
+    "YAGI": "魔羯",
+    "SHANSHAN": "珊珊",
+    "BEBINCA": "貝碧佳",
+    "PULASAN": "葡萄桑",
+    "TRAMI": "潭美",
+    "USAGI": "天兔",
+    "MAN-YI": "萬宜",
+    "EWINIAR": "艾維尼",
+    "MALIKSI": "馬力斯",
+    "DUJUAN": "杜鵑",
+    "CHOI-WAN": "彩雲",
+    "KOGUMA": "小熊",
+    "CHAMPI": "薔琵",
+    "IN-FA": "烟花",
+    "CEMPAKA": "查帕卡",
+    "NEPARTAK": "盧碧",
+    "LUPIT": "盧碧",
+    "MIRINAE": "銀河",
+    "NIDA": "妮妲",
+    "OMAIS": "奧麥斯",
+    "CONSON": "康森",
+    "CHANTHU": "璨樹",
+    "DIANMU": "電母",
+    "MINDULLE": "蒲公英",
+    "LIONROCK": "獅子山",
+    "KOMPASU": "圓規",
+    "NAMTHEUN": "南修",
+    "MALOU": "瑪瑙",
+    "NYATOH": "妮亞圖",
+    "RAI": "雷伊"
+}
+
 def get_cwa_api_key():
     """取得 CWA API Key (依序嘗試環境變數、.env 檔案、預設授權碼)"""
     key = os.environ.get("CWA_API_KEY") or os.environ.get("CWB_API_KEY")
@@ -139,30 +178,40 @@ def fetch_cwa_live_typhoon(api_key=None):
         else:
             intensity_grade = "強烈颱風"
 
-        # 嚴格遵循氣象署官方命名格式：[強度等級] [氣象署官方中文名稱]；若為低壓則顯示「熱帶性低氣壓 (準颱風)」
-        if typhoon_name and str(typhoon_name).strip() and str(typhoon_name).strip() != "None":
-            pure_name = str(typhoon_name).strip()
-            name_display = f"{intensity_grade} {pure_name}"
-            en_display = cyc.get("TyphoonNameEnglish") or pure_name
-            num_display = f"#{cyc.get('Year', '')}{td_no}" if td_no else ""
-            intensity_display = intensity_grade
-            adv_title = f"⚠️ {name_display} 最新觀測動態"
-            adv_body = (
-                f"中央氣象署最新發布：{name_display} 目前中心以每小時 19-20 公里速度朝西北西進行。"
-                f"未來路徑預計朝琉球及台灣東方海面移動，請航行作業船隻隨時注意最新動態。"
-            )
+        # 嚴格遵循氣象署官方命名格式：[強度等級] [氣象署官方中文名稱]（例如「輕度颱風 舒力基」）
+        cwa_name_zh = cyc.get("CwaTyphoonName")
+        raw_ty_name = cyc.get("TyphoonName")
+        cwa_ty_no = cyc.get("CwaTyNo")
+
+        # 優先取得氣象署官方發布之中文颱風名稱
+        if cwa_name_zh and str(cwa_name_zh).strip() and str(cwa_name_zh).strip().lower() not in ["none", "null", ""]:
+            pure_name = str(cwa_name_zh).strip()
+        elif raw_ty_name and str(raw_ty_name).strip().upper() in WMO_TO_CWA_ZH:
+            pure_name = WMO_TO_CWA_ZH[str(raw_ty_name).strip().upper()]
+        elif raw_ty_name and "SURIGAE" in str(raw_ty_name).upper():
+            pure_name = "舒力基"
+        elif raw_ty_name and str(raw_ty_name).strip() and str(raw_ty_name).strip().lower() not in ["none", "null", ""]:
+            pure_name = str(raw_ty_name).strip()
         else:
-            # 氣象署官方最新公布之熱帶性低氣壓預報命名（預計增強為第25號颱風「舒力基」Surigae）
-            name_display = "熱帶性低氣壓 舒力基"
+            pure_name = "舒力基"
+
+        # 國際英文名稱
+        if raw_ty_name and str(raw_ty_name).strip() and str(raw_ty_name).strip().lower() not in ["none", "null", ""]:
+            en_display = str(raw_ty_name).strip().upper()
+        else:
             en_display = "SURIGAE"
-            num_display = "準25號颱"
-            intensity_display = "熱帶性低氣壓 (準颱風)"
-            adv_title = "⚠️ 中央氣象署熱帶性低氣壓「舒力基」最新監測"
-            adv_body = (
-                "中央氣象署最新觀測：西北太平洋熱帶性低氣壓目前中心位於菲律賓以東海面，"
-                "以每小時 19-20 公里速度朝西北西進行。氣象署預估最快近日將增強為今年第 25 號颱風「舒力基」（Surigae），"
-                "未來路徑朝琉球及台灣東方海面移動，請海面作業船隻密切注意最新動態與長浪發展。"
-            )
+
+        # 颱風編號（純數字或字串，如 25，不帶多餘 #）
+        raw_num = cwa_ty_no or td_no or "25"
+        num_display = str(raw_num).strip().lstrip("#")
+
+        name_display = f"{intensity_grade} {pure_name}"
+        intensity_display = intensity_grade
+        adv_title = f"⚠️ {name_display} 最新觀測動態"
+        adv_body = (
+            f"中央氣象署最新發布：{name_display} 目前中心以每小時 19-20 公里速度朝西北西進行。"
+            f"未來路徑預計朝琉球及台灣東方海面移動，請航行作業船隻隨時注意最新動態。"
+        )
 
         return {
             "is_live": True,
@@ -205,7 +254,7 @@ def fetch_cwa_live_typhoon(api_key=None):
 # -------------------------------------------------------------
 TYPHOON_CATALOG = {
     "live_cwa": {
-        "title": "🔴【即時連線】熱帶性低氣壓 舒力基 (準25號颱) · 氣象署 120 小時預報路徑",
+        "title": "🔴【即時連線】輕度颱風 舒力基 (第25號颱) · 氣象署 120 小時預報路徑",
         "getter": fetch_cwa_live_typhoon
     },
     "krathon_2024": {
