@@ -1147,11 +1147,19 @@ else:
         m_typhoon = folium.Map(
             location=map_center,
             zoom_start=zoom_start,
-            min_zoom=4,
+            min_zoom=3,
             max_zoom=9,
-            tiles="CartoDB dark_matter",
-            attr="CartoDB"
+            tiles="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            attr="Esri"
         )
+
+        folium.TileLayer(
+            tiles="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+            attr="Esri",
+            overlay=True,
+            name="Labels",
+            opacity=0.75
+        ).add_to(m_typhoon)
 
         m_typhoon.get_root().header.add_child(folium.Element("""
         <style>
