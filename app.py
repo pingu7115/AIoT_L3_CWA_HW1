@@ -76,6 +76,26 @@ st.markdown("""
         font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
+    /* 徹底解決 Streamlit 頁面時不時反灰、淡化問題 (Disable Stale / Rerun Dimming & Gray Out) */
+    .stApp,
+    section.main,
+    section.main > div,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stAppViewBlockContainer"],
+    [data-testid="stVerticalBlock"],
+    [data-testid="stVerticalBlock"] > div,
+    div[data-testid="stAppViewBlockContainer"] > div,
+    .element-container,
+    div.stElementContainer,
+    .stApp [data-test-script-state="running"] [data-testid="stAppViewBlockContainer"],
+    .stApp [data-test-script-state="running"] [data-testid="stVerticalBlock"],
+    .stApp [data-test-script-state="running"] section.main,
+    .stApp[data-test-script-state="running"] {
+        opacity: 1 !important;
+        filter: none !important;
+        transition: none !important;
+    }
+
     .stApp {
         background-color: #f5f3ef;
         background-image: radial-gradient(circle at 50% 0%, #ffffff 0%, #f5f3ef 75%, #eae6df 100%);
@@ -1199,19 +1219,9 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
             county = stn.get("county", "")
             town = stn.get("town", "")
 
-            # 依規格設定莫蘭迪階層屬性
+            # 依規格設定莫蘭迪階層屬性 (無降雨地區不繪製圓點)
             if rain_val <= 0.0:
-                # 0.0 mm (無降雨): 極簡透光微小點，避免干擾畫面
-                folium.CircleMarker(
-                    location=[stn["lat"], stn["lon"]],
-                    radius=1.5,
-                    color="#d2d6dc",
-                    weight=0.8,
-                    fill=True,
-                    fill_color="#d2d6dc",
-                    fill_opacity=0.3,
-                    tooltip=f"<b>{stn_name}</b> ({county}{town}): 0.0 mm (無降雨)"
-                ).add_to(m_rain)
+                continue
             elif rain_val <= 10.0:
                 # 0.1 ~ 10.0 mm (小雨/微量): Mist Blue (#8faec2)
                 folium.CircleMarker(
@@ -1297,16 +1307,9 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
             pointer-events: auto;
         ">
             <div style="font-weight: 700; font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px;">
-                🌧️ 測站雨量級距圖例
+                🌧️ 降雨測站級距圖例
             </div>
             <div style="display: flex; flex-direction: column; gap: 5px; font-size: 11.5px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                    <span style="display: flex; align-items: center; gap: 6px;">
-                        <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #d2d6dc; opacity: 0.6; border: 1px solid #b8bcc4;"></span>
-                        <span style="color: #6c757d;">0.0 mm</span>
-                    </span>
-                    <span style="color: #6c757d; font-size: 10px;">無降雨</span>
-                </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                     <span style="display: flex; align-items: center; gap: 6px;">
                         <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #8faec2;"></span>
@@ -1336,17 +1339,21 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
                     <span style="color: #a8523b; font-weight: 600; font-size: 10px;">豪雨</span>
                 </div>
             </div>
+            <div style="margin-top: 6px; padding-top: 5px; border-top: 1px solid rgba(0,0,0,0.06); font-size: 10px; color: #859099;">
+                ⚪ 無降雨測站自動隱藏
+            </div>
         </div>
         """
         m_rain.get_root().html.add_child(folium.Element(rain_legend_html))
 
-        st_folium(m_rain, width="stretch", height=540)
+        st_folium(m_rain, width="stretch", height=540, returned_objects=[])
 
+        raining_count = sum(1 for s in all_stations if float(s.get("rain_today", 0.0)) > 0)
         st.markdown(f"""
         <div class="map-legend-panel">
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #6c757d;">
-                <span>💧 <b>資料來源</b>：中央氣象署全台自動雨量測站網即時觀測資料 (O-A0002-001) · 懸停/點選圓點可查看詳細雨量。</span>
-                <span style="color: #5c7c8a; font-weight: 600;">共 {rain_data['total_stations']} 站即時同步</span>
+                <span>💧 <b>資料來源</b>：中央氣象署全台自動雨量測站網即時觀測資料 (O-A0002-001) · 僅標記降雨測站，無降雨地區保持乾淨底圖。</span>
+                <span style="color: #5c7c8a; font-weight: 600;">全台 {rain_data['total_stations']} 站（{raining_count} 站觀測到降雨）</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1777,7 +1784,7 @@ else:
         """
         m_typhoon.get_root().html.add_child(folium.Element(typhoon_legend_html))
 
-        st_folium(m_typhoon, width="stretch", height=520)
+        st_folium(m_typhoon, width="stretch", height=520, returned_objects=[])
 
         # 底部說明列
         st.markdown("""
