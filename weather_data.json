@@ -1,0 +1,773 @@
+{
+  "success": "true",
+  "result": {
+    "resource_id": "F-A0010-001"
+  },
+  "records": {
+    "datasetDescription": "一週氣象預報 (Mock Fallback)",
+    "location": [
+      {
+        "locationName": "北部地區",
+        "weatherElement": [
+          {
+            "elementName": "MinT",
+            "time": [
+              {
+                "dataDate": "2026-09-23",
+                "elementValue": [
+                  {
+                    "value": "18"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-24",
+                "elementValue": [
+                  {
+                    "value": "19"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-25",
+                "elementValue": [
+                  {
+                    "value": "20"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-26",
+                "elementValue": [
+                  {
+                    "value": "18"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-27",
+                "elementValue": [
+                  {
+                    "value": "19"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-28",
+                "elementValue": [
+                  {
+                    "value": "20"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-29",
+                "elementValue": [
+                  {
+                    "value": "18"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "elementName": "MaxT",
+            "time": [
+              {
+                "dataDate": "2026-09-23",
+                "elementValue": [
+                  {
+                    "value": "25"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-24",
+                "elementValue": [
+                  {
+                    "value": "26"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-25",
+                "elementValue": [
+                  {
+                    "value": "27"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-26",
+                "elementValue": [
+                  {
+                    "value": "25"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-27",
+                "elementValue": [
+                  {
+                    "value": "26"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-28",
+                "elementValue": [
+                  {
+                    "value": "27"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-29",
+                "elementValue": [
+                  {
+                    "value": "25"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "locationName": "中部地區",
+        "weatherElement": [
+          {
+            "elementName": "MinT",
+            "time": [
+              {
+                "dataDate": "2026-09-23",
+                "elementValue": [
+                  {
+                    "value": "20"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-24",
+                "elementValue": [
+                  {
+                    "value": "21"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-25",
+                "elementValue": [
+                  {
+                    "value": "22"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-26",
+                "elementValue": [
+                  {
+                    "value": "20"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-27",
+                "elementValue": [
+                  {
+                    "value": "21"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-28",
+                "elementValue": [
+                  {
+                    "value": "22"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-29",
+                "elementValue": [
+                  {
+                    "value": "20"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "elementName": "MaxT",
+            "time": [
+              {
+                "dataDate": "2026-09-23",
+                "elementValue": [
+                  {
+                    "value": "28"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-24",
+                "elementValue": [
+                  {
+                    "value": "29"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-25",
+                "elementValue": [
+                  {
+                    "value": "30"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-26",
+                "elementValue": [
+                  {
+                    "value": "28"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-27",
+                "elementValue": [
+                  {
+                    "value": "29"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-28",
+                "elementValue": [
+                  {
+                    "value": "30"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-29",
+                "elementValue": [
+                  {
+                    "value": "28"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "locationName": "南部地區",
+        "weatherElement": [
+          {
+            "elementName": "MinT",
+            "time": [
+              {
+                "dataDate": "2026-09-23",
+                "elementValue": [
+                  {
+                    "value": "22"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-24",
+                "elementValue": [
+                  {
+                    "value": "23"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-25",
+                "elementValue": [
+                  {
+                    "value": "24"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-26",
+                "elementValue": [
+                  {
+                    "value": "22"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-27",
+                "elementValue": [
+                  {
+                    "value": "23"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-28",
+                "elementValue": [
+                  {
+                    "value": "24"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-29",
+                "elementValue": [
+                  {
+                    "value": "22"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "elementName": "MaxT",
+            "time": [
+              {
+                "dataDate": "2026-09-23",
+                "elementValue": [
+                  {
+                    "value": "30"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-24",
+                "elementValue": [
+                  {
+                    "value": "31"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-25",
+                "elementValue": [
+                  {
+                    "value": "32"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-26",
+                "elementValue": [
+                  {
+                    "value": "30"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-27",
+                "elementValue": [
+                  {
+                    "value": "31"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-28",
+                "elementValue": [
+                  {
+                    "value": "32"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-29",
+                "elementValue": [
+                  {
+                    "value": "30"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "locationName": "東部地區",
+        "weatherElement": [
+          {
+            "elementName": "MinT",
+            "time": [
+              {
+                "dataDate": "2026-09-23",
+                "elementValue": [
+                  {
+                    "value": "19"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-24",
+                "elementValue": [
+                  {
+                    "value": "20"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-25",
+                "elementValue": [
+                  {
+                    "value": "21"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-26",
+                "elementValue": [
+                  {
+                    "value": "19"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-27",
+                "elementValue": [
+                  {
+                    "value": "20"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-28",
+                "elementValue": [
+                  {
+                    "value": "21"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-29",
+                "elementValue": [
+                  {
+                    "value": "19"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "elementName": "MaxT",
+            "time": [
+              {
+                "dataDate": "2026-09-23",
+                "elementValue": [
+                  {
+                    "value": "26"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-24",
+                "elementValue": [
+                  {
+                    "value": "27"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-25",
+                "elementValue": [
+                  {
+                    "value": "28"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-26",
+                "elementValue": [
+                  {
+                    "value": "26"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-27",
+                "elementValue": [
+                  {
+                    "value": "27"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-28",
+                "elementValue": [
+                  {
+                    "value": "28"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-29",
+                "elementValue": [
+                  {
+                    "value": "26"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "locationName": "澎湖地區",
+        "weatherElement": [
+          {
+            "elementName": "MinT",
+            "time": [
+              {
+                "dataDate": "2026-09-23",
+                "elementValue": [
+                  {
+                    "value": "21"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-24",
+                "elementValue": [
+                  {
+                    "value": "22"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-25",
+                "elementValue": [
+                  {
+                    "value": "23"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-26",
+                "elementValue": [
+                  {
+                    "value": "21"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-27",
+                "elementValue": [
+                  {
+                    "value": "22"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-28",
+                "elementValue": [
+                  {
+                    "value": "23"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-29",
+                "elementValue": [
+                  {
+                    "value": "21"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "elementName": "MaxT",
+            "time": [
+              {
+                "dataDate": "2026-09-23",
+                "elementValue": [
+                  {
+                    "value": "27"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-24",
+                "elementValue": [
+                  {
+                    "value": "28"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-25",
+                "elementValue": [
+                  {
+                    "value": "29"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-26",
+                "elementValue": [
+                  {
+                    "value": "27"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-27",
+                "elementValue": [
+                  {
+                    "value": "28"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-28",
+                "elementValue": [
+                  {
+                    "value": "29"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-29",
+                "elementValue": [
+                  {
+                    "value": "27"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "locationName": "金門馬祖地區",
+        "weatherElement": [
+          {
+            "elementName": "MinT",
+            "time": [
+              {
+                "dataDate": "2026-09-23",
+                "elementValue": [
+                  {
+                    "value": "16"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-24",
+                "elementValue": [
+                  {
+                    "value": "17"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-25",
+                "elementValue": [
+                  {
+                    "value": "18"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-26",
+                "elementValue": [
+                  {
+                    "value": "16"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-27",
+                "elementValue": [
+                  {
+                    "value": "17"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-28",
+                "elementValue": [
+                  {
+                    "value": "18"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-29",
+                "elementValue": [
+                  {
+                    "value": "16"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "elementName": "MaxT",
+            "time": [
+              {
+                "dataDate": "2026-09-23",
+                "elementValue": [
+                  {
+                    "value": "23"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-24",
+                "elementValue": [
+                  {
+                    "value": "24"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-25",
+                "elementValue": [
+                  {
+                    "value": "25"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-26",
+                "elementValue": [
+                  {
+                    "value": "23"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-27",
+                "elementValue": [
+                  {
+                    "value": "24"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-28",
+                "elementValue": [
+                  {
+                    "value": "25"
+                  }
+                ]
+              },
+              {
+                "dataDate": "2026-09-29",
+                "elementValue": [
+                  {
+                    "value": "23"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
