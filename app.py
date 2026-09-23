@@ -6,14 +6,15 @@ app.py - 台灣全島 22 縣市即時氣象視覺化與西北太平洋颱風路�
 參考範例: https://taiwan-weather-map.vercel.app/
 
 【嚴格遵守作業規範與功能亮點】：
-1. 視覺化圖層切換：支援「各縣市溫度分佈」與「颱風路徑動態」雙圖層即時切換。
-2. 溫度圖層：100% 透過純 SQL 查詢自本地 SQLite (data.db)，嚴禁前端直呼外部 API；
-   涵蓋全台 22 縣市 GeoJSON 面狀熱力圖著色、4 階氣候標準色標 (🔵 < 20°C / 🟢 20-25°C / 🟡 25-30°C / 🔴 > 30°C)、
-   自訂深色玻璃態 Hover Tooltip 氣溫卡片、六都快捷切換與地圖點選連動。
-3. 颱風圖層：以 Folium 實作西北太平洋與台灣鄰近海域視角 (location=[22.0, 126.0], zoom_start=5, tiles="CartoDB dark_matter")，
-   繪製過去歷史路徑 (#00bcd4)、當前中心高亮漩渦標記與詳細資料卡、未來預報路徑 (#ff5252)、
-   各預報時效藥丸標籤 (DivIcon pills)、70% 潛勢機率暴風圈 (dash_array="4, 4") 與動態警報警戒資訊。
-4. 全面消除 Streamlit 廢棄警告：所有元件與 st_folium 皆採用 width="stretch"。
+1. 視覺化圖層切換：支援「各縣市溫度分佈」、「全台即時累積雨量」與「颱風路徑動態」三圖層即時切換。
+2. 莫蘭迪優雅設計風格 (Morandi Color Palette)：採用沉穩灰藍底色 (#1b222c / #212832)、柔和灰青玻璃卡片 (#29323d)、
+   冰川冰藍 (#9bb5c4 / #6c8ea4)、鼠尾草綠 (#88a28d / #94ab99)、陶瓦微赭 (#c88b76 / #d4a373) 與煙燻玫瑰粉 (#cc7a7a)，
+   徹底取代高飽和螢光色系，兼具現代感與高級灰美學。
+3. 溫度圖層：100% 透過純 SQL 查詢自本地 SQLite (data.db)，嚴禁前端直呼外部 API；
+   涵蓋全台 22 縣市 GeoJSON 面狀熱力圖著色、4 階莫蘭迪色標、自訂玻璃態 Hover Tooltip 卡片。
+4. 雨量圖層：無縫整合中央氣象署日累積雨量透明熱力色斑圖 (O-A0040-003.kmz) 與 1,340 處雨量站即時數據。
+5. 颱風圖層：Folium 西北太平洋無浮水印 Esri Dark 視角，即時調用氣象署熱帶氣旋 API (W-C0034-005) 觀測與 120 小時預報路徑。
+6. 全面消除 Streamlit 廢棄警告：所有元件與 st_folium 皆採用 width="stretch"。
 """
 
 import os
@@ -76,28 +77,28 @@ st.markdown("""
     }
 
     .stApp {
-        background: radial-gradient(circle at 50% 0%, #0d1527 0%, #030712 100%);
-        color: #F3F4F6;
+        background: radial-gradient(circle at 50% 0%, #29323d 0%, #1b222c 100%);
+        color: #d5dbdb;
     }
 
     .top-navbar {
-        background: rgba(15, 23, 42, 0.78);
+        background: rgba(41, 50, 61, 0.85);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(155, 181, 196, 0.2);
         border-radius: 16px;
         padding: 16px 24px;
         margin-bottom: 18px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        box-shadow: 0 6px 24px 0 rgba(0, 0, 0, 0.25);
     }
 
     .brand-title {
         font-size: 1.85rem;
         font-weight: 800;
-        background: linear-gradient(135deg, #60A5FA 0%, #38BDF8 50%, #34D399 100%);
+        background: linear-gradient(135deg, #a2bcc9 0%, #9bb5c4 50%, #88a28d 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         letter-spacing: -0.5px;
@@ -106,7 +107,7 @@ st.markdown("""
 
     .brand-subtitle {
         font-size: 0.88rem;
-        color: #94A3B8;
+        color: #8c9ba5;
         margin-top: 4px;
     }
 
@@ -114,9 +115,9 @@ st.markdown("""
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: rgba(56, 189, 248, 0.1);
-        border: 1px solid rgba(56, 189, 248, 0.25);
-        color: #38BDF8;
+        background: rgba(155, 181, 196, 0.15);
+        border: 1px solid rgba(155, 181, 196, 0.3);
+        color: #a2bcc9;
         padding: 4px 12px;
         border-radius: 9999px;
         font-size: 0.8rem;
@@ -124,30 +125,30 @@ st.markdown("""
     }
 
     .pill-badge.green {
-        background: rgba(16, 185, 129, 0.1);
-        border-color: rgba(16, 185, 129, 0.25);
-        color: #34D399;
+        background: rgba(136, 162, 141, 0.15);
+        border-color: rgba(136, 162, 141, 0.35);
+        color: #94ab99;
     }
 
     .pill-badge.red {
-        background: rgba(239, 68, 68, 0.15);
-        border-color: rgba(239, 68, 68, 0.35);
-        color: #F87171;
+        background: rgba(204, 122, 122, 0.15);
+        border-color: rgba(204, 122, 122, 0.35);
+        color: #cc7a7a;
     }
 
     .glass-card {
-        background: rgba(15, 23, 42, 0.65);
+        background: #29323d;
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(155, 181, 196, 0.2);
         border-radius: 16px;
         padding: 18px 20px;
-        box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 20px -1px rgba(0, 0, 0, 0.22);
         transition: transform 0.2s ease, border-color 0.2s ease;
     }
 
     .glass-card:hover {
-        border-color: rgba(56, 189, 248, 0.35);
+        border-color: rgba(155, 181, 196, 0.45);
         transform: translateY(-2px);
     }
 
@@ -156,7 +157,7 @@ st.markdown("""
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: #94A3B8;
+        color: #8c9ba5;
         margin-bottom: 6px;
     }
 
@@ -166,20 +167,22 @@ st.markdown("""
         letter-spacing: -0.5px;
         line-height: 1.1;
         margin-bottom: 4px;
+        color: #d5dbdb;
     }
 
     .metric-caption {
         font-size: 0.82rem;
-        color: #64748B;
+        color: #8c9ba5;
     }
 
     .map-legend-panel {
-        background: rgba(15, 23, 42, 0.85);
+        background: rgba(41, 50, 61, 0.90);
         backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(155, 181, 196, 0.2);
         border-radius: 12px;
         padding: 14px 18px;
         margin-top: 10px;
+        color: #d5dbdb;
     }
 
     .block-container {
@@ -211,31 +214,69 @@ st.markdown("""
 
     /* 自訂 Leaflet Popup 樣式 */
     .leaflet-popup-content-wrapper {
-        background: rgba(15, 23, 42, 0.95) !important;
+        background: rgba(41, 50, 61, 0.95) !important;
         backdrop-filter: blur(14px) !important;
         -webkit-backdrop-filter: blur(14px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border: 1px solid rgba(155, 181, 196, 0.25) !important;
         border-radius: 14px !important;
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65) !important;
-        color: #F8FAFC !important;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5) !important;
+        color: #d5dbdb !important;
         padding: 4px !important;
     }
     .leaflet-popup-tip {
-        background: rgba(15, 23, 42, 0.95) !important;
+        background: rgba(41, 50, 61, 0.95) !important;
     }
     .leaflet-popup-close-button {
-        color: #94A3B8 !important;
+        color: #8c9ba5 !important;
         padding-top: 6px !important;
         padding-right: 6px !important;
     }
 
-    /* 圖層切換器樣式 */
+    /* 圖層切換器樣式 (Morandi Theme) */
     div[data-testid="stRadio"] > div {
-        background: rgba(15, 23, 42, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: #29323d;
+        border: 1px solid rgba(155, 181, 196, 0.2);
         border-radius: 12px;
-        padding: 6px 12px;
+        padding: 8px 14px;
         gap: 16px;
+    }
+
+    div[data-testid="stRadio"] label {
+        color: #d5dbdb !important;
+    }
+
+    /* Radio Active State: Morandi dusty blue */
+    div[data-testid="stRadio"] label:has(input:checked) {
+        color: #ffffff !important;
+        font-weight: 600 !important;
+    }
+
+    div[data-testid="stRadio"] input[type="radio"]:checked + div {
+        background-color: #6c8294 !important;
+        border-color: #9bb5c4 !important;
+    }
+
+    /* Selectbox & Inputs in Morandi */
+    div[data-baseweb="select"] > div {
+        background-color: #29323d !important;
+        border-color: rgba(155, 181, 196, 0.25) !important;
+        color: #d5dbdb !important;
+    }
+    div[data-baseweb="popover"] ul {
+        background-color: #29323d !important;
+        color: #d5dbdb !important;
+    }
+
+    /* Buttons */
+    button[kind="primary"] {
+        background-color: #6c8294 !important;
+        border-color: #8397a7 !important;
+        color: #ffffff !important;
+    }
+    button[kind="secondary"] {
+        background-color: #29323d !important;
+        border-color: rgba(155, 181, 196, 0.2) !important;
+        color: #d5dbdb !important;
     }
 
     /* 徹底隱藏任何浮水印、頁尾、Leaflet 標籤與選單圖示 */
@@ -299,46 +340,46 @@ PREFER_ORDER = [
 
 def get_temp_category(temp):
     """
-    依據作業規範嚴格劃分 4 級氣溫色階與圖例：
-    🔵 < 20°C（偏冷）
-    🟢 20 - 25°C（舒適）
-    🟡 25 - 30°C（偏暖）
-    🔴 > 30°C（炎熱）
+    依據作業規範嚴格劃分 4 級氣溫色階與圖例（莫蘭迪色系 Morandi Palette）：
+    🔵 < 20°C（偏冷）：Morandi 冰川冰藍 (#6c8ea4)
+    🟢 20 - 25°C（舒適）：Morandi 鼠尾草綠 (#88a28d)
+    🟡 25 - 30°C（偏暖）：Morandi 灰赭橘 (#d4a373)
+    🔴 > 30°C（炎熱）：Morandi 煙燻玫瑰粉 (#cc7a7a)
     """
     if temp < 20.0:
         return {
             "label": "偏冷",
             "icon": "🔵",
-            "color": "#3B82F6",
-            "bg_color": "rgba(59, 130, 246, 0.18)",
-            "border": "#60A5FA",
+            "color": "#6c8ea4",
+            "bg_color": "rgba(108, 142, 164, 0.18)",
+            "border": "#9bb5c4",
             "badge": "🔵 < 20°C 偏冷"
         }
     elif temp < 25.0:
         return {
             "label": "舒適",
             "icon": "🟢",
-            "color": "#10B981",
-            "bg_color": "rgba(16, 185, 129, 0.18)",
-            "border": "#34D399",
+            "color": "#88a28d",
+            "bg_color": "rgba(136, 162, 141, 0.18)",
+            "border": "#94ab99",
             "badge": "🟢 20 - 25°C 舒適"
         }
     elif temp <= 30.0:
         return {
             "label": "偏暖",
             "icon": "🟡",
-            "color": "#F59E0B",
-            "bg_color": "rgba(245, 158, 11, 0.18)",
-            "border": "#FBBF24",
+            "color": "#d4a373",
+            "bg_color": "rgba(212, 163, 115, 0.18)",
+            "border": "#c88b76",
             "badge": "🟡 25 - 30°C 偏暖"
         }
     else:
         return {
             "label": "炎熱",
             "icon": "🔴",
-            "color": "#EF4444",
-            "bg_color": "rgba(239, 68, 68, 0.18)",
-            "border": "#F87171",
+            "color": "#cc7a7a",
+            "bg_color": "rgba(204, 122, 122, 0.18)",
+            "border": "#b86b6b",
             "badge": "🔴 > 30°C 炎熱"
         }
 
@@ -397,24 +438,24 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("#### 🎨 氣溫色階圖例 (Color Legend)")
     st.markdown("""
-    <div style="background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; margin-bottom: 12px;">
-        <div style="font-size: 0.8rem; color: #94A3B8; margin-bottom: 8px; font-weight: 600;">全島面狀著色與預報標準：</div>
+    <div style="background: #29323d; border: 1px solid rgba(155, 181, 196, 0.2); border-radius: 12px; padding: 12px; margin-bottom: 12px;">
+        <div style="font-size: 0.8rem; color: #8c9ba5; margin-bottom: 8px; font-weight: 600;">全島面狀著色與預報標準 (Morandi Palette)：</div>
         <div style="display: flex; flex-direction: column; gap: 7px; font-size: 0.82rem;">
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(59, 130, 246, 0.12); border-left: 3px solid #3B82F6; border-radius: 6px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(108, 142, 164, 0.15); border-left: 3px solid #6c8ea4; border-radius: 6px;">
                 <span>🔵 <b>&lt; 20°C</b></span>
-                <span style="color: #60A5FA; font-weight: 600;">偏冷</span>
+                <span style="color: #9bb5c4; font-weight: 600;">偏冷</span>
             </div>
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(16, 185, 129, 0.12); border-left: 3px solid #10B981; border-radius: 6px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(136, 162, 141, 0.15); border-left: 3px solid #88a28d; border-radius: 6px;">
                 <span>🟢 <b>20 - 25°C</b></span>
-                <span style="color: #34D399; font-weight: 600;">舒適</span>
+                <span style="color: #94ab99; font-weight: 600;">舒適</span>
             </div>
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(245, 158, 11, 0.12); border-left: 3px solid #F59E0B; border-radius: 6px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(212, 163, 115, 0.15); border-left: 3px solid #d4a373; border-radius: 6px;">
                 <span>🟡 <b>25 - 30°C</b></span>
-                <span style="color: #FBBF24; font-weight: 600;">偏暖</span>
+                <span style="color: #d4a373; font-weight: 600;">偏暖</span>
             </div>
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(239, 68, 68, 0.12); border-left: 3px solid #EF4444; border-radius: 6px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(204, 122, 122, 0.15); border-left: 3px solid #cc7a7a; border-radius: 6px;">
                 <span>🔴 <b>&gt; 30°C</b></span>
-                <span style="color: #F87171; font-weight: 600;">炎熱</span>
+                <span style="color: #cc7a7a; font-weight: 600;">炎熱</span>
             </div>
         </div>
     </div>
@@ -458,12 +499,12 @@ with st.sidebar:
 # 🎯 圖層切換控制 (Layer Switching Control)
 # -------------------------------------------------------------
 st.markdown("""
-<div style="background: rgba(15, 23, 42, 0.85); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 14px; padding: 12px 18px; margin-bottom: 14px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+<div style="background: #29323d; border: 1.5px solid rgba(155, 181, 196, 0.25); border-radius: 14px; padding: 12px 18px; margin-bottom: 14px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
     <div style="display: flex; align-items: center; gap: 10px;">
         <span style="font-size: 1.3rem;">🌐</span>
         <div>
-            <div style="font-weight: 700; font-size: 0.95rem; color: #38BDF8;">視覺化圖層切換 (Layer Selector)</div>
-            <div style="font-size: 0.8rem; color: #94A3B8;">請點選切換「各縣市溫度分佈」、「全台即時累積雨量」或「颱風路徑與潛勢動態」</div>
+            <div style="font-weight: 700; font-size: 0.95rem; color: #9bb5c4;">視覺化圖層切換 (Layer Selector)</div>
+            <div style="font-size: 0.8rem; color: #8c9ba5;">請點選切換「各縣市溫度分佈」、「全台即時累積雨量」或「颱風路徑與潛勢動態」</div>
         </div>
     </div>
 </div>
@@ -529,8 +570,8 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
 
     with col_select_b:
         st.markdown(f"""
-        <div style="padding-top: 28px; font-size: 0.9rem; color: #94A3B8;">
-            當前選定：<b style="color: #38BDF8; font-size: 1.15rem;">{selected_region}</b> · 未來 7 天預報資料由本地 SQLite (data.db) 即時提供
+        <div style="padding-top: 28px; font-size: 0.9rem; color: #8c9ba5;">
+            當前選定：<b style="color: #9bb5c4; font-size: 1.15rem;">{selected_region}</b> · 未來 7 天預報資料由本地 SQLite (data.db) 即時提供
         </div>
         """, unsafe_allow_html=True)
 
@@ -551,31 +592,31 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
     week_max = df_forecast["maxt"].max()
     week_min = df_forecast["mint"].min()
 
-    # 玻璃態指標卡片
+    # 玻璃態指標卡片 (Morandi 色系)
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid #F87171;">
+        <div class="glass-card" style="border-top: 3px solid #cc7a7a;">
             <div class="metric-title">🔥 今日最高溫 (MaxT)</div>
-            <div class="metric-value" style="color: #F87171;">{today_max}°C</div>
+            <div class="metric-value" style="color: #cc7a7a;">{today_max}°C</div>
             <div class="metric-caption">日間高溫預測 · {selected_region}</div>
         </div>
         """, unsafe_allow_html=True)
 
     with c2:
         st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid #38BDF8;">
+        <div class="glass-card" style="border-top: 3px solid #6c8ea4;">
             <div class="metric-title">❄️ 今日最低溫 (MinT)</div>
-            <div class="metric-value" style="color: #38BDF8;">{today_min}°C</div>
+            <div class="metric-value" style="color: #9bb5c4;">{today_min}°C</div>
             <div class="metric-caption">清晨夜間低溫 · {selected_region}</div>
         </div>
         """, unsafe_allow_html=True)
 
     with c3:
         st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid #FBBF24;">
+        <div class="glass-card" style="border-top: 3px solid #d4a373;">
             <div class="metric-title">⚖️ 日夜溫差 (Diurnal Range)</div>
-            <div class="metric-value" style="color: #FBBF24;">{today_diff}°C</div>
+            <div class="metric-value" style="color: #d4a373;">{today_diff}°C</div>
             <div class="metric-caption">溫差提示 · 建議外出適度增減衣物</div>
         </div>
         """, unsafe_allow_html=True)
@@ -583,9 +624,9 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
     with c4:
         icon, condition = get_weather_icon(today_min, today_max)
         st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid #34D399;">
+        <div class="glass-card" style="border-top: 3px solid #88a28d;">
             <div class="metric-title">🌡️ 體感環境指標</div>
-            <div class="metric-value" style="color: #34D399;">{icon} {today_avg}°C</div>
+            <div class="metric-value" style="color: #94ab99;">{icon} {today_avg}°C</div>
             <div class="metric-caption">當日平均氣候: {condition}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -654,56 +695,56 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
         </style>
         """))
 
-        # 地圖右上角嵌入自訂色階圖例
+        # 地圖右上角嵌入自訂色階圖例 (Morandi Palette)
         map_legend_html = """
         <div id="map-color-legend" style="
             position: absolute;
             top: 14px;
             right: 14px;
             z-index: 1000;
-            background: rgba(15, 23, 42, 0.90);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(41, 50, 61, 0.95);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(155, 181, 196, 0.25);
             border-radius: 12px;
             padding: 10px 14px;
-            color: #F8FAFC;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            color: #d5dbdb;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.45);
             font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             min-width: 142px;
             pointer-events: auto;
         ">
-            <div style="font-weight: 700; font-size: 11px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-weight: 700; font-size: 11px; color: #8c9ba5; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px; display: flex; align-items: center; justify-content: space-between;">
                 <span>🎨 氣溫色階圖例</span>
             </div>
             <div style="display: flex; flex-direction: column; gap: 5px; font-size: 12px;">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                    <span style="display: flex; align-items: center; gap: 6px;">
-                        <span style="display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #3B82F6; box-shadow: 0 0 6px rgba(59,130,246,0.8);"></span>
-                        <span style="color: #E2E8F0; font-weight: 500;">&lt; 20°C</span>
+                    <span style="display: align-items: center; gap: 6px;">
+                        <span style="display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #6c8ea4; box-shadow: 0 0 6px rgba(108,142,164,0.6);"></span>
+                        <span style="color: #d5dbdb; font-weight: 500;">&lt; 20°C</span>
                     </span>
-                    <span style="color: #60A5FA; font-weight: 600; font-size: 11px;">偏冷 🔵</span>
+                    <span style="color: #9bb5c4; font-weight: 600; font-size: 11px;">偏冷 🔵</span>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                     <span style="display: flex; align-items: center; gap: 6px;">
-                        <span style="display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #10B981; box-shadow: 0 0 6px rgba(16,185,129,0.8);"></span>
-                        <span style="color: #E2E8F0; font-weight: 500;">20 - 25°C</span>
+                        <span style="display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #88a28d; box-shadow: 0 0 6px rgba(136,162,141,0.6);"></span>
+                        <span style="color: #d5dbdb; font-weight: 500;">20 - 25°C</span>
                     </span>
-                    <span style="color: #34D399; font-weight: 600; font-size: 11px;">舒適 🟢</span>
+                    <span style="color: #94ab99; font-weight: 600; font-size: 11px;">舒適 🟢</span>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                     <span style="display: flex; align-items: center; gap: 6px;">
-                        <span style="display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #F59E0B; box-shadow: 0 0 6px rgba(245,158,11,0.8);"></span>
-                        <span style="color: #E2E8F0; font-weight: 500;">25 - 30°C</span>
+                        <span style="display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #d4a373; box-shadow: 0 0 6px rgba(212,163,115,0.6);"></span>
+                        <span style="color: #d5dbdb; font-weight: 500;">25 - 30°C</span>
                     </span>
-                    <span style="color: #FBBF24; font-weight: 600; font-size: 11px;">偏暖 🟡</span>
+                    <span style="color: #d4a373; font-weight: 600; font-size: 11px;">偏暖 🟡</span>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                     <span style="display: flex; align-items: center; gap: 6px;">
-                        <span style="display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #EF4444; box-shadow: 0 0 6px rgba(239,68,68,0.8);"></span>
-                        <span style="color: #E2E8F0; font-weight: 500;">&gt; 30°C</span>
+                        <span style="display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #cc7a7a; box-shadow: 0 0 6px rgba(204,122,122,0.6);"></span>
+                        <span style="color: #d5dbdb; font-weight: 500;">&gt; 30°C</span>
                     </span>
-                    <span style="color: #F87171; font-weight: 600; font-size: 11px;">炎熱 🔴</span>
+                    <span style="color: #cc7a7a; font-weight: 600; font-size: 11px;">炎熱 🔴</span>
                 </div>
             </div>
         </div>
@@ -728,35 +769,35 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
 
                     tooltip_html = f"""
                     <div style="
-                        background: rgba(15, 23, 42, 0.95);
+                        background: rgba(41, 50, 61, 0.95);
                         backdrop-filter: blur(14px);
                         -webkit-backdrop-filter: blur(14px);
-                        border: 1px solid rgba(255, 255, 255, 0.15);
+                        border: 1px solid rgba(155, 181, 196, 0.25);
                         border-top: 3.5px solid {cat['color']};
                         border-radius: 12px;
                         padding: 10px 14px;
                         min-width: 220px;
-                        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+                        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
                         font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                        color: #F8FAFC;
+                        color: #d5dbdb;
                         line-height: 1.5;
                     ">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 5px;">
-                            <span style="font-size: 15px; font-weight: 700; color: #38BDF8;">📍 地區：{c_name}</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid rgba(155, 181, 196, 0.15); padding-bottom: 5px;">
+                            <span style="font-size: 15px; font-weight: 700; color: #9bb5c4;">📍 地區：{c_name}</span>
                             <span style="font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: {cat['color']}22; color: {cat['color']}; border: 1px solid {cat['color']}55;">{cat['icon']} {cat['label']}</span>
                         </div>
                         <div style="font-size: 13.5px; margin-bottom: 3px; display: flex; align-items: baseline; gap: 4px;">
-                            <span style="color: #94A3B8;">🌡️ 均溫：</span>
-                            <b style="color: #FFFFFF; font-size: 16px; font-weight: 700;">{avg_t}°C</b>
-                            <span style="color: #64748B; font-size: 11.5px; margin-left: 2px;">({range_str})</span>
+                            <span style="color: #8c9ba5;">🌡️ 均溫：</span>
+                            <b style="color: #ffffff; font-size: 16px; font-weight: 700;">{avg_t}°C</b>
+                            <span style="color: #8c9ba5; font-size: 11.5px; margin-left: 2px;">({range_str})</span>
                         </div>
                         <div style="font-size: 13px; margin-bottom: 5px;">
-                            <span style="color: #94A3B8;">🌤️ 預報：</span>
-                            <span style="color: #F1F5F9; font-weight: 600;">{icon} {condition}</span>
+                            <span style="color: #8c9ba5;">🌤️ 預報：</span>
+                            <span style="color: #d5dbdb; font-weight: 600;">{icon} {condition}</span>
                         </div>
-                        <div style="font-size: 11px; color: #64748B; margin-top: 5px; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 4px; display: flex; justify-content: space-between;">
+                        <div style="font-size: 11px; color: #8c9ba5; margin-top: 5px; border-top: 1px dashed rgba(155, 181, 196, 0.15); padding-top: 4px; display: flex; justify-content: space-between;">
                             <span>溫差: {diff_t}°C</span>
-                            <span style="color: #38BDF8;">點擊在地圖切換 👆</span>
+                            <span style="color: #9bb5c4;">點擊在地圖切換 👆</span>
                         </div>
                     </div>
                     """
@@ -765,24 +806,24 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
                     <div style="
                         font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
                         padding: 8px 4px;
-                        color: #FFFFFF;
+                        color: #d5dbdb;
                         line-height: 1.5;
                     ">
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 6px; margin-bottom: 8px;">
-                            <h4 style="margin: 0; font-size: 17px; color: #38BDF8;">📍 {c_name}</h4>
-                            <span style="font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: {cat['color']}; color: #FFFFFF;">{cat['icon']} {cat['label']}</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(155, 181, 196, 0.2); padding-bottom: 6px; margin-bottom: 8px;">
+                            <h4 style="margin: 0; font-size: 17px; color: #9bb5c4;">📍 {c_name}</h4>
+                            <span style="font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: {cat['color']}; color: #ffffff;">{cat['icon']} {cat['label']}</span>
                         </div>
                         <p style="margin: 4px 0; font-size: 14px;">🌡️ 預測均溫：<b>{avg_t}°C</b></p>
                         <p style="margin: 4px 0; font-size: 14px;">🌤️ 天氣狀況：<b>{icon} {condition}</b></p>
                         <p style="margin: 4px 0; font-size: 14px;">📊 預報溫幅：<b>{range_str}</b></p>
-                        <p style="margin: 4px 0; font-size: 13px; color: #94A3B8;">⚖️ 日夜溫差：<b>{diff_t}°C</b></p>
+                        <p style="margin: 4px 0; font-size: 13px; color: #8c9ba5;">⚖️ 日夜溫差：<b>{diff_t}°C</b></p>
                     </div>
                     """
                     props["tooltip_card"] = tooltip_html
                     props["popup_card"] = popup_html
                 else:
                     props["tooltip_card"] = f"""
-                    <div style="background: rgba(15, 23, 42, 0.95); border-radius: 8px; padding: 8px 12px; color: #94A3B8; font-size: 13px;">
+                    <div style="background: rgba(41, 50, 61, 0.95); border-radius: 8px; padding: 8px 12px; color: #8c9ba5; font-size: 13px;">
                         📍 地區：{c_name} | 暫無資料
                     </div>
                     """
@@ -800,13 +841,13 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
                     avg_t = (w["maxt"] + w["mint"]) / 2
                     color = get_temp_color(avg_t)
                 else:
-                    color = "#334155"
+                    color = "#29323d"
 
                 return {
                     "fillColor": color,
-                    "color": "#38BDF8" if is_cur else "rgba(255, 255, 255, 0.45)",
+                    "color": "#9bb5c4" if is_cur else "rgba(155, 181, 196, 0.35)",
                     "weight": 3.2 if is_cur else 1.2,
-                    "fillOpacity": 0.85 if is_cur else 0.65,
+                    "fillOpacity": 0.88 if is_cur else 0.65,
                 }
 
             def highlight_fn(feature):
@@ -844,7 +885,7 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
             color = cat["color"]
             is_cur = (c_name == selected_region or c_name.replace("臺", "台") == selected_region.replace("臺", "台"))
             
-            badge_border = "2px solid #FFFFFF" if is_cur else "1.5px solid rgba(255,255,255,0.4)"
+            badge_border = "2px solid #FFFFFF" if is_cur else "1.5px solid rgba(155, 181, 196, 0.5)"
             icon_html = f"""
             <div style="
                 background: {color};
@@ -854,7 +895,7 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
                 padding: 2px 5px;
                 border-radius: 12px;
                 text-align: center;
-                box-shadow: 0 3px 8px rgba(0,0,0,0.85);
+                box-shadow: 0 3px 8px rgba(0,0,0,0.6);
                 border: {badge_border};
                 width: 42px;
                 margin-left: -21px;
@@ -869,18 +910,18 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
                 tooltip=folium.Tooltip(
                     f"""
                     <div style="
-                        background: rgba(15, 23, 42, 0.95);
-                        border: 1px solid rgba(255, 255, 255, 0.15);
+                        background: rgba(41, 50, 61, 0.95);
+                        border: 1px solid rgba(155, 181, 196, 0.25);
                         border-top: 3px solid {color};
                         border-radius: 10px;
                         padding: 8px 12px;
-                        color: #FFFFFF;
+                        color: #d5dbdb;
                         font-family: 'Outfit', sans-serif;
                         font-size: 12.5px;
                         min-width: 180px;
-                        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+                        box-shadow: 0 8px 24px rgba(0,0,0,0.5);
                     ">
-                        <div style="font-weight: 700; color: #38BDF8; margin-bottom: 4px;">📍 地區：{c_name}</div>
+                        <div style="font-weight: 700; color: #9bb5c4; margin-bottom: 4px;">📍 地區：{c_name}</div>
                         <div>🌡️ 均溫：<b>{avg_t}°C</b> ({w['mint']}°C ~ {w['maxt']}°C)</div>
                         <div>🌤️ 預報：{get_weather_icon(w['mint'], w['maxt'])[0]} {get_weather_icon(w['mint'], w['maxt'])[1]}</div>
                     </div>
@@ -901,24 +942,24 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
                             st.rerun()
                         break
 
-        # 底部 4 階色階標尺與圖例說明
+        # 底部 4 階色階標尺與圖例說明 (Morandi Palette)
         st.markdown("""
         <div class="map-legend-panel">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 0.82rem; font-weight: 600; color: #94A3B8;">🌡️ 全台即時氣溫面狀色階說明 (Color Legend)</span>
-                <span style="font-size: 0.75rem; color: #64748B;">4 階氣候標準色標 · 懸停縣市即時顯示卡片</span>
+                <span style="font-size: 0.82rem; font-weight: 600; color: #8c9ba5;">🌡️ 全台即時氣溫面狀色階說明 (Morandi Color Legend)</span>
+                <span style="font-size: 0.75rem; color: #8c9ba5;">4 階莫蘭迪氣候標準色標 · 懸停縣市即時顯示卡片</span>
             </div>
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 4px;">
-                <div style="background: #3B82F6;" title="< 20°C 偏冷"></div>
-                <div style="background: #10B981;" title="20-25°C 舒適"></div>
-                <div style="background: #F59E0B;" title="25-30°C 偏暖"></div>
-                <div style="background: #EF4444;" title="> 30°C 炎熱"></div>
+                <div style="background: #6c8ea4;" title="< 20°C 偏冷"></div>
+                <div style="background: #88a28d;" title="20-25°C 舒適"></div>
+                <div style="background: #d4a373;" title="25-30°C 偏暖"></div>
+                <div style="background: #cc7a7a;" title="> 30°C 炎熱"></div>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.76rem; margin-top: 6px; flex-wrap: wrap; gap: 4px;">
-                <span style="color: #60A5FA; font-weight: 600;">🔵 &lt; 20°C（偏冷）</span>
-                <span style="color: #34D399; font-weight: 600;">🟢 20 - 25°C（舒適）</span>
-                <span style="color: #FBBF24; font-weight: 600;">🟡 25 - 30°C（偏暖）</span>
-                <span style="color: #F87171; font-weight: 600;">🔴 &gt; 30°C（炎熱）</span>
+                <span style="color: #9bb5c4; font-weight: 600;">🔵 &lt; 20°C（偏冷）</span>
+                <span style="color: #94ab99; font-weight: 600;">🟢 20 - 25°C（舒適）</span>
+                <span style="color: #d4a373; font-weight: 600;">🟡 25 - 30°C（偏暖）</span>
+                <span style="color: #cc7a7a; font-weight: 600;">🔴 &gt; 30°C（炎熱）</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -942,25 +983,25 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
         ).encode(
             x=alt.X("dataDate:N", title="預報日期", axis=alt.Axis(
                 labelAngle=-20,
-                labelColor="#94A3B8",
-                titleColor="#94A3B8",
-                gridColor="rgba(255,255,255,0.05)"
+                labelColor="#8c9ba5",
+                titleColor="#8c9ba5",
+                gridColor="rgba(155, 181, 196, 0.08)"
             )),
             y=alt.Y("氣溫:Q", title="氣溫 (°C)", scale=alt.Scale(zero=False, padding=20), axis=alt.Axis(
-                labelColor="#94A3B8",
-                titleColor="#94A3B8",
-                gridColor="rgba(255,255,255,0.06)"
+                labelColor="#8c9ba5",
+                titleColor="#8c9ba5",
+                gridColor="rgba(155, 181, 196, 0.08)"
             )),
             color=alt.Color(
                 "指標:N",
                 scale=alt.Scale(
                     domain=["最高氣溫 (MaxT)", "最低氣溫 (MinT)"],
-                    range=["#F87171", "#38BDF8"]
+                    range=["#cc7a7a", "#9bb5c4"]
                 ),
                 legend=alt.Legend(
                     orient="top",
                     title=None,
-                    labelColor="#E2E8F0",
+                    labelColor="#d5dbdb",
                     labelFontSize=13
                 )
             ),
@@ -972,27 +1013,27 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
         ).properties(height=340).configure_view(
             strokeOpacity=0
         ).configure_axis(
-            domainColor="rgba(255,255,255,0.1)"
+            domainColor="rgba(155, 181, 196, 0.2)"
         )
 
         st.altair_chart(chart, width="stretch")
 
         st.markdown(f"""
-        <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px 18px; margin-top: 10px;">
+        <div style="background: #29323d; border: 1px solid rgba(155, 181, 196, 0.2); border-radius: 12px; padding: 14px 18px; margin-top: 10px;">
             <div style="display: flex; justify-content: space-around; text-align: center;">
                 <div>
-                    <div style="font-size: 0.75rem; color: #94A3B8;">一週最高溫</div>
-                    <div style="font-size: 1.15rem; font-weight: 700; color: #F87171;">{week_max} °C</div>
+                    <div style="font-size: 0.75rem; color: #8c9ba5;">一週最高溫</div>
+                    <div style="font-size: 1.15rem; font-weight: 700; color: #cc7a7a;">{week_max} °C</div>
                 </div>
-                <div style="border-right: 1px solid rgba(255,255,255,0.1);"></div>
+                <div style="border-right: 1px solid rgba(155, 181, 196, 0.2);"></div>
                 <div>
-                    <div style="font-size: 0.75rem; color: #94A3B8;">一週最低溫</div>
-                    <div style="font-size: 1.15rem; font-weight: 700; color: #38BDF8;">{week_min} °C</div>
+                    <div style="font-size: 0.75rem; color: #8c9ba5;">一週最低溫</div>
+                    <div style="font-size: 1.15rem; font-weight: 700; color: #9bb5c4;">{week_min} °C</div>
                 </div>
-                <div style="border-right: 1px solid rgba(255,255,255,0.1);"></div>
+                <div style="border-right: 1px solid rgba(155, 181, 196, 0.2);"></div>
                 <div>
-                    <div style="font-size: 0.75rem; color: #94A3B8;">全週平均溫差</div>
-                    <div style="font-size: 1.15rem; font-weight: 700; color: #FBBF24;">{round((df_forecast['maxt'] - df_forecast['mint']).mean(), 1)} °C</div>
+                    <div style="font-size: 0.75rem; color: #8c9ba5;">全週平均溫差</div>
+                    <div style="font-size: 1.15rem; font-weight: 700; color: #d4a373;">{round((df_forecast['maxt'] - df_forecast['mint']).mean(), 1)} °C</div>
                 </div>
             </div>
         </div>
@@ -1035,14 +1076,14 @@ elif selected_layer == "🌧️ 全台即時累積雨量":
     with st.spinner("正在連線中央氣象署 API (O-A0040 / O-A0002) 取得全台累積雨量與測站資料..."):
         rain_data = get_cached_rainfall()
 
-    # 即時連線狀態橫幅
+    # 即時連線狀態橫幅 (Morandi Palette)
     st.markdown(f"""
-    <div style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div style="background: rgba(41, 50, 61, 0.85); border: 1px solid rgba(155, 181, 196, 0.25); border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 1.25rem;">🌧️</span>
             <div>
-                <div style="color: #38BDF8; font-weight: 700; font-size: 0.92rem;">中央氣象署 (CWA) 全台日累積雨量色斑熱力與即時測站觀測</div>
-                <div style="color: #94A3B8; font-size: 0.8rem;">資料集: O-A0040 (累積雨量圖) & O-A0002-001 (1,340 處雨量站) · 統計時段：<b>{rain_data['obs_period']}</b></div>
+                <div style="color: #9bb5c4; font-weight: 700; font-size: 0.92rem;">中央氣象署 (CWA) 全台日累積雨量色斑熱力與即時測站觀測</div>
+                <div style="color: #8c9ba5; font-size: 0.8rem;">資料集: O-A0040 (累積雨量圖) & O-A0002-001 (1,340 處雨量站) · 統計時段：<b>{rain_data['obs_period']}</b></div>
             </div>
         </div>
         <div style="display: flex; gap: 8px;">
@@ -1052,7 +1093,7 @@ elif selected_layer == "🌧️ 全台即時累積雨量":
     </div>
     """, unsafe_allow_html=True)
 
-    # 4 大指標卡片
+    # 4 大指標卡片 (Morandi 色系)
     rc1, rc2, rc3, rc4 = st.columns(4)
     max_rain = rain_data["max_rain"]
     max_station = rain_data["max_station"]
@@ -1060,9 +1101,9 @@ elif selected_layer == "🌧️ 全台即時累積雨量":
 
     with rc1:
         st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid #38BDF8;">
+        <div class="glass-card" style="border-top: 3px solid #6c8ea4;">
             <div class="metric-title">🌧️ 今日全台最高累積雨量</div>
-            <div class="metric-value" style="color: #38BDF8; font-size: 2.1rem;">{max_rain} <span style="font-size: 1.1rem; color: #94A3B8;">mm</span></div>
+            <div class="metric-value" style="color: #9bb5c4; font-size: 2.1rem;">{max_rain} <span style="font-size: 1.1rem; color: #8c9ba5;">mm</span></div>
             <div class="metric-caption">最高測站: {max_name}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -1078,18 +1119,18 @@ elif selected_layer == "🌧️ 全台即時累積雨量":
 
     with rc3:
         st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid #10B981;">
+        <div class="glass-card" style="border-top: 3px solid #88a28d;">
             <div class="metric-title">📡 有降雨記錄測站數</div>
-            <div class="metric-value" style="color: #34D399; font-size: 2.1rem;">{rain_data['total_rainy_stations']} <span style="font-size: 1.1rem; color: #94A3B8;">/ {rain_data['total_stations']} 站</span></div>
+            <div class="metric-value" style="color: #94ab99; font-size: 2.1rem;">{rain_data['total_rainy_stations']} <span style="font-size: 1.1rem; color: #8c9ba5;">/ {rain_data['total_stations']} 站</span></div>
             <div class="metric-caption">全台自動雨量監測網即時回傳</div>
         </div>
         """, unsafe_allow_html=True)
 
     with rc4:
         st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid #F59E0B;">
+        <div class="glass-card" style="border-top: 3px solid #d4a373;">
             <div class="metric-title">⏱️ 累積雨量統計時段</div>
-            <div class="metric-value" style="color: #FBBF24; font-size: 1.45rem;">本日即時統計</div>
+            <div class="metric-value" style="color: #d4a373; font-size: 1.45rem;">本日即時統計</div>
             <div class="metric-caption">{rain_data['obs_period']}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -1135,7 +1176,7 @@ elif selected_layer == "🌧️ 全台即時累積雨量":
                 name="Counties",
                 style_function=lambda f: {
                     "fillColor": "transparent",
-                    "color": "#475569",
+                    "color": "rgba(155, 181, 196, 0.35)",
                     "weight": 1.2,
                     "opacity": 0.6
                 }
@@ -1156,15 +1197,15 @@ elif selected_layer == "🌧️ 全台即時累積雨量":
                 continue
             c_color = get_rain_color(stn["rain_today"])
             stn_popup = f"""
-            <div style="font-family: 'Outfit', 'Inter', sans-serif; padding: 4px; color: #FFFFFF; min-width: 190px;">
-                <div style="font-size: 14px; font-weight: 700; color: #38BDF8; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 4px; margin-bottom: 6px;">
+            <div style="font-family: 'Outfit', 'Inter', sans-serif; padding: 4px; color: #d5dbdb; min-width: 190px;">
+                <div style="font-size: 14px; font-weight: 700; color: #9bb5c4; border-bottom: 1px solid rgba(155, 181, 196, 0.2); padding-bottom: 4px; margin-bottom: 6px;">
                     📍 {stn['county']} {stn['town']} · {stn['name']}
                 </div>
                 <div style="font-size: 13px; line-height: 1.6;">
-                    <div>🌧️ 本日累積雨量：<b style="color: #F87171; font-size: 15px;">{stn['rain_today']} mm</b></div>
+                    <div>🌧️ 本日累積雨量：<b style="color: #cc7a7a; font-size: 15px;">{stn['rain_today']} mm</b></div>
                     <div>⏱️ 過去 1 小時雨量：<b>{stn['past1hr']} mm</b></div>
                     <div>⏱️ 過去 24 小時雨量：<b>{stn['past24hr']} mm</b></div>
-                    <div style="color: #94A3B8; font-size: 11px; margin-top: 4px;">測站代號: {stn['station_id']} · 觀測時間: {stn['time']}</div>
+                    <div style="color: #8c9ba5; font-size: 11px; margin-top: 4px;">測站代號: {stn['station_id']} · 觀測時間: {stn['time']}</div>
                 </div>
             </div>
             """
@@ -1180,37 +1221,37 @@ elif selected_layer == "🌧️ 全台即時累積雨量":
                 tooltip=f"📍 {stn['name']} ({stn['county']}) · 今日雨量: {stn['rain_today']} mm"
             ).add_to(m_rain)
 
-        # 4. 右上角氣象署標準雨量色階圖例 (浮動面板)
+        # 4. 右上角氣象署標準雨量色階圖例 (浮動面板 - Morandi Palette)
         rain_legend_html = """
         <div id="rain-map-legend" style="
             position: absolute;
             top: 14px;
             right: 14px;
             z-index: 1000;
-            background: rgba(15, 23, 42, 0.92);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(41, 50, 61, 0.95);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(155, 181, 196, 0.25);
             border-radius: 12px;
             padding: 10px 14px;
-            color: #F8FAFC;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.65);
+            color: #d5dbdb;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.45);
             font-family: 'Outfit', 'Inter', sans-serif;
             min-width: 145px;
             pointer-events: auto;
         ">
-            <div style="font-weight: 700; font-size: 11px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px;">
+            <div style="font-weight: 700; font-size: 11px; color: #8c9ba5; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px;">
                 🌧️ 累積雨量圖例 (mm)
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11.5px;">
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #BBF1FA;"></span><span>1 ~ 6 mm</span></span><span style="color: #94A3B8; font-size: 10px;">微量</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #0284C7;"></span><span>6 ~ 15 mm</span></span><span style="color: #38BDF8; font-size: 10px;">小雨</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #16A34A;"></span><span>15 ~ 30 mm</span></span><span style="color: #34D399; font-size: 10px;">中雨</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #EAB308;"></span><span>30 ~ 50 mm</span></span><span style="color: #FBBF24; font-size: 10px;">較大雨</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #EA580C;"></span><span>50 ~ 80 mm</span></span><span style="color: #FB923C; font-size: 10px;">顯著</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #EF4444;"></span><span>80 ~ 130 mm</span></span><span style="color: #F87171; font-size: 10px;">大雨</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #9333EA;"></span><span>130 ~ 200 mm</span></span><span style="color: #C084FC; font-size: 10px;">豪雨</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #E11D48;"></span><span>&gt; 200 mm</span></span><span style="color: #FB7185; font-size: 10px;">大豪雨</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #bbf1fa;"></span><span>1 ~ 6 mm</span></span><span style="color: #8c9ba5; font-size: 10px;">微量</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #6c8ea4;"></span><span>6 ~ 15 mm</span></span><span style="color: #9bb5c4; font-size: 10px;">小雨</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #88a28d;"></span><span>15 ~ 30 mm</span></span><span style="color: #94ab99; font-size: 10px;">中雨</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #d4a373;"></span><span>30 ~ 50 mm</span></span><span style="color: #d4a373; font-size: 10px;">較大雨</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #c88b76;"></span><span>50 ~ 80 mm</span></span><span style="color: #d49b82; font-size: 10px;">顯著</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #cc7a7a;"></span><span>80 ~ 130 mm</span></span><span style="color: #cc7a7a; font-size: 10px;">大雨</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #9a8c98;"></span><span>130 ~ 200 mm</span></span><span style="color: #b5a6b3; font-size: 10px;">豪雨</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #b86b6b;"></span><span>&gt; 200 mm</span></span><span style="color: #cc7a7a; font-size: 10px;">大豪雨</span></div>
             </div>
         </div>
         """
@@ -1220,9 +1261,9 @@ elif selected_layer == "🌧️ 全台即時累積雨量":
 
         st.markdown("""
         <div class="map-legend-panel">
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #94A3B8;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #8c9ba5;">
                 <span>💧 <b>資料來源</b>：中央氣象署雷達合成與雨量站推估 (O-A0040-003) · 點選各測站圓點可查看詳細雨量。</span>
-                <span style="color: #38BDF8; font-weight: 600;">每 10 分鐘同步更新</span>
+                <span style="color: #9bb5c4; font-weight: 600;">每 10 分鐘同步更新</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1270,7 +1311,7 @@ elif selected_layer == "🌧️ 全台即時累積雨量":
             st.info("今日全台暫無測站測得累積雨量。")
 
         st.markdown("""
-        <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 12px; margin-top: 10px; font-size: 0.82rem; color: #94A3B8;">
+        <div style="background: #29323d; border: 1px solid rgba(155, 181, 196, 0.2); border-radius: 12px; padding: 12px; margin-top: 10px; font-size: 0.82rem; color: #8c9ba5;">
             🛡️ <b>防汛安全提醒</b>：山區易受熱對流或地形抬升影響降雨，請留意短延時強降雨與溪水暴漲，外出建議隨身攜帶雨具。
         </div>
         """, unsafe_allow_html=True)
@@ -1299,14 +1340,14 @@ else:
         if selected_ty_key == "live_cwa":
             st.markdown("""
             <div style="display: flex; align-items: center; gap: 8px; justify-content: flex-end; padding-top: 4px;">
-                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10B981; box-shadow: 0 0 10px #10B981;"></span>
-                <span style="color: #34D399; font-weight: 700; font-size: 0.85rem;">🟢 CWA API 即時連線 (W-C0034-005)</span>
+                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #88a28d; box-shadow: 0 0 10px #88a28d;"></span>
+                <span style="color: #94ab99; font-weight: 700; font-size: 0.85rem;">🟢 CWA API 即時連線 (W-C0034-005)</span>
             </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown("""
             <div style="display: flex; align-items: center; gap: 8px; justify-content: flex-end; padding-top: 4px;">
-                <span style="color: #38BDF8; font-weight: 600; font-size: 0.85rem;">📁 歷史重大強颱完整路徑庫</span>
+                <span style="color: #9bb5c4; font-weight: 600; font-size: 0.85rem;">📁 歷史重大強颱完整路徑庫</span>
             </div>
             """, unsafe_allow_html=True)
 
@@ -1320,15 +1361,15 @@ else:
     else:
         cur_typhoon = TYPHOON_CATALOG[selected_ty_key]["data"]
 
-    # 即時連線狀態橫幅
+    # 即時連線狀態橫幅 (Morandi Palette)
     if cur_typhoon.get("is_live"):
         st.markdown(f"""
-        <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="background: rgba(41, 50, 61, 0.85); border: 1px solid rgba(136, 162, 141, 0.35); border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-size: 1.25rem;">📡</span>
                 <div>
-                    <div style="color: #34D399; font-weight: 700; font-size: 0.92rem;">中央氣象署 (CWA) 西北太平洋熱帶氣旋即時監測中</div>
-                    <div style="color: #94A3B8; font-size: 0.8rem;">資料集: W-C0034-005 · 最新氣象觀測定位：<b>{cur_typhoon['obs_time']}</b></div>
+                    <div style="color: #94ab99; font-weight: 700; font-size: 0.92rem;">中央氣象署 (CWA) 西北太平洋熱帶氣旋即時監測中</div>
+                    <div style="color: #8c9ba5; font-size: 0.8rem;">資料集: W-C0034-005 · 最新氣象觀測定位：<b>{cur_typhoon['obs_time']}</b></div>
                 </div>
             </div>
             <div style="display: flex; gap: 8px;">
@@ -1339,12 +1380,12 @@ else:
         """, unsafe_allow_html=True)
     else:
         st.markdown(f"""
-        <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="background: rgba(41, 50, 61, 0.85); border: 1px solid rgba(155, 181, 196, 0.25); border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-size: 1.25rem;">📜</span>
                 <div>
-                    <div style="color: #38BDF8; font-weight: 700; font-size: 0.92rem;">台灣重大颱風歷史路徑回顧模式 · {cur_typhoon['name_zh']}颱風 ({cur_typhoon['name_en']})</div>
-                    <div style="color: #94A3B8; font-size: 0.8rem;">登陸時間節點：{cur_typhoon['obs_time']} · 國際編號 #{cur_typhoon['number']}</div>
+                    <div style="color: #9bb5c4; font-weight: 700; font-size: 0.92rem;">台灣重大颱風歷史路徑回顧模式 · {cur_typhoon['name_zh']}颱風 ({cur_typhoon['name_en']})</div>
+                    <div style="color: #8c9ba5; font-size: 0.8rem;">登陸時間節點：{cur_typhoon['obs_time']} · 國際編號 #{cur_typhoon['number']}</div>
                 </div>
             </div>
             <div>
@@ -1353,40 +1394,40 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
-    # 颱風即時資訊看板指標卡
+    # 颱風即時資訊看板指標卡 (Morandi 色系)
     tc1, tc2, tc3, tc4 = st.columns(4)
     with tc1:
         st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid #EF4444;">
+        <div class="glass-card" style="border-top: 3px solid #cc7a7a;">
             <div class="metric-title">🌀 颱風名稱與強度</div>
-            <div class="metric-value" style="color: #F87171; font-size: 1.85rem;">{cur_typhoon['name_zh']} <span style="font-size: 1.05rem; color: #94A3B8;">({cur_typhoon['name_en']})</span></div>
+            <div class="metric-value" style="color: #cc7a7a; font-size: 1.85rem;">{cur_typhoon['name_zh']} <span style="font-size: 1.05rem; color: #8c9ba5;">({cur_typhoon['name_en']})</span></div>
             <div class="metric-caption">國際編號 #{cur_typhoon['number']} · {cur_typhoon['intensity']}</div>
         </div>
         """, unsafe_allow_html=True)
 
     with tc2:
         st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid #F59E0B;">
+        <div class="glass-card" style="border-top: 3px solid #c88b76;">
             <div class="metric-title">💨 近中心最大風速</div>
-            <div class="metric-value" style="color: #FBBF24; font-size: 1.85rem;">{cur_typhoon['max_wind']}</div>
+            <div class="metric-value" style="color: #c88b76; font-size: 1.85rem;">{cur_typhoon['max_wind']}</div>
             <div class="metric-caption">瞬間最大陣風: {cur_typhoon['gust_wind']}</div>
         </div>
         """, unsafe_allow_html=True)
 
     with tc3:
         st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid #38BDF8;">
+        <div class="glass-card" style="border-top: 3px solid #6c8ea4;">
             <div class="metric-title">📉 中心最低氣壓</div>
-            <div class="metric-value" style="color: #38BDF8; font-size: 1.85rem;">{cur_typhoon['pressure']}</div>
+            <div class="metric-value" style="color: #9bb5c4; font-size: 1.85rem;">{cur_typhoon['pressure']}</div>
             <div class="metric-caption">7級風半徑: {cur_typhoon['radius_7']} / 10級: {cur_typhoon['radius_10']}</div>
         </div>
         """, unsafe_allow_html=True)
 
     with tc4:
         st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid #10B981;">
+        <div class="glass-card" style="border-top: 3px solid #88a28d;">
             <div class="metric-title">🧭 當前移速與方向</div>
-            <div class="metric-value" style="color: #34D399; font-size: 1.55rem;">{cur_typhoon['movement']}</div>
+            <div class="metric-value" style="color: #94ab99; font-size: 1.55rem;">{cur_typhoon['movement']}</div>
             <div class="metric-caption">最新定位時間: {cur_typhoon['obs_time']}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -1397,9 +1438,9 @@ else:
 
     with col_t_map:
         st.markdown("### 🌀 西北太平洋颱風路徑與 70% 潛勢機率圈")
-        st.caption("聚焦西北太平洋與台灣鄰近海域，展示歷史觀測路徑（青藍色）、當前中心（紅色同心光環）與官方預報路徑（紅色實線與虛線潛勢圈）。")
+        st.caption("聚焦西北太平洋與台灣鄰近海域，展示歷史觀測路徑（莫蘭迪冰藍）、當前中心（煙燻粉雙環光圈）與官方預報路徑（莫蘭迪煙燻粉實線與虛線潛勢圈）。")
 
-        # 1. 建立颱風專屬地圖 (focus: location=map_center, zoom_start=zoom_start, tiles="CartoDB dark_matter")
+        # 1. 建立颱風專屬地圖 (focus: location=map_center, zoom_start=zoom_start)
         map_center = cur_typhoon.get("map_center", [20.5, 131.5])
         zoom_start = cur_typhoon.get("zoom_start", 5)
 
@@ -1429,12 +1470,12 @@ else:
         </style>
         """))
 
-        # 2. 過去路徑 (Historical Track): 青藍色實線 (color="#00bcd4") 與節點
+        # 2. 過去路徑 (Historical Track): 莫蘭迪冰藍實線 (color="#6c8ea4") 與節點
         hist_coords = [[p["lat"], p["lon"]] for p in cur_typhoon["historical_points"]]
         if hist_coords:
             folium.PolyLine(
                 hist_coords,
-                color="#00bcd4",
+                color="#6c8ea4",
                 weight=3.5,
                 opacity=0.9,
                 tooltip="🌀 過去觀測移動路徑"
@@ -1444,20 +1485,20 @@ else:
             folium.CircleMarker(
                 location=[p["lat"], p["lon"]],
                 radius=5,
-                color="#00bcd4",
+                color="#6c8ea4",
                 weight=2,
                 fill=True,
-                fill_color="#00bcd4",
+                fill_color="#6c8ea4",
                 fill_opacity=0.9,
                 tooltip=f"⏱️ {p['time']} | 座標: ({p['lat']}°N, {p['lon']}°E)<br>📉 氣壓: {p['pressure']} | 風速: {p['wind']}"
             ).add_to(m_typhoon)
 
-        # 3. 預報路徑 (Forecast Track): 紅色線條 (color="#ff5252") 連接各預報時效
+        # 3. 預報路徑 (Forecast Track): 莫蘭迪煙燻粉線條 (color="#cc7a7a") 連接各預報時效
         cur_pt = [cur_typhoon["current_point"]["lat"], cur_typhoon["current_point"]["lon"]]
         fore_coords = [cur_pt] + [[p["lat"], p["lon"]] for p in cur_typhoon["forecast_points"]]
         folium.PolyLine(
             fore_coords,
-            color="#ff5252",
+            color="#cc7a7a",
             weight=3.5,
             opacity=0.9,
             tooltip="🚨 官方預報路徑"
@@ -1471,12 +1512,12 @@ else:
             folium.Circle(
                 location=f_coord,
                 radius=fp["radius_70"],
-                color="#ff5252",
+                color="#cc7a7a",
                 weight=1.5,
                 dash_array="4, 4",
                 fill=True,
-                fill_color="#ff5252",
-                fill_opacity=0.10,
+                fill_color="#cc7a7a",
+                fill_opacity=0.12,
                 tooltip=f"⭕ 70% 潛勢暴風圈 ({fp['time_label']})<br>半徑: {int(fp['radius_70']/1000)} 公里 | 氣壓: {fp['pressure']}"
             ).add_to(m_typhoon)
 
@@ -1484,25 +1525,25 @@ else:
             folium.CircleMarker(
                 location=f_coord,
                 radius=5,
-                color="#ff5252",
+                color="#cc7a7a",
                 weight=2,
                 fill=True,
                 fill_color="#ffffff",
                 fill_opacity=0.95
             ).add_to(m_typhoon)
 
-            # 預報時間標籤藥丸 (DivIcon Pill)
+            # 預報時間標籤藥丸 (DivIcon Pill - Morandi Palette)
             pill_html = f"""
             <div style="
-                background: rgba(15, 23, 42, 0.92);
-                border: 1.5px solid #ff5252;
-                color: #ff5252;
+                background: rgba(41, 50, 61, 0.95);
+                border: 1.5px solid #cc7a7a;
+                color: #cc7a7a;
                 font-weight: 700;
                 font-size: 11px;
                 padding: 2px 7px;
                 border-radius: 999px;
                 white-space: nowrap;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.85);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.5);
                 margin-left: 9px;
                 margin-top: -10px;
                 letter-spacing: -0.2px;
@@ -1514,14 +1555,14 @@ else:
                 tooltip=f"預報時間: {fp['time_label']} · {fp.get('desc', '')}"
             ).add_to(m_typhoon)
 
-        # 5. 當前中心 (Current Center): 高亮同心光環與詳細 HTML 資訊卡片
+        # 5. 當前中心 (Current Center): 莫蘭迪同心光環與詳細 HTML 資訊卡片
         folium.CircleMarker(
             location=cur_pt,
             radius=15,
-            color="#EF4444",
+            color="#cc7a7a",
             weight=2,
             fill=True,
-            fill_color="#EF4444",
+            fill_color="#cc7a7a",
             fill_opacity=0.25
         ).add_to(m_typhoon)
 
@@ -1531,7 +1572,7 @@ else:
             color="#FFFFFF",
             weight=2.5,
             fill=True,
-            fill_color="#EF4444",
+            fill_color="#cc7a7a",
             fill_opacity=1.0
         ).add_to(m_typhoon)
 
@@ -1539,15 +1580,15 @@ else:
         <div style="
             font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
             min-width: 250px;
-            color: #FFFFFF;
+            color: #d5dbdb;
             padding: 4px;
             line-height: 1.6;
         ">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 6px; margin-bottom: 8px;">
-                <span style="font-weight: 800; font-size: 16px; color: #F87171;">🌀 {cur_typhoon['name_zh']} ({cur_typhoon['name_en']})</span>
-                <span style="font-size: 11px; padding: 2px 7px; border-radius: 999px; background: rgba(239,68,68,0.25); color: #FCA5A5; border: 1px solid #EF4444;">#{cur_typhoon['number']}</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(155, 181, 196, 0.2); padding-bottom: 6px; margin-bottom: 8px;">
+                <span style="font-weight: 800; font-size: 16px; color: #cc7a7a;">🌀 {cur_typhoon['name_zh']} ({cur_typhoon['name_en']})</span>
+                <span style="font-size: 11px; padding: 2px 7px; border-radius: 999px; background: rgba(204,122,122,0.2); color: #cc7a7a; border: 1px solid #cc7a7a;">#{cur_typhoon['number']}</span>
             </div>
-            <div style="font-size: 13px; color: #E2E8F0;">
+            <div style="font-size: 13px; color: #d5dbdb;">
                 <div>⏱️ <b>定位時間</b>：{cur_typhoon['obs_time']}</div>
                 <div>📍 <b>中心座標</b>：北緯 {cur_pt[0]}°，東經 {cur_pt[1]}°</div>
                 <div>📉 <b>中心氣壓</b>：{cur_typhoon['pressure']}</div>
@@ -1561,7 +1602,7 @@ else:
 
         center_badge_html = f"""
         <div style="
-            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+            background: linear-gradient(135deg, #cc7a7a 0%, #b86b6b 100%);
             color: #FFFFFF;
             font-weight: 800;
             font-size: 11px;
@@ -1569,7 +1610,7 @@ else:
             border-radius: 999px;
             white-space: nowrap;
             border: 2px solid #FFFFFF;
-            box-shadow: 0 0 14px rgba(239, 68, 68, 0.85);
+            box-shadow: 0 0 12px rgba(204, 122, 122, 0.6);
             margin-left: 14px;
             margin-top: -12px;
             letter-spacing: -0.2px;
@@ -1584,44 +1625,44 @@ else:
             tooltip=f"🌀 {cur_typhoon['name_zh']} (點擊展開詳細氣象定位卡)"
         ).add_to(m_typhoon)
 
-        # 6. 地圖右上角浮動路徑圖例
+        # 6. 地圖右上角浮動路徑圖例 (Morandi Palette)
         typhoon_legend_html = """
         <div id="typhoon-map-legend" style="
             position: absolute;
             top: 14px;
             right: 14px;
             z-index: 1000;
-            background: rgba(15, 23, 42, 0.90);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(41, 50, 61, 0.95);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(155, 181, 196, 0.25);
             border-radius: 12px;
             padding: 12px 14px;
-            color: #F8FAFC;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.65);
+            color: #d5dbdb;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.45);
             font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
             min-width: 165px;
             pointer-events: auto;
         ">
-            <div style="font-weight: 700; font-size: 11px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">
+            <div style="font-weight: 700; font-size: 11px; color: #8c9ba5; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">
                 🌀 颱風路徑圖例說明
             </div>
             <div style="display: flex; flex-direction: column; gap: 7px; font-size: 12px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="display: inline-block; width: 18px; height: 3.5px; background: #00bcd4; border-radius: 2px;"></span>
-                    <span style="color: #E2E8F0;">過去觀測路徑</span>
+                    <span style="display: inline-block; width: 18px; height: 3.5px; background: #6c8ea4; border-radius: 2px;"></span>
+                    <span style="color: #d5dbdb;">過去觀測路徑</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #EF4444; border: 2px solid #FFFFFF;"></span>
-                    <span style="color: #F87171; font-weight: 600;">當前中心位置</span>
+                    <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #cc7a7a; border: 2px solid #FFFFFF;"></span>
+                    <span style="color: #cc7a7a; font-weight: 600;">當前中心位置</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="display: inline-block; width: 18px; height: 3.5px; background: #ff5252; border-radius: 2px;"></span>
-                    <span style="color: #E2E8F0;">官方預報路徑</span>
+                    <span style="display: inline-block; width: 18px; height: 3.5px; background: #cc7a7a; border-radius: 2px;"></span>
+                    <span style="color: #d5dbdb;">官方預報路徑</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1.5px dashed #ff5252; background: rgba(255,82,82,0.25);"></span>
-                    <span style="color: #E2E8F0;">70% 潛勢機率圈</span>
+                    <span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1.5px dashed #cc7a7a; background: rgba(204,122,122,0.25);"></span>
+                    <span style="color: #d5dbdb;">70% 潛勢機率圈</span>
                 </div>
             </div>
         </div>
@@ -1633,9 +1674,9 @@ else:
         # 底部說明列
         st.markdown("""
         <div class="map-legend-panel">
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #94A3B8;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #8c9ba5;">
                 <span>🌊 <b>潛勢機率圈定義</b>：氣象署預報中心 70% 機率可能涵蓋之移動範圍，虛線圓半徑隨預報時效逐日擴大。</span>
-                <span style="color: #38BDF8; font-weight: 600;">座標與時效同步中央氣象署</span>
+                <span style="color: #9bb5c4; font-weight: 600;">座標與時效同步中央氣象署</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1650,9 +1691,9 @@ else:
         land_alert_html = cur_typhoon.get("land_alert", "• 沿海強陣風戒備").replace("\n", "<br>")
 
         st.markdown(f"""
-        <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-left: 4px solid #EF4444; border-radius: 12px; padding: 14px; margin-bottom: 14px;">
-            <div style="font-weight: 700; color: #FCA5A5; font-size: 0.95rem; margin-bottom: 4px;">{advisory_title}</div>
-            <div style="font-size: 0.84rem; color: #FEE2E2; line-height: 1.5;">
+        <div style="background: rgba(41, 50, 61, 0.9); border: 1px solid rgba(200, 139, 118, 0.35); border-left: 4px solid #c88b76; border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+            <div style="font-weight: 700; color: #c88b76; font-size: 0.95rem; margin-bottom: 4px;">{advisory_title}</div>
+            <div style="font-size: 0.84rem; color: #d5dbdb; line-height: 1.5;">
                 {advisory_body}
             </div>
         </div>
@@ -1662,18 +1703,18 @@ else:
         g1, g2 = st.columns(2)
         with g1:
             st.markdown(f"""
-            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px;">
-                <div style="font-size: 0.8rem; font-weight: 600; color: #F87171; margin-bottom: 4px;">🌊 海面警戒/監測海域</div>
-                <div style="font-size: 0.82rem; color: #E2E8F0; line-height: 1.5;">
+            <div style="background: #29323d; border: 1px solid rgba(155, 181, 196, 0.2); border-radius: 10px; padding: 12px;">
+                <div style="font-size: 0.8rem; font-weight: 600; color: #cc7a7a; margin-bottom: 4px;">🌊 海面警戒/監測海域</div>
+                <div style="font-size: 0.82rem; color: #d5dbdb; line-height: 1.5;">
                     {sea_alert_html}
                 </div>
             </div>
             """, unsafe_allow_html=True)
         with g2:
             st.markdown(f"""
-            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px;">
-                <div style="font-size: 0.8rem; font-weight: 600; color: #FBBF24; margin-bottom: 4px;">🏞️ 陸上警戒/防汛重點</div>
-                <div style="font-size: 0.82rem; color: #E2E8F0; line-height: 1.5;">
+            <div style="background: #29323d; border: 1px solid rgba(155, 181, 196, 0.2); border-radius: 10px; padding: 12px;">
+                <div style="font-size: 0.8rem; font-weight: 600; color: #c88b76; margin-bottom: 4px;">🏞️ 陸上警戒/防汛重點</div>
+                <div style="font-size: 0.82rem; color: #d5dbdb; line-height: 1.5;">
                     {land_alert_html}
                 </div>
             </div>
@@ -1711,7 +1752,7 @@ else:
         )
 
         st.markdown("""
-        <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 12px; margin-top: 10px; font-size: 0.82rem; color: #94A3B8;">
+        <div style="background: #29323d; border: 1px solid rgba(155, 181, 196, 0.2); border-radius: 12px; padding: 12px; margin-top: 10px; font-size: 0.82rem; color: #8c9ba5;">
             🛡️ <b>防颱重點提醒</b>：沿海地區請慎防長浪與風暴潮倒灌；山區需留意落石與土石流，低窪地區請提早做好排水與沙包防汛準備。
         </div>
         """, unsafe_allow_html=True)
