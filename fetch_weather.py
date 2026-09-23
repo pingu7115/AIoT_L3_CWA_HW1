@@ -88,6 +88,14 @@ def fetch_cwa_weather(api_key=None, dataset=DEFAULT_DATASET, output_path=OUTPUT_
     if not api_key:
         api_key = os.environ.get("CWA_API_KEY") or os.environ.get("CWB_API_KEY")
 
+    if not api_key and os.path.exists(".env"):
+        with open(".env", "r", encoding="utf-8") as f:
+            for line in f:
+                line_str = line.strip()
+                if line_str.startswith("CWA_API_KEY="):
+                    api_key = line_str.split("=", 1)[1].strip().strip('"').strip("'")
+                    break
+
     if not api_key:
         print("[WARN] 未提供 CWA API Key，啟用內建模擬資料...")
         data = generate_mock_data()
