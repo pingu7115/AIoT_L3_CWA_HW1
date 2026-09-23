@@ -1148,22 +1148,21 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
     col_r_map, col_r_info = st.columns([1.35, 1])
 
     with col_r_map:
-        st.markdown("### 🗺️ 全台即時累積雨量熱力圖磚與觀測站")
-        st.caption("無浮水印 Esri Light 畫布底圖，套疊氣象署官方透明色斑推估熱力圖 (O-A0040-001/003) 與各縣市雨量站標記。")
+        st.markdown("### 🗺️ 全台即時累積雨量測站分佈圖 (Station Point Map)")
+        st.caption("無點陣圖遮蔽干擾，採用 CartoDB Positron 畫布底圖，依氣象署 O-A0002-001 即時測站觀測渲染莫蘭迪色標圓點。")
 
-        # 建立雨量專屬地圖 (鎖定台灣視角: location=[23.7, 120.9], zoom_start=7)
+        # 建立雨量專屬點狀地圖 (CartoDB positron: location=[23.7, 120.9], zoom_start=7.5)
         m_rain = folium.Map(
             location=[23.7, 120.9],
-            zoom_start=7,
+            zoom_start=7.5,
             min_zoom=6,
-            max_zoom=10,
+            max_zoom=11,
             max_bounds=True,
             min_lat=21.0,
             max_lat=26.5,
             min_lon=118.0,
             max_lon=122.5,
-            tiles="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-            attr="Esri"
+            tiles="CartoDB positron"
         )
 
         m_rain.get_root().header.add_child(folium.Element("""
@@ -1175,7 +1174,7 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
         </style>
         """))
 
-        # 1. 疊加台灣縣市淺色邊界輪廓
+        # 1. 疊加台灣縣市細緻淺色邊界輪廓
         if os.path.exists(GEOJSON_FILE):
             with open(GEOJSON_FILE, "r", encoding="utf-8") as gf:
                 geojson_data = json.load(gf)
@@ -1184,65 +1183,100 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
                 name="Counties",
                 style_function=lambda f: {
                     "fillColor": "transparent",
-                    "color": "rgba(92, 124, 138, 0.35)",
-                    "weight": 1.2,
+                    "color": "rgba(92, 124, 138, 0.25)",
+                    "weight": 1.0,
                     "opacity": 0.6
                 }
             ).add_to(m_rain)
 
-        # 2. 疊加氣象署全台累積雨量雷達圖 / QPESUMS (O-A0040-001 / O-A0040-003, bounds=[[21.8, 119.8], [25.4, 122.2]], opacity=0.7)
-        cwa_radar_overlay_url = rain_data.get("overlay_data_url") or "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0040-001.jpg"
-        folium.raster_layers.ImageOverlay(
-            image=cwa_radar_overlay_url,
-            bounds=[[21.8, 119.8], [25.4, 122.2]],
-            opacity=0.7,
-            name="全台即時累積雨量雷達推估圖"
-        ).add_to(m_rain)
+        # 2. 依氣象署 O-A0002-001 測站即時雨量繪製 Morandi 圓點標記
+        all_stations = rain_data.get("stations", rain_data.get("top_stations", []))
 
-        # 3. 疊加主要雨量觀測站點 (CircleMarker: 0mm: transparent/light blue, >10mm: Morandi blue, >50mm: yellow, >130mm: orange/terracotta)
-        def get_morandi_station_color(val):
-            if val <= 0:
-                return "rgba(162, 196, 201, 0.45)" # 0mm: transparent/light blue
-            elif val < 10:
-                return "#7392a0"                  # 1~10mm: soft morandi blue
-            elif val < 50:
-                return "#5c7c8a"                  # >10mm: Morandi blue
-            elif val < 130:
-                return "#c49359"                  # >50mm: yellow
+        for stn in all_stations:
+            rain_val = float(stn.get("rain_today", 0.0))
+            stn_name = stn.get("name", "測站")
+            county = stn.get("county", "")
+            town = stn.get("town", "")
+
+            # 依規格設定莫蘭迪階層屬性
+            if rain_val <= 0.0:
+                # 0.0 mm (無降雨): 極簡透光微小點，避免干擾畫面
+                folium.CircleMarker(
+                    location=[stn["lat"], stn["lon"]],
+                    radius=1.5,
+                    color="#d2d6dc",
+                    weight=0.8,
+                    fill=True,
+                    fill_color="#d2d6dc",
+                    fill_opacity=0.3,
+                    tooltip=f"<b>{stn_name}</b> ({county}{town}): 0.0 mm (無降雨)"
+                ).add_to(m_rain)
+            elif rain_val <= 10.0:
+                # 0.1 ~ 10.0 mm (小雨/微量): Morandi Dusty Blue (#7392a0)
+                folium.CircleMarker(
+                    location=[stn["lat"], stn["lon"]],
+                    radius=3.5,
+                    color="#7392a0",
+                    weight=1.2,
+                    fill=True,
+                    fill_color="#7392a0",
+                    fill_opacity=0.75,
+                    tooltip=folium.Tooltip(
+                        f"""<div style="background: rgba(255,255,255,0.96); border: 1px solid #7392a0; border-radius: 6px; padding: 3px 8px; font-size: 11.5px; color: #2b303a; box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap;"><b>{stn_name}</b>: <span style="color: #7392a0; font-weight: 700;">{rain_val:.1f} mm</span> <span style="font-size: 10px; color: #7392a0;">(小雨)</span></div>""",
+                        sticky=True
+                    ),
+                    popup=folium.Popup(f"""<b>📍 {stn_name}</b> ({county} {town})<br>🌧️ 本日累積雨量：<b>{rain_val:.1f} mm</b><br>時雨量：{stn.get('past1hr', 0):.1f} mm · 24H: {stn.get('past24hr', 0):.1f} mm""", max_width=220)
+                ).add_to(m_rain)
+            elif rain_val <= 50.0:
+                # 10.1 ~ 50.0 mm (中雨): Morandi Sage/Teal (#5c7c8a)
+                folium.CircleMarker(
+                    location=[stn["lat"], stn["lon"]],
+                    radius=5.0,
+                    color="#5c7c8a",
+                    weight=1.5,
+                    fill=True,
+                    fill_color="#5c7c8a",
+                    fill_opacity=0.85,
+                    tooltip=folium.Tooltip(
+                        f"""<div style="background: rgba(255,255,255,0.96); border: 1px solid #5c7c8a; border-radius: 6px; padding: 3px 8px; font-size: 11.5px; color: #2b303a; box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap;"><b>{stn_name}</b>: <span style="color: #5c7c8a; font-weight: 700;">{rain_val:.1f} mm</span> <span style="font-size: 10px; color: #5c7c8a;">(中雨)</span></div>""",
+                        sticky=True
+                    ),
+                    popup=folium.Popup(f"""<b>📍 {stn_name}</b> ({county} {town})<br>🌧️ 本日累積雨量：<b style="color: #5c7c8a;">{rain_val:.1f} mm</b><br>時雨量：{stn.get('past1hr', 0):.1f} mm · 24H: {stn.get('past24hr', 0):.1f} mm""", max_width=220)
+                ).add_to(m_rain)
+            elif rain_val <= 130.0:
+                # 50.1 ~ 130.0 mm (大雨): Morandi Terracotta (#c47d66)
+                folium.CircleMarker(
+                    location=[stn["lat"], stn["lon"]],
+                    radius=6.5,
+                    color="#c47d66",
+                    weight=1.8,
+                    fill=True,
+                    fill_color="#c47d66",
+                    fill_opacity=0.9,
+                    tooltip=folium.Tooltip(
+                        f"""<div style="background: rgba(255,255,255,0.96); border: 1px solid #c47d66; border-radius: 6px; padding: 3px 8px; font-size: 11.5px; color: #2b303a; box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap;"><b>{stn_name}</b>: <span style="color: #c47d66; font-weight: 700;">{rain_val:.1f} mm</span> <span style="font-size: 10px; color: #c47d66;">(大雨)</span></div>""",
+                        sticky=True
+                    ),
+                    popup=folium.Popup(f"""<b>📍 {stn_name}</b> ({county} {town})<br>🌧️ 本日累積雨量：<b style="color: #c47d66;">{rain_val:.1f} mm</b><br>時雨量：{stn.get('past1hr', 0):.1f} mm · 24H: {stn.get('past24hr', 0):.1f} mm""", max_width=220)
+                ).add_to(m_rain)
             else:
-                return "#b86b53"                  # >130mm: orange/terracotta
+                # > 130.0 mm (豪雨): Morandi Deep Rust (#a8523b)
+                folium.CircleMarker(
+                    location=[stn["lat"], stn["lon"]],
+                    radius=8.0,
+                    color="#a8523b",
+                    weight=2.0,
+                    fill=True,
+                    fill_color="#a8523b",
+                    fill_opacity=0.95,
+                    tooltip=folium.Tooltip(
+                        f"""<div style="background: rgba(255,255,255,0.96); border: 1px solid #a8523b; border-radius: 6px; padding: 3px 8px; font-size: 11.5px; color: #2b303a; box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap;"><b>{stn_name}</b>: <span style="color: #a8523b; font-weight: 700;">{rain_val:.1f} mm</span> <span style="font-size: 10px; color: #a8523b;">(豪雨)</span></div>""",
+                        sticky=True
+                    ),
+                    popup=folium.Popup(f"""<b>📍 {stn_name}</b> ({county} {town})<br>🌧️ 本日累積雨量：<b style="color: #a8523b;">{rain_val:.1f} mm</b><br>時雨量：{stn.get('past1hr', 0):.1f} mm · 24H: {stn.get('past24hr', 0):.1f} mm""", max_width=220)
+                ).add_to(m_rain)
 
-        for stn in rain_data.get("top_stations", []):
-            rain_val = stn["rain_today"]
-            c_color = get_morandi_station_color(rain_val)
-            marker_radius = 5 if rain_val <= 0 else min(12, max(6, int(rain_val * 0.4 + 5)))
-
-            stn_popup = f"""
-            <div style="font-family: 'Outfit', 'Inter', sans-serif; padding: 4px; color: #2b303a; min-width: 190px;">
-                <div style="font-size: 14px; font-weight: 700; color: #2b303a; border-bottom: 1px solid rgba(0, 0, 0, 0.08); padding-bottom: 4px; margin-bottom: 6px;">
-                    📍 {stn['county']} {stn['town']} · {stn['name']}
-                </div>
-                <div style="font-size: 13px; line-height: 1.6;">
-                    <div>🌧️ 本日累積雨量：<b style="color: {c_color if rain_val > 0 else '#5c7c8a'}; font-size: 15px;">{rain_val} mm</b></div>
-                    <div>⏱️ 過去 1 小時雨量：<b>{stn['past1hr']} mm</b></div>
-                    <div>⏱️ 過去 24 小時雨量：<b>{stn['past24hr']} mm</b></div>
-                    <div style="color: #6c757d; font-size: 11px; margin-top: 4px;">測站代號: {stn['station_id']} · 觀測時間: {stn['time']}</div>
-                </div>
-            </div>
-            """
-            folium.CircleMarker(
-                location=[stn["lat"], stn["lon"]],
-                radius=marker_radius,
-                color=c_color if rain_val > 0 else "#7392a0",
-                weight=2 if rain_val > 0 else 1,
-                fill=True,
-                fill_color=c_color,
-                fill_opacity=0.85 if rain_val > 0 else 0.45,
-                popup=folium.Popup(stn_popup, max_width=260),
-                tooltip=f"📍 {stn['name']} ({stn['county']}) · 今日雨量: {rain_val} mm"
-            ).add_to(m_rain)
-
-        # 4. 右上角標準雨量色階圖例 (浮動面板 - Morandi Light Palette)
+        # 3. 地圖右上角莫蘭迪測站雨量圖例 (浮動面板 - CartoDB Positron Cohesive Morandi Legend)
         rain_legend_html = """
         <div id="rain-map-legend" style="
             position: absolute;
@@ -1257,19 +1291,49 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
             padding: 10px 14px;
             color: #2b303a;
             box-shadow: 0 4px 16px rgba(60, 50, 40, 0.08);
-            font-family: 'Outfit', 'Inter', sans-serif;
-            min-width: 150px;
+            font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+            min-width: 165px;
             pointer-events: auto;
         ">
             <div style="font-weight: 700; font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px;">
-                🌧️ 降雨級距與圖例 (mm)
+                🌧️ 測站雨量級距圖例
             </div>
             <div style="display: flex; flex-direction: column; gap: 5px; font-size: 11.5px;">
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: rgba(162, 196, 201, 0.7); border: 1px solid #7392a0;"></span><span>0 mm</span></span><span style="color: #6c757d; font-size: 10px;">尚未降雨</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #7392a0;"></span><span>&lt; 10 mm</span></span><span style="color: #7392a0; font-size: 10px; font-weight: 600;">零星微量</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #5c7c8a;"></span><span>&gt; 10 mm</span></span><span style="color: #5c7c8a; font-size: 10px; font-weight: 600;">莫蘭迪藍</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #c49359;"></span><span>&gt; 50 mm</span></span><span style="color: #c49359; font-size: 10px; font-weight: 600;">大雨黃標</span></div>
-                <div style="display: flex; align-items: center; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #b86b53;"></span><span>&gt; 130 mm</span></span><span style="color: #b86b53; font-size: 10px; font-weight: 600;">豪雨陶土</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #d2d6dc; opacity: 0.6; border: 1px solid #b8bcc4;"></span>
+                        <span style="color: #6c757d;">0.0 mm</span>
+                    </span>
+                    <span style="color: #6c757d; font-size: 10px;">無降雨</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #7392a0;"></span>
+                        <span style="color: #2b303a; font-weight: 500;">0.1 ~ 10.0 mm</span>
+                    </span>
+                    <span style="color: #7392a0; font-weight: 600; font-size: 10px;">小雨/微量</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #5c7c8a;"></span>
+                        <span style="color: #2b303a; font-weight: 500;">10.1 ~ 50.0 mm</span>
+                    </span>
+                    <span style="color: #5c7c8a; font-weight: 600; font-size: 10px;">中雨</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #c47d66;"></span>
+                        <span style="color: #2b303a; font-weight: 500;">50.1 ~ 130.0 mm</span>
+                    </span>
+                    <span style="color: #c47d66; font-weight: 600; font-size: 10px;">大雨</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #a8523b;"></span>
+                        <span style="color: #2b303a; font-weight: 500;">&gt; 130.0 mm</span>
+                    </span>
+                    <span style="color: #a8523b; font-weight: 600; font-size: 10px;">豪雨</span>
+                </div>
             </div>
         </div>
         """
@@ -1277,11 +1341,11 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
 
         st_folium(m_rain, width="stretch", height=540)
 
-        st.markdown("""
+        st.markdown(f"""
         <div class="map-legend-panel">
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #6c757d;">
-                <span>💧 <b>資料來源</b>：中央氣象署雷達合成與雨量站推估 (O-A0040-003) · 點選各測站圓點可查看詳細雨量。</span>
-                <span style="color: #5c7c8a; font-weight: 600;">每 10 分鐘同步更新</span>
+                <span>💧 <b>資料來源</b>：中央氣象署全台自動雨量測站網即時觀測資料 (O-A0002-001) · 懸停/點選圓點可查看詳細雨量。</span>
+                <span style="color: #5c7c8a; font-weight: 600;">共 {rain_data['total_stations']} 站即時同步</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
