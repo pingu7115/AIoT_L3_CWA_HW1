@@ -351,7 +351,7 @@ def get_temp_category(temp):
     依據作業規範嚴格劃分 4 級氣溫色階與圖例（溫潤米色系 × 莫蘭迪色 Warm Beige & Morandi）：
     🔵 < 20°C（偏冷）：Morandi 灰藍 / 塵藍 (#5c7c8a)
     🟢 20 - 25°C（舒適）：Morandi 鼠尾草綠 (#6b8e73)
-    🟡 25 - 30°C（偏暖）：Morandi 溫潤微赭 (#c49359)
+    🟡 25 - 30°C（偏暖）：Morandi 芥末黃 (#c9a859)
     🔴 > 30°C（炎熱）：Morandi 陶瓦微橘 (#b86b53)
     """
     if temp < 20.0:
@@ -376,9 +376,9 @@ def get_temp_category(temp):
         return {
             "label": "偏暖",
             "icon": "🟡",
-            "color": "#c49359",
-            "bg_color": "rgba(196, 147, 89, 0.12)",
-            "border": "#d4a66e",
+            "color": "#c9a859",
+            "bg_color": "rgba(201, 168, 89, 0.12)",
+            "border": "#d8b96f",
             "badge": "🟡 25 - 30°C 偏暖"
         }
     else:
@@ -457,9 +457,9 @@ with st.sidebar:
                 <span>🟢 <b>20 - 25°C</b></span>
                 <span style="color: #6b8e73; font-weight: 600;">舒適</span>
             </div>
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(196, 147, 89, 0.08); border-left: 3px solid #c49359; border-radius: 6px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(201, 168, 89, 0.08); border-left: 3px solid #c9a859; border-radius: 6px;">
                 <span>🟡 <b>25 - 30°C</b></span>
-                <span style="color: #c49359; font-weight: 600;">偏暖</span>
+                <span style="color: #c9a859; font-weight: 600;">偏暖</span>
             </div>
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(184, 107, 83, 0.08); border-left: 3px solid #b86b53; border-radius: 6px;">
                 <span>🔴 <b>&gt; 30°C</b></span>
@@ -622,9 +622,9 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
 
     with c3:
         st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid #c49359;">
+        <div class="glass-card" style="border-top: 3px solid #c9a859;">
             <div class="metric-title">⚖️ 日夜溫差 (Diurnal Range)</div>
-            <div class="metric-value" style="color: #c49359;">{today_diff}°C</div>
+            <div class="metric-value" style="color: #c9a859;">{today_diff}°C</div>
             <div class="metric-caption">溫差提示 · 建議外出適度增減衣物</div>
         </div>
         """, unsafe_allow_html=True)
@@ -742,10 +742,10 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                     <span style="display: flex; align-items: center; gap: 6px;">
-                        <span style="display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #c49359; box-shadow: 0 0 4px rgba(196,147,89,0.4);"></span>
+                        <span style="display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #c9a859; box-shadow: 0 0 4px rgba(201,168,89,0.4);"></span>
                         <span style="color: #2b303a; font-weight: 500;">25 - 30°C</span>
                     </span>
-                    <span style="color: #c49359; font-weight: 600; font-size: 11px;">偏暖 🟡</span>
+                    <span style="color: #c9a859; font-weight: 600; font-size: 11px;">偏暖 🟡</span>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                     <span style="display: flex; align-items: center; gap: 6px;">
@@ -960,13 +960,13 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 4px;">
                 <div style="background: #5c7c8a;" title="< 20°C 偏冷"></div>
                 <div style="background: #6b8e73;" title="20-25°C 舒適"></div>
-                <div style="background: #c49359;" title="25-30°C 偏暖"></div>
+                <div style="background: #c9a859;" title="25-30°C 偏暖"></div>
                 <div style="background: #b86b53;" title="> 30°C 炎熱"></div>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.76rem; margin-top: 6px; flex-wrap: wrap; gap: 4px;">
                 <span style="color: #5c7c8a; font-weight: 600;">🔵 &lt; 20°C（偏冷）</span>
                 <span style="color: #6b8e73; font-weight: 600;">🟢 20 - 25°C（舒適）</span>
-                <span style="color: #c49359; font-weight: 600;">🟡 25 - 30°C（偏暖）</span>
+                <span style="color: #c9a859; font-weight: 600;">🟡 25 - 30°C（偏暖）</span>
                 <span style="color: #b86b53; font-weight: 600;">🔴 &gt; 30°C（炎熱）</span>
             </div>
         </div>
@@ -1041,7 +1041,7 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
                 <div style="border-right: 1px solid rgba(0, 0, 0, 0.07);"></div>
                 <div>
                     <div style="font-size: 0.75rem; color: #6c757d;">全週平均溫差</div>
-                    <div style="font-size: 1.15rem; font-weight: 700; color: #c49359;">{round((df_forecast['maxt'] - df_forecast['mint']).mean(), 1)} °C</div>
+                    <div style="font-size: 1.15rem; font-weight: 700; color: #c9a859;">{round((df_forecast['maxt'] - df_forecast['mint']).mean(), 1)} °C</div>
                 </div>
             </div>
         </div>
@@ -1136,9 +1136,9 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
 
     with rc4:
         st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid #c49359;">
+        <div class="glass-card" style="border-top: 3px solid #c9a859;">
             <div class="metric-title">⏱️ 累積雨量統計時段</div>
-            <div class="metric-value" style="color: #c49359; font-size: 1.45rem;">本日即時統計</div>
+            <div class="metric-value" style="color: #c9a859; font-size: 1.45rem;">本日即時統計</div>
             <div class="metric-caption">{rain_data['obs_period']}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -1149,9 +1149,9 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
 
     with col_r_map:
         st.markdown("### 🗺️ 全台即時累積雨量測站分佈圖 (Station Point Map)")
-        st.caption("無點陣圖遮蔽干擾，採用 CartoDB Positron 畫布底圖，依氣象署 O-A0002-001 即時測站觀測渲染莫蘭迪色標圓點。")
+        st.caption("無點陣圖遮蔽干擾，採用 OpenStreetMap 畫布底圖，依氣象署 O-A0002-001 即時測站觀測渲染莫蘭迪色標圓點。")
 
-        # 建立雨量專屬點狀地圖 (location=[23.7, 120.9], zoom_start=7.5，乾淨無浮水印圖資)
+        # 建立雨量專屬點狀地圖 (OpenStreetMap: location=[23.7, 120.9], zoom_start=7.5)
         m_rain = folium.Map(
             location=[23.7, 120.9],
             zoom_start=7.5,
@@ -1162,8 +1162,7 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
             max_lat=26.5,
             min_lon=118.0,
             max_lon=122.5,
-            tiles="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-            attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            tiles="OpenStreetMap"
         )
 
         m_rain.get_root().header.add_child(folium.Element("""
@@ -1213,36 +1212,36 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
                     tooltip=f"<b>{stn_name}</b> ({county}{town}): 0.0 mm (無降雨)"
                 ).add_to(m_rain)
             elif rain_val <= 10.0:
-                # 0.1 ~ 10.0 mm (小雨/微量): Morandi Dusty Blue (#7392a0)
+                # 0.1 ~ 10.0 mm (小雨/微量): Mist Blue (#8faec2)
                 folium.CircleMarker(
                     location=[stn["lat"], stn["lon"]],
                     radius=3.5,
-                    color="#7392a0",
+                    color="#8faec2",
                     weight=1.2,
                     fill=True,
-                    fill_color="#7392a0",
+                    fill_color="#8faec2",
                     fill_opacity=0.75,
                     tooltip=folium.Tooltip(
-                        f"""<div style="background: rgba(255,255,255,0.96); border: 1px solid #7392a0; border-radius: 6px; padding: 3px 8px; font-size: 11.5px; color: #2b303a; box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap;"><b>{stn_name}</b>: <span style="color: #7392a0; font-weight: 700;">{rain_val:.1f} mm</span> <span style="font-size: 10px; color: #7392a0;">(小雨)</span></div>""",
+                        f"""<div style="background: rgba(255,255,255,0.96); border: 1px solid #8faec2; border-radius: 6px; padding: 3px 8px; font-size: 11.5px; color: #2b303a; box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap;"><b>{stn_name}</b>: <span style="color: #8faec2; font-weight: 700;">{rain_val:.1f} mm</span> <span style="font-size: 10px; color: #8faec2;">(小雨)</span></div>""",
                         sticky=True
                     ),
-                    popup=folium.Popup(f"""<b>📍 {stn_name}</b> ({county} {town})<br>🌧️ 本日累積雨量：<b>{rain_val:.1f} mm</b><br>時雨量：{stn.get('past1hr', 0):.1f} mm · 24H: {stn.get('past24hr', 0):.1f} mm""", max_width=220)
+                    popup=folium.Popup(f"""<b>📍 {stn_name}</b> ({county} {town})<br>🌧️ 本日累積雨量：<b style="color: #8faec2;">{rain_val:.1f} mm</b><br>時雨量：{stn.get('past1hr', 0):.1f} mm · 24H: {stn.get('past24hr', 0):.1f} mm""", max_width=220)
                 ).add_to(m_rain)
             elif rain_val <= 50.0:
-                # 10.1 ~ 50.0 mm (中雨): Morandi Sage/Teal (#5c7c8a)
+                # 10.1 ~ 50.0 mm (中雨): Deep Slate Navy (#395b74)
                 folium.CircleMarker(
                     location=[stn["lat"], stn["lon"]],
                     radius=5.0,
-                    color="#5c7c8a",
+                    color="#395b74",
                     weight=1.5,
                     fill=True,
-                    fill_color="#5c7c8a",
+                    fill_color="#395b74",
                     fill_opacity=0.85,
                     tooltip=folium.Tooltip(
-                        f"""<div style="background: rgba(255,255,255,0.96); border: 1px solid #5c7c8a; border-radius: 6px; padding: 3px 8px; font-size: 11.5px; color: #2b303a; box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap;"><b>{stn_name}</b>: <span style="color: #5c7c8a; font-weight: 700;">{rain_val:.1f} mm</span> <span style="font-size: 10px; color: #5c7c8a;">(中雨)</span></div>""",
+                        f"""<div style="background: rgba(255,255,255,0.96); border: 1px solid #395b74; border-radius: 6px; padding: 3px 8px; font-size: 11.5px; color: #2b303a; box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap;"><b>{stn_name}</b>: <span style="color: #395b74; font-weight: 700;">{rain_val:.1f} mm</span> <span style="font-size: 10px; color: #395b74;">(中雨)</span></div>""",
                         sticky=True
                     ),
-                    popup=folium.Popup(f"""<b>📍 {stn_name}</b> ({county} {town})<br>🌧️ 本日累積雨量：<b style="color: #5c7c8a;">{rain_val:.1f} mm</b><br>時雨量：{stn.get('past1hr', 0):.1f} mm · 24H: {stn.get('past24hr', 0):.1f} mm""", max_width=220)
+                    popup=folium.Popup(f"""<b>📍 {stn_name}</b> ({county} {town})<br>🌧️ 本日累積雨量：<b style="color: #395b74;">{rain_val:.1f} mm</b><br>時雨量：{stn.get('past1hr', 0):.1f} mm · 24H: {stn.get('past24hr', 0):.1f} mm""", max_width=220)
                 ).add_to(m_rain)
             elif rain_val <= 130.0:
                 # 50.1 ~ 130.0 mm (大雨): Morandi Terracotta (#c47d66)
@@ -1309,17 +1308,17 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                     <span style="display: flex; align-items: center; gap: 6px;">
-                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #7392a0;"></span>
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #8faec2;"></span>
                         <span style="color: #2b303a; font-weight: 500;">0.1 ~ 10.0 mm</span>
                     </span>
-                    <span style="color: #7392a0; font-weight: 600; font-size: 10px;">小雨/微量</span>
+                    <span style="color: #8faec2; font-weight: 600; font-size: 10px;">小雨/微量</span>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                     <span style="display: flex; align-items: center; gap: 6px;">
-                        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #5c7c8a;"></span>
+                        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #395b74;"></span>
                         <span style="color: #2b303a; font-weight: 500;">10.1 ~ 50.0 mm</span>
                     </span>
-                    <span style="color: #5c7c8a; font-weight: 600; font-size: 10px;">中雨</span>
+                    <span style="color: #395b74; font-weight: 600; font-size: 10px;">中雨</span>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                     <span style="display: flex; align-items: center; gap: 6px;">
@@ -1482,13 +1481,22 @@ else:
     # 颱風即時資訊看板指標卡 (Morandi 溫潤色系)
     tc1, tc2, tc3, tc4 = st.columns(4)
     with tc1:
-        en_label = f" <span style='font-size: 1.05rem; color: #6c757d;'>({cur_typhoon['name_en']})</span>" if cur_typhoon.get('name_en') and cur_typhoon['name_en'] != 'Tropical Depression' else ""
-        num_caption = f"國際編號 #{cur_typhoon['number']} · " if cur_typhoon.get('number') and cur_typhoon['number'] != '準颱風' else ""
+        # 標題規範：若為即時熱帶低壓，直接顯示 "🌀 熱帶性低氣壓 "，完全移除多餘代號
+        ty_raw_name = str(cur_typhoon.get('name_zh', ''))
+        if cur_typhoon.get("is_live") or any(k in ty_raw_name for k in ["熱帶低壓", "熱帶性低氣壓", "準颱風"]):
+            ty_title_display = "🌀 熱帶性低氣壓 "
+            ty_cap_display = "中央氣象署即時定位觀測 · 準颱風"
+        else:
+            en_label = f" <span style='font-size: 1.05rem; color: #6c757d;'>({cur_typhoon['name_en']})</span>" if cur_typhoon.get('name_en') and cur_typhoon['name_en'] != 'Tropical Depression' else ""
+            ty_title_display = f"{ty_raw_name}{en_label}"
+            num_caption = f"國際編號 #{cur_typhoon['number']} · " if cur_typhoon.get('number') and cur_typhoon['number'] != '準颱風' else ""
+            ty_cap_display = f"{num_caption}{cur_typhoon['intensity']}"
+
         st.markdown(f"""
         <div class="glass-card" style="border-top: 3px solid #b86b53;">
             <div class="metric-title">🌀 颱風名稱與強度</div>
-            <div class="metric-value" style="color: #b86b53; font-size: 1.85rem;">{cur_typhoon['name_zh']}{en_label}</div>
-            <div class="metric-caption">{num_caption}{cur_typhoon['intensity']}</div>
+            <div class="metric-value" style="color: #b86b53; font-size: 1.85rem;">{ty_title_display}</div>
+            <div class="metric-caption">{ty_cap_display}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1663,8 +1671,18 @@ else:
             fill_opacity=1.0
         ).add_to(m_typhoon)
 
-        popup_en_str = f" ({cur_typhoon['name_en']})" if cur_typhoon.get('name_en') and cur_typhoon['name_en'] != 'Tropical Depression' else ""
-        popup_badge_str = f"#{cur_typhoon['number']}" if cur_typhoon.get('number') and cur_typhoon['number'] != '準颱風' else cur_typhoon['intensity']
+        is_td_system = cur_typhoon.get("is_live") or any(k in str(cur_typhoon.get('name_zh', '')) for k in ["熱帶低壓", "熱帶性低氣壓", "準颱風"])
+        if is_td_system:
+            popup_header_title = "🌀 熱帶性低氣壓 "
+            popup_badge_str = "準颱風"
+            center_badge_label = "🌀 熱帶性低氣壓 "
+            marker_tooltip = "🌀 熱帶性低氣壓  (點擊展開詳細氣象定位卡)"
+        else:
+            popup_en_str = f" ({cur_typhoon['name_en']})" if cur_typhoon.get('name_en') and cur_typhoon['name_en'] != 'Tropical Depression' else ""
+            popup_header_title = f"🌀 {cur_typhoon['name_zh']}{popup_en_str}"
+            popup_badge_str = f"#{cur_typhoon['number']}" if cur_typhoon.get('number') and cur_typhoon['number'] != '準颱風' else cur_typhoon['intensity']
+            center_badge_label = f"🌀 當前中心 ({cur_typhoon['name_zh']})"
+            marker_tooltip = f"🌀 {cur_typhoon['name_zh']} (點擊展開詳細氣象定位卡)"
 
         center_popup_html = f"""
         <div style="
@@ -1675,7 +1693,7 @@ else:
             line-height: 1.6;
         ">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 0, 0, 0.08); padding-bottom: 6px; margin-bottom: 8px;">
-                <span style="font-weight: 800; font-size: 16px; color: #b86b53;">🌀 {cur_typhoon['name_zh']}{popup_en_str}</span>
+                <span style="font-weight: 800; font-size: 16px; color: #b86b53;">{popup_header_title}</span>
                 <span style="font-size: 11px; padding: 2px 7px; border-radius: 999px; background: rgba(184,107,83,0.15); color: #b86b53; border: 1px solid #b86b53;">{popup_badge_str}</span>
             </div>
             <div style="font-size: 13px; color: #2b303a;">
@@ -1705,14 +1723,14 @@ else:
             margin-top: -12px;
             letter-spacing: -0.2px;
             cursor: pointer;
-        ">🌀 當前中心 ({cur_typhoon['name_zh']})</div>
+        ">{center_badge_label}</div>
         """
 
         folium.Marker(
             location=cur_pt,
             icon=folium.DivIcon(html=center_badge_html),
             popup=folium.Popup(center_popup_html, max_width=320),
-            tooltip=f"🌀 {cur_typhoon['name_zh']} (點擊展開詳細氣象定位卡)"
+            tooltip=marker_tooltip
         ).add_to(m_typhoon)
 
         # 6. 地圖右上角浮動路徑圖例 (Morandi Light Palette)
