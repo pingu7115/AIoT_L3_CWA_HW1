@@ -1149,9 +1149,9 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
 
     with col_r_map:
         st.markdown("### 🗺️ 全台即時累積雨量測站分佈圖 (Station Point Map)")
-        st.caption("無點陣圖遮蔽干擾，採用 OpenStreetMap 畫布底圖，依氣象署 O-A0002-001 即時測站觀測渲染莫蘭迪色標圓點。")
+        st.caption("無點陣圖遮蔽干擾，採用極簡淺灰無地名底圖，依氣象署 O-A0002-001 即時測站觀測渲染莫蘭迪色標圓點。")
 
-        # 建立雨量專屬點狀地圖 (OpenStreetMap: location=[23.7, 120.9], zoom_start=7.5)
+        # 建立雨量專屬點狀地圖 (Carto Voyager 極簡無地名淺色底圖: location=[23.7, 120.9], zoom_start=7.5)
         m_rain = folium.Map(
             location=[23.7, 120.9],
             zoom_start=7.5,
@@ -1162,7 +1162,8 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
             max_lat=26.5,
             min_lon=118.0,
             max_lon=122.5,
-            tiles="OpenStreetMap"
+            tiles="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png",
+            attr='&copy; <a href="https://carto.com/">CARTO</a>'
         )
 
         m_rain.get_root().header.add_child(folium.Element("""
