@@ -3,15 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台灣氣象即時觀測與 GIS 綜合儀表板</title>
+    <title>台灣即時氣象</title>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <!-- Chart.js for 7-day forecast graph -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -19,149 +13,91 @@
     <!-- Map Container -->
     <div id="map"></div>
 
-    <!-- Top Navigation Bar -->
-    <header class="top-navbar">
-        <div class="brand">
-            <span class="brand-icon">🌤️</span>
-            <span class="brand-title">台灣氣象 GIS 儀表板</span>
-            <span class="live-pulse"><span class="pulse-dot"></span>CWA 即時連線</span>
+    <!-- Top Left Dashboard / Stats Panel -->
+    <div class="panel top-left-panel">
+        <div class="title-bar">
+            <h1>台灣即時氣象</h1>
+            <span class="badge">資料庫</span>
         </div>
-        <nav class="nav-tabs" id="main-nav-tabs">
-            <button class="nav-tab active" data-tab="temp">🌡️ 氣溫預報</button>
-            <button class="nav-tab" data-tab="humidity">💧 濕度與體感</button>
-            <button class="nav-tab" data-tab="uv">☀️ 紫外線</button>
-            <button class="nav-tab" data-tab="rain">🌧️ 即時雨量</button>
-            <button class="nav-tab" data-tab="typhoon">🌀 颱風路徑</button>
-        </nav>
-    </header>
-
-    <!-- Left Main Dashboard Panel (Glassmorphism) -->
-    <aside class="panel left-panel">
-        <div class="panel-header">
-            <div class="county-select-box">
-                <label for="county-select">選擇縣市觀測</label>
-                <select id="county-select">
-                    <option value="ALL">全台灣概覽 (22 縣市)</option>
-                    <option value="臺北市">臺北市</option>
-                    <option value="新北市">新北市</option>
-                    <option value="基隆市">基隆市</option>
-                    <option value="桃園市">桃園市</option>
-                    <option value="新竹市">新竹市</option>
-                    <option value="新竹縣">新竹縣</option>
-                    <option value="苗栗縣">苗栗縣</option>
-                    <option value="臺中市">臺中市</option>
-                    <option value="彰化縣">彰化縣</option>
-                    <option value="南投縣">南投縣</option>
-                    <option value="雲林縣">雲林縣</option>
-                    <option value="嘉義市">嘉義市</option>
-                    <option value="嘉義縣">嘉義縣</option>
-                    <option value="臺南市">臺南市</option>
-                    <option value="高雄市">高雄市</option>
-                    <option value="屏東縣">屏東縣</option>
-                    <option value="宜蘭縣">宜蘭縣</option>
-                    <option value="花蓮縣">花蓮縣</option>
-                    <option value="臺東縣">臺東縣</option>
-                    <option value="澎湖縣">澎湖縣</option>
-                    <option value="金門縣">金門縣</option>
-                    <option value="連江縣">連江縣</option>
-                </select>
-            </div>
-            <div class="meta-info">
-                <span>更新時間：<strong id="obs-time">載入中...</strong></span>
-                <span class="source-badge">CWA Open Data</span>
-            </div>
+        
+        <div class="meta-info">
+            <p>觀測時間：<span id="obs-time">載入中...</span></p>
+            <p>資料來源：CWA F-D0047-091</p>
+            <p>本次讀取：資料庫快取 (未呼叫 API)</p>
+            <p>測站數量：<span id="loc-count">22</span> 縣市</p>
         </div>
 
-        <!-- Submode Toggles (Dynamic based on Tab) -->
-        <div class="submode-container" id="submode-container" style="display: none;">
-            <!-- Injected via JavaScript -->
-        </div>
-
-        <!-- 4 Stat Metric Cards -->
-        <div class="stat-grid" id="stat-grid">
-            <div class="stat-card" id="card-1">
-                <span class="stat-title" id="card-title-1">最高溫</span>
-                <span class="stat-value" id="card-val-1">-</span>
-                <span class="stat-sub" id="card-sub-1">-</span>
+        <!-- 2x2 Stat Grid -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <span class="stat-title">最高溫</span>
+                <span class="stat-value"><span id="max-temp">-</span> <small>°C</small></span>
+                <span class="stat-sub" id="max-temp-loc">-</span>
             </div>
-            <div class="stat-card" id="card-2">
-                <span class="stat-title" id="card-title-2">最低溫</span>
-                <span class="stat-value" id="card-val-2">-</span>
-                <span class="stat-sub" id="card-sub-2">-</span>
+            <div class="stat-card">
+                <span class="stat-title">最低溫</span>
+                <span class="stat-value"><span id="min-temp">-</span> <small>°C</small></span>
+                <span class="stat-sub" id="min-temp-loc">-</span>
             </div>
-            <div class="stat-card" id="card-3">
-                <span class="stat-title" id="card-title-3">平均溫</span>
-                <span class="stat-value" id="card-val-3">-</span>
-                <span class="stat-sub" id="card-sub-3">-</span>
+            <div class="stat-card">
+                <span class="stat-title">最高降雨機率</span>
+                <span class="stat-value"><span id="max-rain">-</span> <small>%</small></span>
+                <span class="stat-sub" id="max-rain-loc">-</span>
             </div>
-            <div class="stat-card" id="card-4">
-                <span class="stat-title" id="card-title-4">氣候現象</span>
-                <span class="stat-value text-val" id="card-val-4">-</span>
-                <span class="stat-sub" id="card-sub-4">多數地區</span>
+            <div class="stat-card">
+                <span class="stat-title">天氣現象</span>
+                <span class="stat-value-text" id="common-weather">-</span>
+                <span class="stat-sub">多數地區</span>
             </div>
         </div>
+    </div>
 
-        <!-- Dynamic Context Panel (Chart or Advisory List) -->
-        <div class="context-panel" id="context-panel">
-            <div class="context-title" id="context-title">📈 7 天氣溫預報趨勢 (MinT vs MaxT)</div>
-            <div class="chart-wrapper" id="chart-wrapper">
-                <canvas id="forecastChart"></canvas>
-            </div>
-            <div class="detail-list" id="detail-list" style="display: none;"></div>
-        </div>
-
-        <!-- Guidance / Health Advice Banner -->
-        <div class="advice-card" id="advice-card">
-            <div class="advice-icon" id="advice-icon">💡</div>
-            <div class="advice-text">
-                <div class="advice-heading" id="advice-heading">生活天氣指引</div>
-                <div class="advice-body" id="advice-body">日夜溫差適中，外出攜帶薄外套，注意防曬與補充水分。</div>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Right Map Controls -->
+    <!-- Right Control Sidebar -->
     <div class="panel right-panel">
-        <div class="control-group">
-            <div class="control-title">地圖底圖</div>
-            <div class="map-switcher">
-                <button class="switcher-btn active" id="btn-base-dark">🌙 深色</button>
-                <button class="switcher-btn" id="btn-base-street">🗺️ 街道圖</button>
-            </div>
+        <div class="layer-group">
+            <div class="layer-title">圖層</div>
+            <button class="layer-btn active" id="btn-temp">🌡️ 氣溫</button>
+            <button class="layer-btn" id="btn-rain">🌧️ 降雨機率</button>
         </div>
-
-        <div class="control-group">
+        
+        <div class="layer-group">
             <label class="checkbox-container">
-                <input type="checkbox" checked id="toggle-marker-labels">
+                <input type="checkbox" checked id="toggle-marker">
                 <span class="checkmark"></span>
-                地圖數值膠囊標籤
+                氣溫/機率 數值標籤
             </label>
         </div>
 
-        <button class="btn-action" id="btn-recenter">📌 重新定位全台</button>
+        <div class="layer-group">
+            <div class="layer-title">底圖</div>
+            <div class="map-switcher">
+                <button class="switcher-btn active" id="base-dark">深色</button>
+                <button class="switcher-btn" id="base-street">街道圖</button>
+            </div>
+        </div>
+        
+        <button class="btn-primary" id="btn-locate">📌 重新定位全台</button>
     </div>
 
-    <!-- Bottom Floating Legend -->
-    <div class="legend-panel" id="legend-panel">
-        <div class="legend-header">
-            <span class="legend-title" id="legend-title">氣溫分級 (°C)</span>
-            <span class="legend-subtitle" id="legend-subtitle">全台即時觀測</span>
-        </div>
+    <!-- Bottom Legend -->
+    <div class="legend-panel">
+        <div class="legend-title" id="legend-title">°C</div>
         <div class="legend-gradient" id="legend-gradient"></div>
         <div class="legend-labels" id="legend-labels">
-            <span>5°C</span>
-            <span>15°C</span>
-            <span>20°C</span>
-            <span>24°C</span>
-            <span>28°C</span>
-            <span>32°C</span>
-            <span>36°C</span>
+            <span>5</span>
+            <span>10</span>
+            <span>15</span>
+            <span>20</span>
+            <span>24</span>
+            <span>28</span>
+            <span>32</span>
+            <span>36</span>
         </div>
     </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Custom Application Logic -->
+    <!-- Custom JS -->
     <script src="script.js"></script>
 </body>
 </html>

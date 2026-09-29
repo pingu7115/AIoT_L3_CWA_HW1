@@ -152,11 +152,13 @@ python -m streamlit run app.py
 ```
 
 ### Gate 3 PASS Checklist：
-- [x] [PASS] Local Map displaying Taiwan (Carto Dark / OSM)
-- [x] [PASS] Locations matched and parsed to map (22 縣市座標全匹配)
-- [x] [PASS] Popups showing correct Weather, Temp & Rain
-- [x] [PASS] Data successfully read from SQLite Gate 2 DB (`/api/weather` 純 SQL 查詢)
-- [x] [PASS] Interactive map fully built with Glassmorphism UI & Layer switcher
+```text
+[PASS] Local Map displaying Taiwan
+[PASS] Locations matched and parsed to map
+[PASS] Popups showing correct Weather & Temperature
+[PASS] Data successfully read from SQLite Gate 2 DB
+[PASS] Streamlit Interactive map fully built
+```
 
 ---
 
@@ -164,40 +166,21 @@ python -m streamlit run app.py
 
 - 已確認 `.env` 被 `.gitignore` 排除。
 - 在 commit history 中沒有暴露 API Key (100% masking)。
-- 模組化代碼、GeoJSON 邊界、資料庫建置腳本全數推送至 GitHub `main` 分支。
-- **GitHub 專案倉庫**：[https://github.com/pingu7115/AIoT_L3_CWA_HW1](https://github.com/pingu7115/AIoT_L3_CWA_HW1)
-
-### Gate 4 PASS Checklist：
-- [x] [PASS] Git repository initialized and clean
-- [x] [PASS] `.gitignore` configured (`.env`, `.venv`, `__pycache__`, etc.)
-- [x] [PASS] No secrets or API keys in git history
-- [x] [PASS] Pushed to GitHub main branch
-- [x] [PASS] README Five Gates tracker fully documented
+- README 五大 Gate Tracker 自動化更新並 commit。
 
 ---
 
 ## Gate 5 — Vercel Auto Deployment ✅ PASS
 
-- **驗證日期**：2026-09-29
-- 為了使專案能夠在 Vercel 順利運行並達成無伺服器（Serverless）自動發布，已建立標準配置：
-  - **`vercel.json`**：設定 `@vercel/python` building 與 routing（將 `/api/weather` 與靜態路由導向 `api/index.py`）。
-  - **`api/index.py`**：Vercel Serverless Function 專屬進入點，負責 binding Flask `app`。
-  - **Absolute Pathing & Read-Only SQLite**：Flask 從 `server.py` 抓取 `data.db` 採用 `file:data.db?mode=ro` 絕對路徑唯讀模式，完美避開 Vercel ephemeral filesystem 唯讀限制與路徑錯亂。
-  - **雙軌本機運行相容**：
-    - 啟動標準 Flask Web GIS：`python server.py`（開啟 `http://127.0.0.1:5000`）
-    - 啟動進階 Streamlit 互動儀表板：`python -m streamlit run app.py`（開啟 `http://localhost:8501`）
+**驗證日期：** 2026-09-29  
+為了使 Python Flask app 能夠在 Vercel 順利運行，已經建立了正確的 Serverless 配置：
 
-### 部署流程：
-1. 將本程式碼 Commit 後，Push 推送至遠端 GitHub `main` 分支。
-2. 登入 [Vercel](https://vercel.com/)，點選 **Add New Project** 並 Import 您的 GitHub 倉庫 `AIoT_L3_CWA_HW1`。
-3. 點選 **Deploy**，Vercel 將自動觸發 Build 並指派公開網址（例如 `https://<your-project>.vercel.app`）。
+1. **`vercel.json`** : 設定 `@vercel/python` building routing。
+2. **`api/index.py`** : Vercel Serverless Function 專屬進入點，負責 binding Flask。
+3. **`Absolute Pathing`** : 修改了 Flask 從 `server.py` 抓取 `data.db` 與 `static/` 資料夾的邏輯為 `os.path.abspath(__file__)` 絕對路徑，避開 Vercel ephemeral filesystem 路徑錯亂。
 
-### Gate 5 PASS Checklist：
-- [x] [PASS] `vercel.json` routing configuration created
-- [x] [PASS] `api/index.py` serverless function entrypoint tested
-- [x] [PASS] SQLite read-only mode (`mode=ro`) configured for Vercel
-- [x] [PASS] Static assets correctly bound to Flask server
-- [x] [PASS] Cloud platform deployment ready on Vercel
+**部署流程：** 將本程式碼 Commit 後，Vercel 將自動透過 GitHub 觸發 Build。  
+**註：** 按照規範，Local `data.db` 隨同部署，做為暫時性的唯讀資料庫呈現，未連結外部 Cloud DB。
 
 ---
 
