@@ -76,11 +76,11 @@ def get_cwa_api_key():
 def get_uv_category(uv_val):
     """
     依據中央氣象署與 WHO 國際標準之 5 階紫外線分級：
-    0~2: 微量級 (Low)
-    3~5: 中量級 (Moderate)
-    6~7: 高量級 (High)
-    8~10: 過量級 (Very High)
-    11+: 危險級 (Extreme)
+    0~2: 微量級 / 安全 (藍色 #2b82d9)
+    3~5: 中量級 / 一般 (綠色 #2a9d8f)
+    6~7: 高量級 / 警戒 (黃色 #e5a93c)
+    8~10: 過量級 / 極高 (紅色 #c94a4a)
+    11+: 危險級 / 危險 (紫色 #7209b7)
     """
     if uv_val is None:
         return {
@@ -95,39 +95,39 @@ def get_uv_category(uv_val):
     uv = float(uv_val)
     if uv <= 2.9:
         return {
-            "level": "低量級",
+            "level": "微量級 (安全)",
             "range": "0 - 2",
-            "color": "#52796f",     # 莫蘭迪鼠尾草綠
-            "icon": "🟢",
+            "color": "#2b82d9",     # 安全藍色
+            "icon": "🔵",
             "sunburn_time": "安全時間約 60 分鐘以上",
             "advice": "可安心從事戶外活動，外出建議佩戴太陽眼鏡與帽子。",
             "spf_advice": "SPF15+ / PA+"
         }
     elif uv <= 5.9:
         return {
-            "level": "中量級",
+            "level": "中量級 (一般)",
             "range": "3 - 5",
-            "color": "#d4a373",     # 莫蘭迪琥珀暖金
-            "icon": "🟡",
+            "color": "#2a9d8f",     # 一般綠色
+            "icon": "🟢",
             "sunburn_time": "曬傷時間約 30 至 45 分鐘",
             "advice": "出門建議佩戴遮陽帽、太陽眼鏡，並塗抹防曬乳液，適時尋找陰涼處。",
             "spf_advice": "SPF30 / PA++"
         }
     elif uv <= 7.9:
         return {
-            "level": "高量級",
+            "level": "高量級 (警戒)",
             "range": "6 - 7",
-            "color": "#e76f51",     # 莫蘭迪陶瓦橘
-            "icon": "🟠",
+            "color": "#e5a93c",     # 警戒黃色
+            "icon": "🟡",
             "sunburn_time": "曬傷時間約 20 至 30 分鐘",
             "advice": "上午 10 時至下午 2 時盡量減少戶外曝曬，外出必備防曬乳、長袖衣物與遮陽傘。",
             "spf_advice": "SPF30+ / PA+++"
         }
     elif uv <= 10.9:
         return {
-            "level": "過量級",
+            "level": "過量級 (極高)",
             "range": "8 - 10",
-            "color": "#c94a4a",     # 莫蘭迪磚緋紅
+            "color": "#c94a4a",     # 極高紅色
             "icon": "🔴",
             "sunburn_time": "曬傷時間約 15 至 20 分鐘",
             "advice": "紫外線強度極高！中午期間盡量避免外出，出門需全面防曬（防曬霜、帽子、太陽眼鏡、遮陽傘）。",
@@ -135,9 +135,9 @@ def get_uv_category(uv_val):
         }
     else:
         return {
-            "level": "危險級",
+            "level": "危險級 (危險)",
             "range": "11+",
-            "color": "#7209b7",     # 莫蘭迪深紫羅蘭
+            "color": "#7209b7",     # 危險紫色
             "icon": "🟣",
             "sunburn_time": "極易曬傷！安全時間小於 15 分鐘",
             "advice": "達危險級防護門檻！非必要嚴禁在戶外曝曬，室外活動務必穿著長袖、帽子及高係數防曬產品。",
@@ -145,7 +145,7 @@ def get_uv_category(uv_val):
         }
 
 def get_uv_color(uv_val):
-    """取得對應紫外線數值的莫蘭迪代表色碼"""
+    """取得對應紫外線數值的代表色碼"""
     return get_uv_category(uv_val)["color"]
 
 def fetch_cwa_uv_stations(api_key=None):
@@ -179,6 +179,10 @@ def fetch_cwa_uv_stations(api_key=None):
                     except ValueError:
                         uv_float = 0.0
 
+                    # 排除儀器故障、負值 (-99.0) 或異常數值
+                    if uv_float < 0:
+                        continue
+
                     meta = UV_STATIONS_META.get(sid, {
                         "name": f"測站 {sid}",
                         "county": "未知",
@@ -210,7 +214,6 @@ def fetch_cwa_uv_stations(api_key=None):
     if not stations:
         print("[INFO] 使用離線標準測站備援資料...")
         for sid, meta in UV_STATIONS_META.items():
-            # 依地理分佈預設合理數值 (8.0 ~ 10.0)
             mock_uv = 9.0 if "臺北" in meta["name"] or "新北" in meta["name"] else (10.0 if "東" in meta["county"] or "南" in meta["county"] else 8.0)
             cat = get_uv_category(mock_uv)
             stations.append({
@@ -247,6 +250,73 @@ def fetch_cwa_uv_stations(api_key=None):
         "total_stations": len(stations),
         "is_live": True
     }
+
+def get_county_realtime_uv_map(stations_list):
+    """
+    從局屬氣象測站即時實測觀測資料，計算全台 22 縣市當前即時偵測紫外線指數
+    若該縣市轄內有多處測站，取即時實測最大值 (Peak Detection) 作為該縣市當前代表強度
+    若該縣市無獨立測站 (如新竹市、嘉義縣)，對應至鄰近核心氣象站實測
+    """
+    county_stations = {}
+    for st in stations_list:
+        if st.get("uv_index", -1) >= 0:
+            c = st["county"]
+            county_stations.setdefault(c, []).append(st)
+
+    NEIGHBOR_MAP = {
+        "新竹市": "新竹縣",
+        "嘉義縣": "嘉義市"
+    }
+
+    ALL_COUNTIES = [
+        "基隆市", "臺北市", "新北市", "桃園市", "新竹市", "新竹縣", "苗栗縣",
+        "臺中市", "彰化縣", "南投縣", "雲林縣", "嘉義市", "嘉義縣", "臺南市",
+        "高雄市", "屏東縣", "宜蘭縣", "花蓮縣", "臺東縣", "澎湖縣", "金門縣", "連江縣"
+    ]
+
+    result = {}
+    for c in ALL_COUNTIES:
+        target_c = c
+        if target_c not in county_stations and target_c in NEIGHBOR_MAP:
+            target_c = NEIGHBOR_MAP[target_c]
+        
+        st_list = county_stations.get(target_c, [])
+        if st_list:
+            best_st = max(st_list, key=lambda x: x["uv_index"])
+            cat = get_uv_category(best_st["uv_index"])
+            result[c] = {
+                "regionName": c,
+                "uvi": best_st["uv_index"],
+                "exposureLevel": cat["level"],
+                "color": cat["color"],
+                "icon": cat["icon"],
+                "sunburn_time": cat["sunburn_time"],
+                "advice": cat["advice"],
+                "spf_advice": cat["spf_advice"],
+                "primary_station": best_st["name"],
+                "primary_town": best_st["town"],
+                "stations": st_list,
+                "is_interpolated": (target_c != c),
+                "source_desc": f"局屬{best_st['name']}氣象站 ({best_st['town']}) 即時實測" if target_c == c else f"鄰近{best_st['name']}氣象站實測推估"
+            }
+        else:
+            cat = get_uv_category(8.0)
+            result[c] = {
+                "regionName": c,
+                "uvi": 8.0,
+                "exposureLevel": cat["level"],
+                "color": cat["color"],
+                "icon": cat["icon"],
+                "sunburn_time": cat["sunburn_time"],
+                "advice": cat["advice"],
+                "spf_advice": cat["spf_advice"],
+                "primary_station": "區域推估",
+                "primary_town": "",
+                "stations": [],
+                "is_interpolated": True,
+                "source_desc": "區域推估"
+            }
+    return result
 
 def parse_uv_from_weather_json(json_path="weather_data.json"):
     """
