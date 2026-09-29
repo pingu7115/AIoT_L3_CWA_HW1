@@ -168,7 +168,7 @@ st.markdown("""
         color: #b86b53;
     }
 
-    .glass-card {
+    .glass-card, .metric-card {
         background: #ffffff;
         border: 1px solid rgba(0, 0, 0, 0.07);
         border-radius: 16px;
@@ -177,13 +177,13 @@ st.markdown("""
         transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     }
 
-    .glass-card:hover {
+    .glass-card:hover, .metric-card:hover {
         border-color: rgba(92, 124, 138, 0.3);
         box-shadow: 0 8px 24px rgba(60, 50, 40, 0.09);
         transform: translateY(-2px);
     }
 
-    .metric-title {
+    .metric-title, .metric-label {
         font-size: 0.82rem;
         font-weight: 600;
         text-transform: uppercase;
@@ -1921,36 +1921,36 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
     m1, m2, m3, m4 = st.columns(4)
     with m1:
         st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-label">☀️ 全台最高實測紫外線</div>
-            <div class="metric-value" style="color: {cat_max['color']};">{max_st_uv} <span style="font-size: 1rem; font-weight: 600;">UVI</span></div>
+        <div class="glass-card" style="border-top: 3px solid {cat_max['color']};">
+            <div class="metric-title">☀️ 全台最高實測紫外線</div>
+            <div class="metric-value" style="color: {cat_max['color']};">{max_st_uv} <span style="font-size: 1.1rem; font-weight: 600;">UVI</span></div>
             <div class="metric-caption">測站：<b>{max_st_name}</b> ({cat_max['icon']} {cat_max['level']})</div>
         </div>
         """, unsafe_allow_html=True)
 
     with m2:
         st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-label">📊 測站平均紫外線指數</div>
-            <div class="metric-value" style="color: {cat_avg['color']};">{avg_st_uv} <span style="font-size: 1rem; font-weight: 600;">UVI</span></div>
+        <div class="glass-card" style="border-top: 3px solid {cat_avg['color']};">
+            <div class="metric-title">📊 測站平均紫外線指數</div>
+            <div class="metric-value" style="color: {cat_avg['color']};">{avg_st_uv} <span style="font-size: 1.1rem; font-weight: 600;">UVI</span></div>
             <div class="metric-caption">全島均值 ({cat_avg['icon']} {cat_avg['level']})</div>
         </div>
         """, unsafe_allow_html=True)
 
     with m3:
         st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-label">⚠️ 過量/危險警戒縣市</div>
-            <div class="metric-value" style="color: #c94a4a;">{high_uv_count} <span style="font-size: 1rem; font-weight: 600;">縣市</span></div>
+        <div class="glass-card" style="border-top: 3px solid #c94a4a;">
+            <div class="metric-title">⚠️ 過量/危險警戒縣市</div>
+            <div class="metric-value" style="color: #c94a4a;">{high_uv_count} <span style="font-size: 1.1rem; font-weight: 600;">縣市</span></div>
             <div class="metric-caption">指數 ≥ 8.0 強烈曝曬警戒</div>
         </div>
         """, unsafe_allow_html=True)
 
     with m4:
         st.markdown("""
-        <div class="metric-card">
-            <div class="metric-label">🛡️ 今日外出防曬建議</div>
-            <div class="metric-value" style="color: #5c7c8a; font-size: 1.45rem;">SPF50+ / PA++++</div>
+        <div class="glass-card" style="border-top: 3px solid #5c7c8a;">
+            <div class="metric-title">🛡️ 今日外出防曬建議</div>
+            <div class="metric-value" style="color: #5c7c8a; font-size: 1.65rem;">SPF50+ / PA++++</div>
             <div class="metric-caption">10:00-14:00 盡量減少烈日曝曬</div>
         </div>
         """, unsafe_allow_html=True)
@@ -2283,15 +2283,6 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
         </div>
         """, unsafe_allow_html=True)
 
-        # 快速切換縣市按鈕標籤
-        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
-        st.markdown("<div style='font-size: 0.82rem; font-weight: 600; color: #2b303a; margin-bottom: 6px;'>📍 快速切換縣市：</div>", unsafe_allow_html=True)
-        pill_cols = st.columns(6)
-        for i, c_btn in enumerate(sorted_regions[:18]):
-            with pill_cols[i % 6]:
-                if st.button(c_btn, key=f"uv_pill_{c_btn}", width="stretch", type="primary" if c_btn == selected_uv_region else "secondary"):
-                    st.session_state["selected_uv_region"] = c_btn
-                    st.rerun()
 
     with col_details:
         # 縣市選擇下拉選單
