@@ -16,7 +16,8 @@ if hasattr(sys.stderr, "reconfigure"):
 
 from fetch_weather import fetch_cwa_weather
 from parse_weather import parse_weather_json
-from database import insert_forecasts, verify_database
+from database import insert_forecasts, insert_uv_forecasts, verify_database
+from uv_data import parse_uv_from_weather_json
 
 def run_pipeline(api_key=None, force_mock=False):
     print("=" * 65)
@@ -45,6 +46,9 @@ def run_pipeline(api_key=None, force_mock=False):
     # 3. 存入資料庫
     print("\n[階段 3: 資料庫存儲 Data Storage]")
     insert_forecasts(clean_data, "data.db")
+    uv_data = parse_uv_from_weather_json("weather_data.json")
+    if uv_data:
+        insert_uv_forecasts(uv_data, "data.db")
 
     # 4. 驗證資料庫
     print("\n[階段 3.1: 資料庫驗證]")

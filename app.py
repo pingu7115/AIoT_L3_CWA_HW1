@@ -42,6 +42,14 @@ from database import (
 from main import run_pipeline
 from typhoon_data import fetch_cwa_live_typhoon, TYPHOON_CATALOG
 from rainfall_data import fetch_cwa_rainfall_data, get_rain_color
+from uv_data import (
+    fetch_cwa_uv_stations,
+    get_uv_category,
+    get_uv_color,
+    get_latest_uv_by_counties,
+    get_uv_forecast_for_region,
+    UV_STATIONS_META
+)
 
 GEOJSON_FILE = "taiwan_counties.geojson"
 
@@ -54,6 +62,11 @@ def get_cached_live_typhoon():
 def get_cached_rainfall():
     """快取 5 分鐘避免頻繁呼叫 CWA 雨量 API"""
     return fetch_cwa_rainfall_data()
+
+@st.cache_data(ttl=300)
+def get_cached_uv_stations():
+    """快取 5 分鐘避免頻繁呼叫 CWA 紫外線測站 API"""
+    return fetch_cwa_uv_stations()
 
 # -------------------------------------------------------------
 # 頁面配置 (Warm Beige Theme Default)
@@ -509,8 +522,14 @@ with st.sidebar:
     if st.button("🌡️ 顯示各縣市溫度分佈", key="side_btn_temp", width="stretch", type="primary" if cur_layer == "🌡️ 各縣市溫度分佈" else "secondary"):
         st.session_state["active_layer"] = "🌡️ 各縣市溫度分佈"
         st.rerun()
+    if st.button("🌧️ 顯示全台累積雨量", key="side_btn_rain", width="stretch", type="primary" if cur_layer == "🌧️ 全台即時累積雨量圖" else "secondary"):
+        st.session_state["active_layer"] = "🌧️ 全台即時累積雨量圖"
+        st.rerun()
     if st.button("🌀 顯示颱風路徑動態", key="side_btn_ty", width="stretch", type="primary" if cur_layer == "🌀 颱風路徑動態" else "secondary"):
         st.session_state["active_layer"] = "🌀 颱風路徑動態"
+        st.rerun()
+    if st.button("☀️ 顯示紫外線指數分佈", key="side_btn_uv", width="stretch", type="primary" if cur_layer == "☀️ 紫外線指數觀測與預報" else "secondary"):
+        st.session_state["active_layer"] = "☀️ 紫外線指數觀測與預報"
         st.rerun()
 
     st.markdown("---")
@@ -520,6 +539,7 @@ with st.sidebar:
     - ✅ **涵蓋全台 22 縣市與 6 大分區**
     - ✅ **GeoJSON 面狀熱力著色 (Choropleth)**
     - ✅ **西北太平洋颱風路徑與 70% 潛勢圈**
+    - ✅ **全台 30 測站紫外線實測與一週預報**
     - ✅ **消除所有廢棄警告 (width="stretch")**
     """)
 
@@ -532,13 +552,13 @@ st.markdown("""
         <span style="font-size: 1.3rem;">🌐</span>
         <div>
             <div style="font-weight: 700; font-size: 0.95rem; color: #2b303a;">視覺化圖層切換 (Layer Selector)</div>
-            <div style="font-size: 0.8rem; color: #6c757d;">請點選切換「各縣市溫度分佈」、「全台即時累積雨量圖」或「颱風路徑與潛勢動態」</div>
+            <div style="font-size: 0.8rem; color: #6c757d;">請點選切換「各縣市溫度分佈」、「全台即時累積雨量圖」、「颱風路徑動態」或「紫外線指數觀測與預報」</div>
         </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-LAYER_OPTIONS = ["🌡️ 各縣市溫度分佈", "🌧️ 全台即時累積雨量圖", "🌀 颱風路徑動態"]
+LAYER_OPTIONS = ["🌡️ 各縣市溫度分佈", "🌧️ 全台即時累積雨量圖", "🌀 颱風路徑動態", "☀️ 紫外線指數觀測與預報"]
 
 if "active_layer" not in st.session_state or st.session_state["active_layer"] not in LAYER_OPTIONS:
     st.session_state["active_layer"] = "🌡️ 各縣市溫度分佈"
@@ -1420,9 +1440,7 @@ elif selected_layer == "🌧️ 全台即時累積雨量圖":
     st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
 
 # =============================================================
-# 圖層 3: 🌀 颱風路徑動態 (Typhoon / Tropical Cyclone Forecast View)
-# =============================================================
-else:
+elif selected_layer == "🌀 颱風路徑動態":
     # 觀測目標切換器 (支援氣象署即時 API 與近期重大颱風)
     ty_keys = list(TYPHOON_CATALOG.keys())
     ty_titles = {k: TYPHOON_CATALOG[k]["title"] for k in ty_keys}
@@ -1863,6 +1881,615 @@ else:
         st.markdown("""
         <div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 12px; padding: 12px; margin-top: 10px; font-size: 0.82rem; color: #6c757d; box-shadow: 0 4px 12px rgba(60, 50, 40, 0.05);">
             🛡️ <b>防颱重點提醒</b>：沿海地區請慎防長浪與風暴潮倒灌；山區需留意落石與土石流，低窪地區請提早做好排水與沙包防汛準備。
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
+
+# =============================================================
+# 圖層 4: ☀️ 紫外線指數觀測與預報 (UV Index Observation & Forecast)
+# =============================================================
+elif selected_layer == "☀️ 紫外線指數觀測與預報":
+    # 讀取本地 SQLite 資料庫與 CWA 測站資料
+    with st.spinner("正在載入全台紫外線觀測與一週預報數據..."):
+        uv_stations_data = get_cached_uv_stations()
+        county_uv_map = get_latest_uv_by_counties()
+
+    # 取得排序區域清單
+    all_db_regions = get_distinct_regions(DEFAULT_DB_PATH)
+    sorted_regions = [r for r in PREFER_ORDER if r in all_db_regions]
+    for r in all_db_regions:
+        if r not in sorted_regions:
+            sorted_regions.append(r)
+
+    if "selected_uv_region" not in st.session_state or st.session_state["selected_uv_region"] not in sorted_regions:
+        st.session_state["selected_uv_region"] = "臺北市" if "臺北市" in sorted_regions else sorted_regions[0]
+
+    selected_uv_region = st.session_state["selected_uv_region"]
+
+    # 數據統計
+    max_station = uv_stations_data.get("max_station", {})
+    max_st_uv = max_station.get("uv_index", 0.0) if max_station else 0.0
+    max_st_name = max_station.get("name", "觀測中") if max_station else "觀測中"
+    avg_st_uv = uv_stations_data.get("avg_uv", 0.0)
+    obs_date = uv_stations_data.get("obs_date", "")
+
+    # 各縣市預報統計
+    high_uv_count = 0
+    for c_info in county_uv_map.values():
+        if c_info.get("uvi", 0) >= 8.0:
+            high_uv_count += 1
+
+    # 頂部即時連線橫幅
+    st.markdown(f"""
+    <div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; box-shadow: 0 4px 12px rgba(60, 50, 40, 0.05);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.25rem;">☀️</span>
+            <div>
+                <div style="color: #2b303a; font-weight: 700; font-size: 0.92rem;">中央氣象署 (CWA) 全台紫外線即時監測與 7 天預報系統</div>
+                <div style="color: #6c757d; font-size: 0.8rem;">資料集: O-A0005-001 (各站實測最大值) · F-D0047-091 (縣市預報) · 觀測日期: <b>{obs_date}</b></div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <span class="pill-badge green">局屬 30 測站連線</span>
+            <span class="pill-badge">22 縣市 SQLite 預報</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 頂部 4 大重點指標卡片
+    cat_max = get_uv_category(max_st_uv)
+    cat_avg = get_uv_category(avg_st_uv)
+
+    m1, m2, m3, m4 = st.columns(4)
+    with m1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">☀️ 全台最高實測紫外線</div>
+            <div class="metric-value" style="color: {cat_max['color']};">{max_st_uv} <span style="font-size: 1rem; font-weight: 600;">UVI</span></div>
+            <div class="metric-caption">測站：<b>{max_st_name}</b> ({cat_max['icon']} {cat_max['level']})</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with m2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">📊 測站平均紫外線指數</div>
+            <div class="metric-value" style="color: {cat_avg['color']};">{avg_st_uv} <span style="font-size: 1rem; font-weight: 600;">UVI</span></div>
+            <div class="metric-caption">全島均值 ({cat_avg['icon']} {cat_avg['level']})</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with m3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">⚠️ 過量/危險警戒縣市</div>
+            <div class="metric-value" style="color: #c94a4a;">{high_uv_count} <span style="font-size: 1rem; font-weight: 600;">縣市</span></div>
+            <div class="metric-caption">指數 ≥ 8.0 強烈曝曬警戒</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with m4:
+        st.markdown("""
+        <div class="metric-card">
+            <div class="metric-label">🛡️ 今日外出防曬建議</div>
+            <div class="metric-value" style="color: #5c7c8a; font-size: 1.45rem;">SPF50+ / PA++++</div>
+            <div class="metric-caption">10:00-14:00 盡量減少烈日曝曬</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
+
+    # 主畫面左右分欄 (地圖 vs 縣市一週預報與排行)
+    col_map, col_details = st.columns([1.65, 1.35])
+
+    with col_map:
+        st.markdown("### 🗺️ 全台 22 縣市紫外線面狀熱力與測站觀測圖")
+        st.caption("懸停各縣市即時顯示紫外線防護卡，點擊縣市切換一週預報；圓點標記為 CWA 30 處局屬氣象站實測最大值。")
+
+        # 建立地圖實例
+        m_uv = folium.Map(
+            location=[23.7, 120.9],
+            zoom_start=7.3,
+            min_zoom=7,
+            max_zoom=10,
+            max_bounds=True,
+            min_lat=21.0,
+            max_lat=26.5,
+            min_lon=118.0,
+            max_lon=122.5,
+            tiles="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            attr="Esri"
+        )
+
+        m_uv.get_root().header.add_child(folium.Element("""
+        <style>
+            .leaflet-control-attribution {
+                display: none !important;
+                visibility: hidden !important;
+            }
+            .leaflet-tooltip {
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+            }
+            .leaflet-tooltip-top:before,
+            .leaflet-tooltip-bottom:before,
+            .leaflet-tooltip-left:before,
+            .leaflet-tooltip-right:before {
+                display: none !important;
+            }
+            .foliumtooltip table {
+                margin: 0 !important;
+                border-collapse: collapse !important;
+            }
+            .foliumtooltip td {
+                padding: 0 !important;
+                border: none !important;
+            }
+        </style>
+        """))
+
+        # 右上角紫外線指數色階圖例
+        uv_legend_html = """
+        <div id="uv-color-legend" style="
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 12px;
+            padding: 10px 14px;
+            color: #2b303a;
+            box-shadow: 0 4px 16px rgba(60, 50, 40, 0.08);
+            font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+            min-width: 146px;
+            pointer-events: auto;
+        ">
+            <div style="font-weight: 700; font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px;">
+                <span>☀️ 紫外線指數圖例</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 5px; font-size: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 11px; height: 11px; background: #52796f; border-radius: 3px; display: inline-block;"></span>
+                        <span style="color: #2b303a;">0 - 2 微量</span>
+                    </div>
+                    <span style="color: #52796f; font-weight: 700;">🟢 安全</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 11px; height: 11px; background: #d4a373; border-radius: 3px; display: inline-block;"></span>
+                        <span style="color: #2b303a;">3 - 5 中量</span>
+                    </div>
+                    <span style="color: #d4a373; font-weight: 700;">🟡 一般</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 11px; height: 11px; background: #e76f51; border-radius: 3px; display: inline-block;"></span>
+                        <span style="color: #2b303a;">6 - 7 高量</span>
+                    </div>
+                    <span style="color: #e76f51; font-weight: 700;">🟠 警戒</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 11px; height: 11px; background: #c94a4a; border-radius: 3px; display: inline-block;"></span>
+                        <span style="color: #2b303a;">8 - 10 過量</span>
+                    </div>
+                    <span style="color: #c94a4a; font-weight: 700;">🔴 極高</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 11px; height: 11px; background: #7209b7; border-radius: 3px; display: inline-block;"></span>
+                        <span style="color: #2b303a;">11+ 危險</span>
+                    </div>
+                    <span style="color: #7209b7; font-weight: 700;">🟣 危險</span>
+                </div>
+            </div>
+        </div>
+        """
+        m_uv.get_root().html.add_child(folium.Element(uv_legend_html))
+
+        # 疊加全台 22 縣市 GeoJSON 面狀熱力著色
+        if os.path.exists(GEOJSON_FILE):
+            with open(GEOJSON_FILE, "r", encoding="utf-8") as gf:
+                geojson_uv_data = json.load(gf)
+
+            def resolve_uv(c_name):
+                if not c_name:
+                    return None
+                if c_name in county_uv_map:
+                    return county_uv_map[c_name]
+                alt_name = c_name.replace("臺", "台") if "臺" in c_name else c_name.replace("台", "臺")
+                if alt_name in county_uv_map:
+                    return county_uv_map[alt_name]
+                return None
+
+            for feat in geojson_uv_data.get("features", []):
+                props = feat.get("properties", {})
+                c_name = props.get("COUNTYNAME") or props.get("name")
+                u_info = resolve_uv(c_name)
+                if u_info:
+                    val = u_info["uvi"]
+                    cat = get_uv_category(val)
+                    props["tooltip_card"] = f"""
+                    <div style="
+                        background: rgba(255, 255, 255, 0.97);
+                        backdrop-filter: blur(12px);
+                        -webkit-backdrop-filter: blur(12px);
+                        border: 1px solid rgba(0, 0, 0, 0.08);
+                        border-top: 3.5px solid {cat['color']};
+                        border-radius: 12px;
+                        padding: 10px 14px;
+                        min-width: 220px;
+                        box-shadow: 0 6px 20px rgba(60, 50, 40, 0.1);
+                        font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+                        color: #2b303a;
+                        line-height: 1.5;
+                    ">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); padding-bottom: 5px;">
+                            <span style="font-size: 15px; font-weight: 700; color: #2b303a;">📍 地區：{c_name}</span>
+                            <span style="font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: {cat['color']}18; color: {cat['color']}; border: 1px solid {cat['color']}44;">{cat['icon']} {cat['level']}</span>
+                        </div>
+                        <div style="font-size: 13.5px; margin-bottom: 3px; display: flex; align-items: baseline; gap: 4px;">
+                            <span style="color: #6c757d;">☀️ 預測指數：</span>
+                            <b style="color: {cat['color']}; font-size: 16px; font-weight: 700;">{val} UVI</b>
+                            <span style="color: #6c757d; font-size: 11.5px;">({cat['range']})</span>
+                        </div>
+                        <div style="font-size: 12.5px; color: #6c757d; margin-bottom: 4px;">
+                            ⏱️ <b>致傷時間：</b>{cat['sunburn_time']}
+                        </div>
+                        <div style="font-size: 12px; color: #2b303a; background: #f8f6f0; border-radius: 6px; padding: 5px 8px; margin-top: 4px;">
+                            🛡️ <b>防護指引：</b>{cat['advice']}
+                        </div>
+                        <div style="font-size: 11px; color: #5c7c8a; font-weight: 600; margin-top: 6px; border-top: 1px dashed rgba(0, 0, 0, 0.08); padding-top: 4px; text-align: right;">
+                            點擊在地圖切換一週預報 👆
+                        </div>
+                    </div>
+                    """
+                    props["popup_card"] = f"""
+                    <div style="font-family: 'Outfit', sans-serif; padding: 6px 2px; color: #2b303a; line-height: 1.5;">
+                        <h4 style="margin: 0 0 6px 0; color: #2b303a;">📍 {c_name} 紫外線預報</h4>
+                        <p style="margin: 3px 0;">指數數值：<b>{val} UVI ({cat['level']})</b></p>
+                        <p style="margin: 3px 0;">致傷時間：<b>{cat['sunburn_time']}</b></p>
+                        <p style="margin: 3px 0;">建議防護：<b>{cat['spf_advice']}</b></p>
+                    </div>
+                    """
+                else:
+                    props["tooltip_card"] = f"""
+                    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 8px; padding: 8px 12px; color: #6c757d; font-size: 13px;">
+                        📍 地區：{c_name} | 暫無紫外線資料
+                    </div>
+                    """
+                    props["popup_card"] = props["tooltip_card"]
+
+            def uv_style_fn(feature):
+                props = feature.get("properties", {})
+                c_name = props.get("COUNTYNAME") or props.get("name")
+                u_info = resolve_uv(c_name)
+                is_cur = (c_name == selected_uv_region or (c_name and c_name.replace("臺", "台") == selected_uv_region.replace("臺", "台")))
+                color = get_uv_color(u_info["uvi"]) if u_info else "#e8e4dc"
+
+                return {
+                    "fillColor": color,
+                    "color": "#2b303a" if is_cur else "rgba(92, 124, 138, 0.35)",
+                    "weight": 3.0 if is_cur else 1.2,
+                    "fillOpacity": 0.88 if is_cur else 0.72,
+                }
+
+            def uv_highlight_fn(feature):
+                return {
+                    "weight": 3.2,
+                    "color": "#2b303a",
+                    "fillOpacity": 0.95
+                }
+
+            folium.GeoJson(
+                geojson_uv_data,
+                name="Taiwan UV Counties",
+                style_function=uv_style_fn,
+                highlight_function=uv_highlight_fn,
+                tooltip=folium.GeoJsonTooltip(
+                    fields=["tooltip_card"],
+                    labels=False,
+                    sticky=True,
+                    style="background: transparent; border: none; padding: 0; box-shadow: none;"
+                ),
+                popup=folium.GeoJsonPopup(
+                    fields=["popup_card"],
+                    labels=False,
+                    style="background: transparent; border: none; padding: 0; box-shadow: none;"
+                )
+            ).add_to(m_uv)
+
+        # 疊加局屬 30 處氣象測站實測標記 (Circle / DivIcon)
+        for st_item in uv_stations_data.get("stations", []):
+            st_color = st_item["color"]
+            st_val = st_item["uv_index"]
+            st_name = st_item["name"]
+            st_icon_html = f"""
+            <div style="
+                background: {st_color};
+                color: #FFFFFF;
+                font-weight: 800;
+                font-size: 11px;
+                padding: 2px 7px;
+                border-radius: 999px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 2px;
+                white-space: nowrap;
+                box-shadow: 0 2px 8px rgba(60, 50, 40, 0.3);
+                border: 1.5px solid #FFFFFF;
+                min-width: 48px;
+                margin-left: -24px;
+                margin-top: -10px;
+                cursor: pointer;
+            "><span>☀️</span><span>{st_val}</span></div>
+            """
+
+            folium.Marker(
+                location=[st_item["lat"], st_item["lon"]],
+                icon=folium.DivIcon(html=st_icon_html),
+                tooltip=folium.Tooltip(
+                    f"""
+                    <div style="
+                        background: rgba(255, 255, 255, 0.97);
+                        border: 1px solid rgba(0, 0, 0, 0.08);
+                        border-top: 3px solid {st_color};
+                        border-radius: 10px;
+                        padding: 8px 12px;
+                        color: #2b303a;
+                        font-family: 'Outfit', sans-serif;
+                        font-size: 12.5px;
+                        min-width: 180px;
+                        box-shadow: 0 4px 16px rgba(60, 50, 40, 0.1);
+                    ">
+                        <div style="font-weight: 700; color: #2b303a; margin-bottom: 3px;">📍 CWA 測站：{st_name} ({st_item['county']} {st_item['town']})</div>
+                        <div>☀️ 紫外線實測：<b style="color: {st_color}; font-size: 14px;">{st_val} UVI</b> ({st_item['level']})</div>
+                        <div style="font-size: 11.5px; color: #6c757d; margin-top: 2px;">⏱️ {st_item['sunburn_time']}</div>
+                    </div>
+                    """,
+                    sticky=True
+                ),
+                popup=folium.Popup(
+                    f"""
+                    <div style="font-family: 'Outfit', sans-serif; padding: 6px; color: #2b303a;">
+                        <h4 style="margin: 0 0 6px 0;">📍 {st_name} 氣象測站</h4>
+                        <p style="margin: 2px 0;">站碼: <b>{st_item['station_id']}</b></p>
+                        <p style="margin: 2px 0;">行政區: <b>{st_item['county']} {st_item['town']}</b></p>
+                        <p style="margin: 2px 0;">當日實測最大: <b style="color: {st_color};">{st_val} UVI</b></p>
+                        <p style="margin: 2px 0;">分級等級: <b>{st_item['level']}</b></p>
+                        <p style="margin: 2px 0;">建議防護: <b>{st_item['spf_advice']}</b></p>
+                    </div>
+                    """,
+                    max_width=250
+                )
+            ).add_to(m_uv)
+
+        map_uv_state = st_folium(m_uv, width="stretch", height=500, returned_objects=["last_active_drawing"])
+        if map_uv_state and map_uv_state.get("last_active_drawing"):
+            last_props = map_uv_state["last_active_drawing"].get("properties", {})
+            clicked_c = last_props.get("COUNTYNAME") or last_props.get("name")
+            if clicked_c:
+                for r in sorted_regions:
+                    if r == clicked_c or r.replace("臺", "台") == clicked_c.replace("臺", "台"):
+                        if st.session_state.get("selected_uv_region") != r:
+                            st.session_state["selected_uv_region"] = r
+                            st.rerun()
+                        break
+
+        # 底部色階標尺與圖例說明
+        st.markdown("""
+        <div class="map-legend-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.82rem; font-weight: 600; color: #2b303a;">☀️ 國際 WHO / 氣象署 5 階紫外線分級圖例</span>
+                <span style="font-size: 0.75rem; color: #6c757d;">數值越高級數越高 · 圓點代表 CWA 局屬測站實測值</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 4px;">
+                <div style="background: #52796f;" title="0-2 低量級"></div>
+                <div style="background: #d4a373;" title="3-5 中量級"></div>
+                <div style="background: #e76f51;" title="6-7 高量級"></div>
+                <div style="background: #c94a4a;" title="8-10 過量級"></div>
+                <div style="background: #7209b7;" title="11+ 危險級"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.76rem; margin-top: 6px; flex-wrap: wrap; gap: 4px;">
+                <span style="color: #52796f; font-weight: 600;">🟢 0-2 (微量)</span>
+                <span style="color: #d4a373; font-weight: 600;">🟡 3-5 (中量)</span>
+                <span style="color: #e76f51; font-weight: 600;">🟠 6-7 (高量)</span>
+                <span style="color: #c94a4a; font-weight: 600;">🔴 8-10 (過量)</span>
+                <span style="color: #7209b7; font-weight: 600;">🟣 11+ (危險)</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # 快速切換縣市按鈕標籤
+        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size: 0.82rem; font-weight: 600; color: #2b303a; margin-bottom: 6px;'>📍 快速切換縣市：</div>", unsafe_allow_html=True)
+        pill_cols = st.columns(6)
+        for i, c_btn in enumerate(sorted_regions[:18]):
+            with pill_cols[i % 6]:
+                if st.button(c_btn, key=f"uv_pill_{c_btn}", width="stretch", type="primary" if c_btn == selected_uv_region else "secondary"):
+                    st.session_state["selected_uv_region"] = c_btn
+                    st.rerun()
+
+    with col_details:
+        # 縣市選擇下拉選單
+        cur_idx = sorted_regions.index(selected_uv_region) if selected_uv_region in sorted_regions else 0
+        selected_uv_region = st.selectbox(
+            "📍 選擇檢視縣市 / 區域紫外線一週預報：",
+            options=sorted_regions,
+            index=cur_idx,
+            key="uv_region_selector"
+        )
+        st.session_state["selected_uv_region"] = selected_uv_region
+
+        # 查詢該縣市未來 7 天預報 (純 SQL 查詢自 SQLite data.db)
+        uv_forecast_rows = get_uv_forecast_for_region(selected_uv_region, DEFAULT_DB_PATH)
+
+        if uv_forecast_rows:
+            today_row = uv_forecast_rows[0]
+            today_uvi = today_row["uvi"]
+            today_cat = get_uv_category(today_uvi)
+
+            # 縣市重點大卡片
+            st.markdown(f"""
+            <div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; box-shadow: 0 4px 14px rgba(60, 50, 40, 0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); padding-bottom: 8px;">
+                    <div>
+                        <span style="font-size: 1.25rem; font-weight: 700; color: #2b303a;">📍 {selected_uv_region} 今日紫外線狀況</span>
+                        <div style="font-size: 0.8rem; color: #6c757d;">預報日期：{today_row['dataDate']} · 100% 本地 SQLite 純 SQL 查詢</div>
+                    </div>
+                    <span style="font-size: 0.88rem; font-weight: 700; padding: 4px 12px; border-radius: 999px; background: {today_cat['color']}18; color: {today_cat['color']}; border: 1.5px solid {today_cat['color']}55;">
+                        {today_cat['icon']} {today_cat['level']}
+                    </span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px;">
+                    <div style="background: #fdfcf9; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 10px; padding: 12px;">
+                        <div style="font-size: 0.8rem; color: #6c757d;">預測紫外線指數</div>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: {today_cat['color']}; line-height: 1.2;">
+                            {today_uvi} <span style="font-size: 0.95rem; font-weight: 600;">UVI</span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #6c757d; margin-top: 2px;">指數範圍：{today_cat['range']}</div>
+                    </div>
+                    <div style="background: #fdfcf9; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 10px; padding: 12px;">
+                        <div style="font-size: 0.8rem; color: #6c757d;">曝曬致傷時間評估</div>
+                        <div style="font-size: 0.95rem; font-weight: 700; color: #2b303a; margin-top: 4px; line-height: 1.3;">
+                            ⏱️ {today_cat['sunburn_time']}
+                        </div>
+                        <div style="font-size: 0.75rem; color: #5c7c8a; font-weight: 600; margin-top: 4px;">推薦 {today_cat['spf_advice']}</div>
+                    </div>
+                </div>
+                <div style="background: {today_cat['color']}12; border-left: 4px solid {today_cat['color']}; border-radius: 6px; padding: 10px 14px; font-size: 0.84rem; color: #2b303a; line-height: 1.5;">
+                    🛡️ <b>防曬指引</b>：{today_cat['advice']}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Altair 7 天紫外線預報柱狀/折線圖
+            st.markdown("#### 📅 未來 7 天紫外線指數趨勢預報")
+
+            chart_data = []
+            for r in uv_forecast_rows:
+                u_cat = get_uv_category(r["uvi"])
+                chart_data.append({
+                    "日期": r["dataDate"][5:],  # MM-DD
+                    "全日期": r["dataDate"],
+                    "紫外線指數": r["uvi"],
+                    "曝曬等級": r["exposureLevel"],
+                    "代表色": u_cat["color"],
+                    "致傷時間": u_cat["sunburn_time"]
+                })
+            df_chart = pd.DataFrame(chart_data)
+
+            bar_chart = alt.Chart(df_chart).mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6, size=24).encode(
+                x=alt.X("日期:N", title="預報日期", axis=alt.Axis(labelAngle=0)),
+                y=alt.Y("紫外線指數:Q", title="紫外線指數 (UVI)", scale=alt.Scale(domain=[0, max(12, df_chart["紫外線指數"].max() + 1)])),
+                color=alt.Color("代表色:N", scale=None, legend=None),
+                tooltip=[
+                    alt.Tooltip("全日期:N", title="日期"),
+                    alt.Tooltip("紫外線指數:Q", title="紫外線指數"),
+                    alt.Tooltip("曝曬等級:N", title="曝曬等級"),
+                    alt.Tooltip("致傷時間:N", title="安全致傷時間")
+                ]
+            )
+
+            line_chart = alt.Chart(df_chart).mark_line(color="#2b303a", strokeWidth=2, strokeDash=[4, 3]).encode(
+                x=alt.X("日期:N"),
+                y=alt.Y("紫外線指數:Q")
+            )
+
+            text_chart = alt.Chart(df_chart).mark_text(dy=-10, fontSize=11, fontWeight=700).encode(
+                x=alt.X("日期:N"),
+                y=alt.Y("紫外線指數:Q"),
+                text=alt.Text("紫外線指數:Q", format=".1f"),
+                color=alt.value("#2b303a")
+            )
+
+            combined_chart = (bar_chart + line_chart + text_chart).properties(
+                height=220
+            ).configure_view(strokeWidth=0)
+
+            st.altair_chart(combined_chart, use_container_width=True)
+
+            # 7 天數據明細表
+            st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+            st.markdown("#### 📋 一週紫外線逐日預報數據表")
+
+            df_table = pd.DataFrame([
+                {
+                    "日期": r["dataDate"],
+                    "紫外線指數 (UVI)": f"{r['uvi']:.1f}",
+                    "曝曬等級": f"{get_uv_category(r['uvi'])['icon']} {r['exposureLevel']}",
+                    "曬傷風險時間": get_uv_category(r["uvi"])["sunburn_time"],
+                    "建議防曬係數": get_uv_category(r["uvi"])["spf_advice"]
+                }
+                for r in uv_forecast_rows
+            ])
+
+            st.dataframe(
+                df_table,
+                width="stretch",
+                hide_index=True,
+                column_config={
+                    "日期": st.column_config.TextColumn("日期", width="medium"),
+                    "紫外線指數 (UVI)": st.column_config.TextColumn("紫外線指數", width="small"),
+                    "曝曬等級": st.column_config.TextColumn("曝曬等級", width="medium"),
+                    "曬傷風險時間": st.column_config.TextColumn("致傷時間"),
+                    "建議防曬係數": st.column_config.TextColumn("建議防曬")
+                }
+            )
+
+        # 全台測站實測紫外線排行榜 (Top 10)
+        st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+        st.markdown("#### 🏆 CWA 氣象測站當日實測紫外線排行 (Top 10)")
+
+        top_stations = uv_stations_data.get("top_stations", [])[:10]
+        if top_stations:
+            df_st_rank = pd.DataFrame([
+                {
+                    "排名": f"#{idx+1}",
+                    "測站名稱": s["name"],
+                    "縣市": s["county"],
+                    "行政區": s["town"],
+                    "實測 UVI": s["uv_index"],
+                    "等級": f"{s['icon']} {s['level']}",
+                    "防護裝備": s["spf_advice"]
+                }
+                for idx, s in enumerate(top_stations)
+            ])
+
+            st.dataframe(
+                df_st_rank,
+                width="stretch",
+                hide_index=True,
+                column_config={
+                    "排名": st.column_config.TextColumn("排名", width="small"),
+                    "測站名稱": st.column_config.TextColumn("測站"),
+                    "縣市": st.column_config.TextColumn("縣市"),
+                    "行政區": st.column_config.TextColumn("鄉鎮區"),
+                    "實測 UVI": st.column_config.NumberColumn("實測指數", format="%.1f"),
+                    "等級": st.column_config.TextColumn("等級"),
+                    "防護裝備": st.column_config.TextColumn("防護建議")
+                }
+            )
+
+        # 防曬安全全攻略科普卡片 (Morandi Light)
+        st.markdown("""
+        <div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 12px; padding: 14px 18px; margin-top: 14px; box-shadow: 0 4px 12px rgba(60, 50, 40, 0.05); font-size: 0.82rem; color: #2b303a; line-height: 1.6;">
+            <div style="font-weight: 700; font-size: 0.92rem; color: #5c7c8a; margin-bottom: 6px;">
+                💡 世界衛生組織 (WHO) 紫外線防護 ABC 原則：
+            </div>
+            <ul style="margin: 0; padding-left: 20px; color: #495057;">
+                <li><b>A (Avoid 避免)</b>：上午 10:00 至下午 14:00 為紫外線最強烈時段，請盡量避免在無遮蔽下劇烈戶外運動。</li>
+                <li><b>B (Block 遮蔽)</b>：撐抗 UV 遮陽傘、穿著長袖排汗透氣外套、佩戴寬邊遮陽帽與具備 UV400 標章太陽眼鏡。</li>
+                <li><b>C (Cream 防曬乳)</b>：出門前 15 分鐘均勻塗抹足量防曬乳（至少 2 枚硬幣大小），戶外每 2 小時或大量出汗後務必補擦。</li>
+            </ul>
         </div>
         """, unsafe_allow_html=True)
 

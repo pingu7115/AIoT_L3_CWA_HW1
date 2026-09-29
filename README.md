@@ -62,10 +62,13 @@ flowchart TD
 | 檔案名稱 | 所屬階段 | 職責與功能說明 |
 | :--- | :--- | :--- |
 | [`fetch_weather.py`](fetch_weather.py) | 階段 1: 資料獲取 | 發送 HTTP GET 請求取得預報資料，存為 `weather_data.json`。具備無金鑰/離線時自動啟用模擬資料之容錯機制。 |
-| [`parse_weather.py`](parse_weather.py) | 階段 2: 資料解析 | 解析巢狀 JSON，萃取全台 6 大區域（北部、中部、南部、東部、澎湖、金門馬祖）7 天預報（MinT, MaxT, dataDate）。 |
-| [`database.py`](database.py) | 階段 3: 資料庫存儲 | 建立 SQLite `data.db` 與 `TemperatureForecasts` 表，具備防重複寫入機制 (`ON CONFLICT DO UPDATE`) 與 SQL 驗證查詢。 |
-| [`main.py`](main.py) | 整合管線 | 一鍵式執行完整 ETL 流程 (`fetch` -> `parse` -> `database` -> `verify`)。 |
-| [`app.py`](app.py) | 階段 4: 前端展示 | Streamlit 互動儀表板，**嚴格透過 SQL 自 SQLite 查詢**。提供區域切換、MaxT vs MinT 雙線折線圖、預報表格與 Folium 氣溫分級地圖。 |
+| [`parse_weather.py`](parse_weather.py) | 階段 2: 資料解析 | 解析巢狀 JSON，萃取全台 22 縣市與 6 大區域 7 天氣象預報（MinT, MaxT, dataDate）。 |
+| [`database.py`](database.py) | 階段 3: 資料庫存儲 | 建立 SQLite `data.db`，包含 `TemperatureForecasts` 與 `UVForecasts` 表，具備防重複寫入機制 (`ON CONFLICT DO UPDATE`) 與純 SQL 查詢。 |
+| [`uv_data.py`](uv_data.py) | 紫外線模組 | 串接 CWA `O-A0005-001` 全台 30 局屬測站實測與 `F-D0047-091` 一週預報，提供 WHO 5 階分級與防曬建議。 |
+| [`rainfall_data.py`](rainfall_data.py) | 雨量模組 | 串接 CWA `O-A0002-001` 全台 1,300+ 測站雨量與雷達累積雨量色斑圖。 |
+| [`typhoon_data.py`](typhoon_data.py) | 颱風模組 | 串接 CWA `W-C0034-005` 西北太平洋熱帶氣旋即時監測與 120 小時路徑預報。 |
+| [`main.py`](main.py) | 整合管線 | 一鍵式執行完整 ETL 流程 (`fetch` -> `parse` -> `database storage` -> `verify`)。 |
+| [`app.py`](app.py) | 階段 4: 前端展示 | Streamlit 互動儀表板，支援「氣溫分佈」、「全台雨量」、「颱風路徑」與「紫外線指數」4 大圖層即時切換。 |
 
 ---
 

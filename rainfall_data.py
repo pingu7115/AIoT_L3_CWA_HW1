@@ -208,5 +208,4 @@ if __name__ == "__main__":
     print("Fetched rainfall data successfully!")
     print("Max rain:", data["max_rain"], "mm")
     print("Max station:", data["max_station"])
-    print("Top stations count:", len(data["top_stations"]))
-    print("Has overlay?:", data["overlay_data_url"] is not None)
+    print("Official image URL:", data.get("official_img_url"))
