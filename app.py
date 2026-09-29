@@ -2126,7 +2126,10 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                         line-height: 1.55;
                     ">
                         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid rgba(0, 0, 0, 0.08); padding-bottom: 6px; margin-bottom: 8px;">
-                            <span style="font-size: 16px; font-weight: 800; color: #2b303a;">📍 {c_name} 紫外線預報</span>
+                            <div>
+                                <span style="font-size: 16px; font-weight: 800; color: #2b303a;">📍 {c_name}【全縣市綜合預報】</span>
+                                <div style="font-size: 11px; color: #6c757d;">氣象署全區 7 天代表值 (與右側圖表同步)</div>
+                            </div>
                             <span style="font-size: 11px; font-weight: 700; padding: 2.5px 8px; border-radius: 999px; background: {cat['color']}22; color: {cat['color']}; border: 1px solid {cat['color']}55;">
                                 {cat['icon']} {cat['level']}
                             </span>
@@ -2244,8 +2247,9 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                 ),
                 popup=folium.Popup(
                     f"""
-                    <div style="font-family: 'Outfit', sans-serif; min-width: 200px; padding: 6px 4px; color: #2b303a; line-height: 1.5;">
-                        <h4 style="margin: 0 0 6px 0; color: #2b303a; border-bottom: 1.5px solid rgba(0,0,0,0.07); padding-bottom: 4px;">📍 {st_name} 氣象測站實測</h4>
+                    <div style="font-family: 'Outfit', sans-serif; min-width: 210px; padding: 6px 4px; color: #2b303a; line-height: 1.5;">
+                        <h4 style="margin: 0 0 4px 0; color: #2b303a; border-bottom: 1.5px solid rgba(0,0,0,0.07); padding-bottom: 4px;">📍 {st_name} 氣象測站【即時觀測實測】</h4>
+                        <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px;">單點儀器當日瞬間最大測得值</div>
                         <p style="margin: 3px 0; font-size: 13px;">站碼：<b>{st_item['station_id']}</b></p>
                         <p style="margin: 3px 0; font-size: 13px;">行政區：<b>{st_item['county']} {st_item['town']}</b></p>
                         <p style="margin: 3px 0; font-size: 13px;">當日最大實測：<b style="color: {st_color}; font-size: 16px;">{st_val} UVI</b> ({st_item['level']})</p>
@@ -2303,13 +2307,45 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
             today_uvi = today_row["uvi"]
             today_cat = get_uv_category(today_uvi)
 
+            # 尋找該縣市轄內之局屬氣象測站 (提供即時實測觀測對照)
+            local_stations = [
+                s for s in uv_stations_data.get("stations", [])
+                if s.get("county") == selected_uv_region or (s.get("county") and s.get("county").replace("臺", "台") == selected_uv_region.replace("臺", "台"))
+            ]
+
+            if local_stations:
+                st_badges_html = "".join([
+                    f"""<div style="background: #ffffff; border: 1px solid rgba(0,0,0,0.08); border-left: 3.5px solid {s['color']}; border-radius: 8px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 8px; margin: 3px 6px 3px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+                        <span style="font-weight: 700; color: #2b303a; font-size: 0.82rem;">📍 {s['name']}氣象站 ({s['town']})</span>
+                        <span style="color: {s['color']}; font-weight: 800; font-size: 0.95rem;">{s['uv_index']} UVI</span>
+                        <span style="font-size: 0.72rem; padding: 1px 6px; border-radius: 999px; background: {s['color']}18; color: {s['color']}; font-weight: 700;">{s['level']}</span>
+                    </div>"""
+                    for s in local_stations
+                ])
+                local_stations_section = f"""
+                <div style="margin-top: 12px; background: #fdfbf7; border: 1px dashed rgba(92, 124, 138, 0.35); border-radius: 10px; padding: 10px 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;">
+                        <span style="font-size: 0.82rem; font-weight: 700; color: #2b303a;">📡 轄內氣象測站即時實測觀測對照：</span>
+                        <span style="font-size: 0.72rem; color: #6c757d;">CWA 當日最大實測 (O-A0005-001)</span>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap;">
+                        {st_badges_html}
+                    </div>
+                    <div style="font-size: 0.73rem; color: #6c757d; margin-top: 6px; line-height: 1.45;">
+                        💡 <b>數據關係說明</b>：本卡片與左側地圖底色為<b>全縣市代表性綜合預報</b>（{today_uvi} UVI）；地圖圓點與上方標籤為<b>轄內測站實測峰值</b>。因測站微氣候與地理條件（如恆春半島緯度低、直射角大），單點實測峰值常會高於全縣平均預報。
+                    </div>
+                </div>
+                """
+            else:
+                local_stations_section = ""
+
             # 縣市重點大卡片
             st.markdown(f"""
             <div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; box-shadow: 0 4px 14px rgba(60, 50, 40, 0.05);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); padding-bottom: 8px;">
                     <div>
                         <span style="font-size: 1.25rem; font-weight: 700; color: #2b303a;">📍 {selected_uv_region} 今日紫外線狀況</span>
-                        <div style="font-size: 0.8rem; color: #6c757d;">預報日期：{today_row['dataDate']} · 100% 本地 SQLite 純 SQL 查詢</div>
+                        <div style="font-size: 0.8rem; color: #6c757d;">全縣市綜合預報 · 預報日期：{today_row['dataDate']} · 100% 本地 SQLite 純 SQL 查詢</div>
                     </div>
                     <span style="font-size: 0.88rem; font-weight: 700; padding: 4px 12px; border-radius: 999px; background: {today_cat['color']}18; color: {today_cat['color']}; border: 1.5px solid {today_cat['color']}55;">
                         {today_cat['icon']} {today_cat['level']}
@@ -2317,7 +2353,7 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px;">
                     <div style="background: #fdfcf9; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 10px; padding: 12px;">
-                        <div style="font-size: 0.8rem; color: #6c757d;">預測紫外線指數</div>
+                        <div style="font-size: 0.8rem; color: #6c757d;">全縣預測紫外線指數 (綜合代表值)</div>
                         <div style="font-size: 1.8rem; font-weight: 800; color: {today_cat['color']}; line-height: 1.2;">
                             {today_uvi} <span style="font-size: 0.95rem; font-weight: 600;">UVI</span>
                         </div>
@@ -2334,6 +2370,7 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                 <div style="background: {today_cat['color']}12; border-left: 4px solid {today_cat['color']}; border-radius: 6px; padding: 10px 14px; font-size: 0.84rem; color: #2b303a; line-height: 1.5;">
                     🛡️ <b>防曬指引</b>：{today_cat['advice']}
                 </div>
+                {local_stations_section}
             </div>
             """, unsafe_allow_html=True)
 
