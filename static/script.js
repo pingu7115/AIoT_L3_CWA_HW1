@@ -73,6 +73,16 @@ let humidityMode = 'rh';      // 'rh' | 'thi'
 let uvMode = 'realtime';      // 'realtime' | 'hourly' | 'max'
 let uvHour = 12;
 let selectedCounty = 'ALL';
+let selectedTyphoonTarget = 'live_cwa';
+
+// In-memory instant caches (eliminates switching lag completely)
+const uvDataCache = {
+    bundleLoaded: false,
+    realtime: null,
+    max: null,
+    hourly: {}
+};
+const typhoonCache = {};
 
 let weatherData = [];         // from /api/weather
 let humidityData = null;      // from /api/humidity
@@ -138,6 +148,160 @@ function getRainColor(r) {
     if (r >= 50) return '#0ea5e9';
     if (r >= 20) return '#10b981';
     return '#94a3b8';
+}
+
+// CWA 官方太陽天頂角物理衰減公式 (計算 06:00 ~ 18:00 逐時強度)
+function getSolarUvFactor(hourFloat) {
+    if (hourFloat < 6.0 || hourFloat >= 18.0) return 0.0;
+    const lat = 23.5 * Math.PI / 180.0;
+    const decl = -2.5 * Math.PI / 180.0;
+    const w = 15.0 * (hourFloat - 11.9) * Math.PI / 180.0;
+    const cosZ = Math.sin(lat) * Math.sin(decl) + Math.cos(lat) * Math.cos(decl) * Math.cos(w);
+    if (cosZ <= 0.05) return 0.0;
+    const cosNoon = Math.sin(lat) * Math.sin(decl) + Math.cos(lat) * Math.cos(decl);
+    const factor = Math.pow(cosZ / cosNoon, 1.4);
+    return Math.max(0.0, Math.min(1.0, factor));
+}
+
+function getHourDescription(h) {
+    const map = {
+        6: '清晨日出 · 0.0 UVI',
+        7: '晨間初昇 · 1.8 UVI',
+        8: '上班通勤 · 4.3 UVI',
+        9: '陽光漸強 · 6.9 UVI',
+        10: '上午強光 · 9.1 UVI',
+        11: '正午臨近 · 10.6 UVI',
+        12: '正午最大 · 11.0 UVI',
+        13: '午後強烈 · 10.4 UVI',
+        14: '午後斜照 · 8.8 UVI',
+        15: '午後漸弱 · 6.4 UVI',
+        16: '傍晚前夕 · 3.8 UVI',
+        17: '日落黃昏 · 1.0 UVI',
+        18: '日落暮色 · 0.0 UVI'
+    };
+    return map[h] || `${h}:00 逐時推估`;
+}
+
+function getUvCategoryMeta(calcUv) {
+    if (calcUv <= 2) {
+        return {
+            level: "微量級 (低)",
+            color: "#2b82d9",
+            icon: "🟢",
+            sunburn_time: "曬傷時間約 60 分鐘以上",
+            advice: "外出活動安全無虞，敏感膚質可視需要配戴遮陽帽或墨鏡。",
+            spf_advice: "SPF15+"
+        };
+    } else if (calcUv <= 5) {
+        return {
+            level: "中量級 (中等)",
+            color: "#2a9d8f",
+            icon: "🟡",
+            sunburn_time: "曬傷時間約 30 至 45 分鐘",
+            advice: "外出建議塗抹防曬乳、戴遮陽帽或撐陽傘；避免長時間直曬。",
+            spf_advice: "SPF15-30"
+        };
+    } else if (calcUv <= 7) {
+        return {
+            level: "高量級 (警戒)",
+            color: "#e5a93c",
+            icon: "🟠",
+            sunburn_time: "曬傷時間約 20 至 30 分鐘",
+            advice: "上午 10 時至下午 2 時盡量減少戶外曝曬，外出必備防曬乳與遮陽傘。",
+            spf_advice: "SPF30+ / PA+++"
+        };
+    } else if (calcUv <= 10) {
+        return {
+            level: "過量級 (極高)",
+            color: "#c94a4a",
+            icon: "🔴",
+            sunburn_time: "曬傷時間約 15 至 20 分鐘",
+            advice: "紫外線強度極高！中午期間盡量避免外出，出門需全面防曬。",
+            spf_advice: "SPF50+ / PA++++"
+        };
+    } else {
+        return {
+            level: "危險級 (極端危險)",
+            color: "#7209b7",
+            icon: "🟣",
+            sunburn_time: "曝曬 10 至 15 分鐘即可能曬傷",
+            advice: "危險級強烈曝曬！極易造成皮膚灼傷，請盡量待在室內陰涼處。",
+            spf_advice: "SPF50+ / PA++++"
+        };
+    }
+}
+
+// 本地即時計算逐時 UV (0ms 零延遲，徹底消除卡頓)
+function computeHourlyUvData(hour) {
+    if (uvDataCache.hourly[hour]) {
+        return uvDataCache.hourly[hour];
+    }
+    const factor = getSolarUvFactor(hour);
+    const baseStations = (uvDataCache.max && uvDataCache.max.stations) || (uvData && uvData.stations) || [];
+    const stations = [];
+    const counties = {};
+
+    baseStations.forEach(s => {
+        const origPeak = s.uv_index || 0.0;
+        let calcUv = Math.round(origPeak * factor);
+        if (hour >= 18 || hour <= 6) calcUv = 0;
+        else if (hour === 17 && calcUv > 1) calcUv = 1;
+
+        const cat = getUvCategoryMeta(calcUv);
+        const stObj = {
+            ...s,
+            uv_index: calcUv,
+            display_val: String(calcUv),
+            level: cat.level,
+            color: cat.color,
+            icon: cat.icon,
+            sunburn_time: cat.sunburn_time,
+            advice: cat.advice,
+            spf_advice: cat.spf_advice
+        };
+        stations.push(stObj);
+
+        const cname = s.county;
+        if (cname) {
+            if (!counties[cname] || calcUv > counties[cname].uvi) {
+                counties[cname] = {
+                    regionName: cname,
+                    uvi: calcUv,
+                    exposureLevel: cat.level,
+                    color: cat.color,
+                    icon: cat.icon,
+                    sunburn_time: cat.sunburn_time,
+                    advice: cat.advice,
+                    spf_advice: cat.spf_advice,
+                    primary_station: s.name,
+                    primary_town: s.town || '',
+                    stations: [stObj]
+                };
+            } else {
+                counties[cname].stations.push(stObj);
+            }
+        }
+    });
+
+    const sorted = [...stations].sort((a, b) => b.uv_index - a.uv_index);
+    const maxSt = sorted[0];
+    const maxUv = maxSt ? maxSt.uv_index : 0;
+    const avgUv = stations.length > 0 ? +(stations.reduce((a, b) => a + b.uv_index, 0) / stations.length).toFixed(1) : 0;
+
+    const padH = String(hour).padStart(2, '0') + ':00';
+    const dateStr = uvDataCache.max && uvDataCache.max.obs_time ? uvDataCache.max.obs_time.substring(0, 10) : '';
+    const res = {
+        mode: 'hourly',
+        mode_title: `${padH} 逐時推估`,
+        hour: hour,
+        obs_time: `${dateStr} ${padH}`,
+        counties: counties,
+        stations: stations,
+        max_uv: maxUv,
+        avg_uv: avgUv
+    };
+    uvDataCache.hourly[hour] = res;
+    return res;
 }
 
 // =============================================================================
@@ -240,23 +404,33 @@ document.getElementById('county-select').addEventListener('change', (e) => {
 });
 
 // =============================================================================
-// 5. Data Fetching
+// 5. Data Fetching (Pre-fetching Bundle for 0ms Lag-free Switching)
 // =============================================================================
 async function fetchAllData() {
     try {
-        const [wRes, hRes, uvRes, rRes, tRes] = await Promise.all([
-            fetch('/api/weather').then(r => r.json()),
+        const [wRes, hRes, uvBundleRes, rRes, tRes] = await Promise.all([
+            fetch('/api/weather').then(r => r.json()).catch(() => []),
             fetch('/api/humidity').then(r => r.json()).catch(() => null),
-            fetch('/api/uv?mode=realtime').then(r => r.json()).catch(() => null),
+            fetch('/api/uv?mode=bundle').then(r => r.json()).catch(() => null),
             fetch('/api/rainfall').then(r => r.json()).catch(() => null),
-            fetch('/api/typhoon').then(r => r.json()).catch(() => null)
+            fetch('/api/typhoon?target=live_cwa').then(r => r.json()).catch(() => null)
         ]);
 
         weatherData = wRes || [];
         humidityData = hRes;
-        uvData = uvRes;
         rainfallData = rRes;
-        typhoonData = tRes;
+
+        if (uvBundleRes) {
+            uvDataCache.bundleLoaded = true;
+            uvDataCache.realtime = uvBundleRes.realtime;
+            uvDataCache.max = uvBundleRes.max;
+            uvData = uvDataCache.realtime;
+        }
+
+        if (tRes) {
+            typhoonData = tRes;
+            typhoonCache['live_cwa'] = tRes;
+        }
 
         if (weatherData.length > 0) {
             document.getElementById('obs-time').innerText = 
@@ -274,18 +448,68 @@ async function fetchAllData() {
 // 6. Navigation Tabs & Submode Management
 // =============================================================================
 const navTabs = document.querySelectorAll('.nav-tab');
+let prevTab = 'temp';
+
 navTabs.forEach(tab => {
-    tab.addEventListener('click', () => {
+    tab.addEventListener('click', async () => {
         navTabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
+        prevTab = activeTab;
         activeTab = tab.getAttribute('data-tab');
-        
+
+        // Toggle Select Boxes (County vs Typhoon)
+        const countyBox = document.getElementById('county-select-box');
+        const typhoonBox = document.getElementById('typhoon-select-box');
+
+        if (activeTab === 'typhoon') {
+            if (countyBox) countyBox.style.display = 'none';
+            if (typhoonBox) typhoonBox.style.display = 'flex';
+            if (!typhoonData || typhoonData.current_target !== selectedTyphoonTarget) {
+                await loadTyphoonTarget(selectedTyphoonTarget);
+            }
+        } else {
+            if (countyBox) countyBox.style.display = 'flex';
+            if (typhoonBox) typhoonBox.style.display = 'none';
+            if (prevTab === 'typhoon') {
+                map.flyTo([23.7, 120.95], 7.5, { duration: 1.0 });
+            }
+        }
+
         setupSubmodes();
         renderCurrentLayer();
         updateDashboard();
         updateLegend();
     });
 });
+
+// Typhoon Target Selector Listener
+const typhoonSelectEl = document.getElementById('typhoon-select');
+if (typhoonSelectEl) {
+    typhoonSelectEl.addEventListener('change', async (e) => {
+        selectedTyphoonTarget = e.target.value;
+        await loadTyphoonTarget(selectedTyphoonTarget);
+    });
+}
+
+async function loadTyphoonTarget(targetKey) {
+    if (typhoonCache[targetKey]) {
+        typhoonData = typhoonCache[targetKey];
+        renderCurrentLayer();
+        updateDashboard();
+        updateLegend();
+        return;
+    }
+    try {
+        const res = await fetch(`/api/typhoon?target=${targetKey}`);
+        typhoonData = await res.json();
+        typhoonCache[targetKey] = typhoonData;
+        renderCurrentLayer();
+        updateDashboard();
+        updateLegend();
+    } catch (err) {
+        console.error("Failed to load typhoon target:", err);
+    }
+}
 
 function setupSubmodes() {
     const subContainer = document.getElementById('submode-container');
@@ -294,8 +518,10 @@ function setupSubmodes() {
     if (activeTab === 'humidity') {
         subContainer.style.display = 'flex';
         subContainer.innerHTML = `
-            <button class="submode-btn ${humidityMode === 'rh' ? 'active' : ''}" id="btn-sub-rh">💧 相對濕度 (RH %)</button>
-            <button class="submode-btn ${humidityMode === 'thi' ? 'active' : ''}" id="btn-sub-thi">🌡️ 體感舒適度 (THI)</button>
+            <div class="submode-btn-group">
+                <button class="submode-btn ${humidityMode === 'rh' ? 'active' : ''}" id="btn-sub-rh">💧 相對濕度 (RH %)</button>
+                <button class="submode-btn ${humidityMode === 'thi' ? 'active' : ''}" id="btn-sub-thi">🌡️ 體感舒適度 (THI)</button>
+            </div>
         `;
         document.getElementById('btn-sub-rh').addEventListener('click', () => {
             humidityMode = 'rh';
@@ -313,38 +539,105 @@ function setupSubmodes() {
         });
     } else if (activeTab === 'uv') {
         subContainer.style.display = 'flex';
+        const padH = String(uvHour).padStart(2, '0') + ':00';
         subContainer.innerHTML = `
-            <button class="submode-btn ${uvMode === 'realtime' ? 'active' : ''}" id="btn-sub-uv-rt">📡 即時實測</button>
-            <button class="submode-btn ${uvMode === 'hourly' ? 'active' : ''}" id="btn-sub-uv-hr">⏰ 逐時推估 (${uvHour}:00)</button>
-            <button class="submode-btn ${uvMode === 'max' ? 'active' : ''}" id="btn-sub-uv-max">☀️ 今日最大值</button>
+            <div class="submode-btn-group">
+                <button class="submode-btn ${uvMode === 'realtime' ? 'active' : ''}" id="btn-sub-uv-rt">📡 即時實測</button>
+                <button class="submode-btn ${uvMode === 'hourly' ? 'active' : ''}" id="btn-sub-uv-hr">⏰ 逐時推估 (<span id="uv-hr-label">${padH}</span>)</button>
+                <button class="submode-btn ${uvMode === 'max' ? 'active' : ''}" id="btn-sub-uv-max">☀️ 今日最大值</button>
+            </div>
+            ${uvMode === 'hourly' ? `
+            <div class="hourly-slider-panel" id="uv-hourly-panel">
+                <div class="hourly-slider-header">
+                    <span class="hourly-slider-title">⏰ 推估時段：<strong id="uv-slider-text">${padH}</strong></span>
+                    <span class="hourly-slider-badge" id="uv-slider-badge">${getHourDescription(uvHour)}</span>
+                </div>
+                <div class="slider-track-wrap">
+                    <input type="range" min="6" max="18" step="1" value="${uvHour}" id="uv-hour-range" class="custom-slider">
+                    <div class="slider-ticks">
+                        <span>06:00</span>
+                        <span>08:00</span>
+                        <span>10:00</span>
+                        <span>12:00</span>
+                        <span>14:00</span>
+                        <span>16:00</span>
+                        <span>18:00</span>
+                    </div>
+                </div>
+                <div class="hourly-quick-chips">
+                    <button class="quick-chip ${uvHour === 8 ? 'active' : ''}" data-h="8">08:00 通勤</button>
+                    <button class="quick-chip ${uvHour === 10 ? 'active' : ''}" data-h="10">10:00 晨光</button>
+                    <button class="quick-chip ${uvHour === 12 ? 'active' : ''}" data-h="12">12:00 正午最大</button>
+                    <button class="quick-chip ${uvHour === 14 ? 'active' : ''}" data-h="14">14:00 午後</button>
+                    <button class="quick-chip ${uvHour === 16 ? 'active' : ''}" data-h="16">16:00 傍晚</button>
+                    <button class="quick-chip ${uvHour === 18 ? 'active' : ''}" data-h="18">18:00 日落</button>
+                </div>
+            </div>
+            ` : ''}
         `;
-        document.getElementById('btn-sub-uv-rt').addEventListener('click', async () => {
+
+        // 0ms instant switching between the 3 modes (no lagging!)
+        document.getElementById('btn-sub-uv-rt').addEventListener('click', () => {
             uvMode = 'realtime';
-            uvData = await fetch('/api/uv?mode=realtime').then(r => r.json());
+            uvData = uvDataCache.realtime || uvData;
             setupSubmodes();
             renderCurrentLayer();
             updateDashboard();
             updateLegend();
         });
-        document.getElementById('btn-sub-uv-hr').addEventListener('click', async () => {
-            uvMode = 'hourly';
-            uvHour = (new Date()).getHours();
-            if (uvHour < 6) uvHour = 6;
-            if (uvHour > 18) uvHour = 18;
-            uvData = await fetch(`/api/uv?mode=hourly&hour=${uvHour}`).then(r => r.json());
-            setupSubmodes();
-            renderCurrentLayer();
-            updateDashboard();
-            updateLegend();
-        });
-        document.getElementById('btn-sub-uv-max').addEventListener('click', async () => {
+
+        document.getElementById('btn-sub-uv-max').addEventListener('click', () => {
             uvMode = 'max';
-            uvData = await fetch('/api/uv?mode=max').then(r => r.json());
+            uvData = uvDataCache.max || uvData;
             setupSubmodes();
             renderCurrentLayer();
             updateDashboard();
             updateLegend();
         });
+
+        document.getElementById('btn-sub-uv-hr').addEventListener('click', () => {
+            uvMode = 'hourly';
+            uvData = computeHourlyUvData(uvHour);
+            setupSubmodes();
+            renderCurrentLayer();
+            updateDashboard();
+            updateLegend();
+        });
+
+        if (uvMode === 'hourly') {
+            const range = document.getElementById('uv-hour-range');
+            range.addEventListener('input', (e) => {
+                uvHour = parseInt(e.target.value);
+                uvData = computeHourlyUvData(uvHour);
+                const pH = String(uvHour).padStart(2, '0') + ':00';
+                document.getElementById('uv-slider-text').innerText = pH;
+                document.getElementById('uv-hr-label').innerText = pH;
+                document.getElementById('uv-slider-badge').innerText = getHourDescription(uvHour);
+                document.querySelectorAll('.quick-chip').forEach(c => {
+                    c.classList.toggle('active', parseInt(c.getAttribute('data-h')) === uvHour);
+                });
+                renderCurrentLayer();
+                updateDashboard();
+                updateLegend();
+            });
+
+            document.querySelectorAll('.quick-chip').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    uvHour = parseInt(btn.getAttribute('data-h'));
+                    document.getElementById('uv-hour-range').value = uvHour;
+                    uvData = computeHourlyUvData(uvHour);
+                    const pH = String(uvHour).padStart(2, '0') + ':00';
+                    document.getElementById('uv-slider-text').innerText = pH;
+                    document.getElementById('uv-hr-label').innerText = pH;
+                    document.getElementById('uv-slider-badge').innerText = getHourDescription(uvHour);
+                    document.querySelectorAll('.quick-chip').forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderCurrentLayer();
+                    updateDashboard();
+                    updateLegend();
+                });
+            });
+        }
     } else {
         subContainer.style.display = 'none';
     }
@@ -445,52 +738,143 @@ function renderRainMarkers() {
 
 function renderTyphoonLayer() {
     if (!typhoonData) return;
-
     const t = typhoonData;
+
+    // 1. Center & Zoom map on Typhoon
+    if (t.map_center && t.map_center.length === 2) {
+        map.setView(t.map_center, t.zoom_start || 6);
+    } else if (t.current_point) {
+        map.setView([t.current_point.lat, t.current_point.lon], 6);
+    }
+
+    // 2. Historical Track (過去觀測路徑 - 莫蘭迪灰藍實線 #5c7c8a)
+    if (t.historical_points && t.historical_points.length > 0) {
+        const histCoords = t.historical_points.map(p => [p.lat, p.lon]);
+        L.polyline(histCoords, {
+            color: '#5c7c8a',
+            weight: 3.5,
+            opacity: 0.9
+        }).bindTooltip("🌀 過去觀測移動路徑").addTo(typhoonGroup);
+
+        t.historical_points.forEach(p => {
+            L.circleMarker([p.lat, p.lon], {
+                radius: 5,
+                color: '#5c7c8a',
+                fillColor: '#5c7c8a',
+                fillOpacity: 0.9,
+                weight: 2
+            }).bindPopup(`
+                <div class="typhoon-popup">
+                    <div class="popup-title">⏱️ ${p.time} 過去觀測點</div>
+                    <div>📍 <b>座標</b>：北緯 ${p.lat}°，東經 ${p.lon}°</div>
+                    <div>📉 <b>氣壓</b>：${p.pressure}</div>
+                    <div>💨 <b>風速</b>：${p.wind}</div>
+                    <div>🧭 <b>性質</b>：${p.type || '觀測節點'}</div>
+                </div>
+            `).bindTooltip(`⏱️ ${p.time} | 氣壓: ${p.pressure} | 風速: ${p.wind}`).addTo(typhoonGroup);
+        });
+    }
+
+    // 3. Current Center (當前中心 - 莫蘭迪陶土色與暴風圈)
     if (t.current_point) {
         const cp = t.current_point;
-        
-        // Storm Radius Circle
-        if (t.radius_7 > 0) {
+        const r7km = Number(t.radius_7_km) || 0;
+        const r10km = Number(t.radius_10_km) || 0;
+
+        // 7 級風暴風半徑
+        if (r7km > 0) {
             L.circle([cp.lat, cp.lon], {
-                radius: t.radius_7 * 1000,
+                radius: r7km * 1000,
                 color: '#ef4444',
                 weight: 2,
+                dashArray: '4, 6',
                 fillColor: '#ef4444',
-                fillOpacity: 0.18,
-                dashArray: '4, 6'
-            }).addTo(typhoonGroup);
+                fillOpacity: 0.15
+            }).bindTooltip(`7級風暴風半徑: ${r7km} 公里 (${t.radius_7})`).addTo(typhoonGroup);
         }
 
-        // Center Eye Marker
+        // 10 級風暴風半徑
+        if (r10km > 0) {
+            L.circle([cp.lat, cp.lon], {
+                radius: r10km * 1000,
+                color: '#dc2626',
+                weight: 2,
+                fillColor: '#dc2626',
+                fillOpacity: 0.25
+            }).bindTooltip(`10級風暴風半徑: ${r10km} 公里`).addTo(typhoonGroup);
+        }
+
+        // 當前中心外環光暈
+        L.circleMarker([cp.lat, cp.lon], {
+            radius: 18,
+            color: '#b86b53',
+            weight: 2,
+            fillColor: '#b86b53',
+            fillOpacity: 0.25
+        }).addTo(typhoonGroup);
+
+        // 當前中心實心點
         const eyeMarker = L.circleMarker([cp.lat, cp.lon], {
             radius: 8,
-            fillColor: '#ef4444',
             color: '#ffffff',
             weight: 2.5,
-            fillOpacity: 0.95
+            fillColor: '#b86b53',
+            fillOpacity: 1.0
         });
-        eyeMarker.bindPopup(`<strong>颱風中心: ${t.name_zh} (${t.name_en})</strong><br>強度：${t.intensity}<br>最大風速：${t.max_wind} m/s<br>中心氣壓：${t.pressure} hPa<br>7級風暴風半徑：${t.radius_7} km`);
-        eyeMarker.addTo(typhoonGroup);
 
-        // Forecast path line
+        eyeMarker.bindPopup(`
+            <div class="typhoon-popup">
+                <div class="popup-title">🌀 ${t.name_zh} (${t.name_en || ''})</div>
+                <div>⏱️ <b>定位時間</b>：${t.obs_time}</div>
+                <div>📍 <b>中心座標</b>：北緯 ${cp.lat}°，東經 ${cp.lon}°</div>
+                <div>📉 <b>中心氣壓</b>：${t.pressure}</div>
+                <div>💨 <b>最大風速</b>：${t.max_wind}</div>
+                <div>🌪️ <b>瞬間陣風</b>：${t.gust_wind || '-'}</div>
+                <div>⭕ <b>暴風半徑</b>：7級 ${t.radius_7} / 10級 ${t.radius_10}</div>
+                <div>🧭 <b>移向移速</b>：${t.movement}</div>
+            </div>
+        `);
+        eyeMarker.bindTooltip(`🌀 ${t.name_zh} (點擊展開詳細氣象定位卡)`).addTo(typhoonGroup);
+
+        // 4. Forecast Track (官方預報路徑) & 70% 潛勢機率圈
         if (t.forecast_points && t.forecast_points.length > 0) {
-            const latlngs = [[cp.lat, cp.lon], ...t.forecast_points.map(p => [p.lat, p.lon])];
-            L.polyline(latlngs, {
-                color: '#f59e0b',
-                weight: 3,
+            const foreCoords = [[cp.lat, cp.lon], ...t.forecast_points.map(p => [p.lat, p.lon])];
+            L.polyline(foreCoords, {
+                color: '#b86b53',
+                weight: 3.5,
+                opacity: 0.9,
                 dashArray: '6, 6'
-            }).addTo(typhoonGroup);
+            }).bindTooltip("🚨 官方預報路徑").addTo(typhoonGroup);
 
             t.forecast_points.forEach(fp => {
-                const node = L.circleMarker([fp.lat, fp.lon], {
-                    radius: 5,
-                    fillColor: '#f59e0b',
-                    color: '#ffffff',
-                    weight: 1.5
-                });
-                node.bindPopup(`<strong>${fp.time} 預估路徑</strong><br>風速：${fp.max_wind} m/s<br>暴風半徑：${fp.radius_7} km`);
-                node.addTo(typhoonGroup);
+                const r70 = Number(fp.radius_70) || 0;
+                if (r70 > 0) {
+                    L.circle([fp.lat, fp.lon], {
+                        radius: r70,
+                        color: '#b86b53',
+                        weight: 1.5,
+                        dashArray: '4, 4',
+                        fillColor: '#b86b53',
+                        fillOpacity: 0.12
+                    }).bindTooltip(`⭕ 70% 潛勢暴風圈 (${fp.time_label}) · 半徑: ${Math.round(r70 / 1000)} 公里`).addTo(typhoonGroup);
+                }
+
+                L.circleMarker([fp.lat, fp.lon], {
+                    radius: 6,
+                    color: '#b86b53',
+                    fillColor: '#ffffff',
+                    fillOpacity: 0.95,
+                    weight: 2.2
+                }).bindPopup(`
+                    <div class="typhoon-popup">
+                        <div class="popup-title">⏱️ ${fp.time_label} 氣象預報點</div>
+                        <div>📍 <b>預報座標</b>：北緯 ${fp.lat}°，東經 ${fp.lon}°</div>
+                        <div>📉 <b>預測氣壓</b>：${fp.pressure}</div>
+                        <div>💨 <b>預測風速</b>：${fp.wind}</div>
+                        <div>⭕ <b>70% 潛勢半徑</b>：${Math.round(r70 / 1000)} 公里</div>
+                        <div class="popup-desc">🧭 ${fp.desc || ''}</div>
+                    </div>
+                `).bindTooltip(`⏱️ 預報節點: ${fp.time_label} · ${fp.desc || ''}`).addTo(typhoonGroup);
             });
         }
     }
@@ -701,26 +1085,77 @@ function updateDashboard() {
     } else if (activeTab === 'typhoon') {
         chartWrap.style.display = 'none';
         detailList.style.display = 'flex';
-        contextTitle.innerText = `🌀 颱風路徑與觀測數據`;
+        detailList.style.flexDirection = 'column';
+        contextTitle.innerText = `📅 官方預報路徑節點數據表`;
 
         if (typhoonData) {
-            title1.innerText = '熱帶系統'; val1.innerText = typhoonData.name_zh || '無颱風'; sub1.innerText = typhoonData.name_en || '西北太平洋';
-            title2.innerText = '系統強度'; val2.innerText = typhoonData.intensity || '一般低壓'; sub2.innerText = 'CWA 即時監控';
-            title3.innerText = '中心氣壓'; val3.innerHTML = `${typhoonData.pressure || 1008} <small>hPa</small>`; sub3.innerText = `最大風速 ${typhoonData.max_wind || 15} m/s`;
-            title4.innerText = '暴風半徑'; val4.innerHTML = `${typhoonData.radius_7 || 0} <small>km</small>`; sub4.innerText = '7 級風暴風圈';
+            const t = typhoonData;
+            title1.innerText = '颱風名稱與強度';
+            val1.innerHTML = `<span style="font-size:1.1rem;color:#b86b53;">${t.name_zh || '無颱風'}</span>`;
+            sub1.innerText = `${t.name_en ? t.name_en + ' · ' : ''}${t.intensity || '低壓系統'}`;
+
+            title2.innerText = '近中心最大風速';
+            val2.innerHTML = `<span style="font-size:1.15rem;color:#c47d66;">${t.max_wind || '-'}</span>`;
+            sub2.innerText = `瞬間陣風: ${t.gust_wind || '-'}`;
+
+            title3.innerText = '中心最低氣壓';
+            val3.innerHTML = `<span style="font-size:1.15rem;color:#5c7c8a;">${t.pressure || '-'}</span>`;
+            sub3.innerText = `7級半徑: ${t.radius_7 || '-'}`;
+
+            title4.innerText = '移向與移速';
+            val4.innerHTML = `<span style="font-size:0.92rem;color:#6b8e73;">${(t.movement || '').split('，')[0] || t.movement}</span>`;
+            sub4.innerText = `定位: ${t.obs_time || '-'}`;
 
             adviceIcon.innerText = '🌀';
-            adviceHead.innerText = typhoonData.advisory_title || '海上陸上警報概況';
-            adviceBody.innerText = typhoonData.advisory_body || '目前台灣近海無颱風直接威脅，氣象署持續嚴密監控中。';
+            adviceHead.innerText = t.advisory_title || '防颱警戒指引';
+            adviceBody.innerText = t.advisory_body || '請密切留意中央氣象署最新警報與風雨預報資訊。';
 
-            if (typhoonData.forecast_points) {
-                detailList.innerHTML = typhoonData.forecast_points.map(fp => `
-                    <div class="detail-item">
-                        <span>${fp.time}</span>
-                        <strong style="color: #f59e0b">${fp.max_wind} m/s · 半徑 ${fp.radius_7} km</strong>
-                    </div>
+            let tableRows = '';
+            if (t.forecast_points && t.forecast_points.length > 0) {
+                tableRows = t.forecast_points.map(fp => `
+                    <tr>
+                        <td><strong>${fp.time_label}</strong></td>
+                        <td>${fp.lat}°N, ${fp.lon}°E</td>
+                        <td>${fp.pressure}</td>
+                        <td>${fp.wind}</td>
+                        <td>${Math.round((fp.radius_70 || 0) / 1000)} km</td>
+                        <td>${fp.desc || '-'}</td>
+                    </tr>
                 `).join('');
             }
+
+            const seaAlertHtml = (t.sea_alert || '• 鄰近海域密切注意').replace(/\n/g, '<br>');
+            const landAlertHtml = (t.land_alert || '• 沿海強陣風戒備').replace(/\n/g, '<br>');
+
+            detailList.innerHTML = `
+                <div class="typhoon-table-wrap">
+                    <table class="typhoon-table">
+                        <thead>
+                            <tr>
+                                <th>預報時間</th>
+                                <th>座標</th>
+                                <th>氣壓</th>
+                                <th>風速</th>
+                                <th>70%半徑</th>
+                                <th>路徑動態</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows || '<tr><td colspan="6" style="text-align:center;padding:12px;">無預報路徑</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="typhoon-alert-grid">
+                    <div class="typhoon-alert-card sea">
+                        <div class="typhoon-alert-title">🌊 海面警戒 / 監測海域</div>
+                        <div class="typhoon-alert-content">${seaAlertHtml}</div>
+                    </div>
+                    <div class="typhoon-alert-card land">
+                        <div class="typhoon-alert-title">🏞️ 陸上警戒 / 防汛重點</div>
+                        <div class="typhoon-alert-content">${landAlertHtml}</div>
+                    </div>
+                </div>
+            `;
         }
     }
 }

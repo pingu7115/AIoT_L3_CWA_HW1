@@ -113,14 +113,84 @@ def get_county_forecast(county):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+import re
+
+def parse_radius_km(val_str):
+    if not val_str:
+        return 0.0
+    m = re.search(r'(\d+)', str(val_str))
+    if m:
+        return float(m.group(1))
+    return 0.0
+
+TYPHOON_TARGET_LIST = [
+    {"key": "live_cwa", "title": "🔴 即時連線：氣象署最新熱帶系統 (舒力基)", "badge": "即時連線"},
+    {"key": "krathon_2024", "title": "🌪️ 歷史展示：中度颱風 山陀兒 (登陸高雄)", "badge": "歷史展示"},
+    {"key": "gaemi_2024", "title": "🌪️ 歷史展示：強烈颱風 凱米 (登陸宜蘭)", "badge": "歷史展示"},
+    {"key": "congrey_2024", "title": "🌪️ 歷史展示：強烈颱風 康芮 (登陸台東)", "badge": "歷史展示"}
+]
+
+def sanitize_typhoon_data(t, current_target="live_cwa"):
+    if not t:
+        return None
+    t_copy = dict(t)
+    t_copy['radius_7_km'] = parse_radius_km(t.get('radius_7'))
+    t_copy['radius_10_km'] = parse_radius_km(t.get('radius_10'))
+    t_copy['current_target'] = current_target
+    t_copy['targets'] = TYPHOON_TARGET_LIST
+    return t_copy
+
 @app.route('/api/uv')
 def get_uv():
     mode = request.args.get('mode', 'realtime')
     hour = request.args.get('hour', None)
     try:
+        if mode == 'bundle':
+            live_res = uv_data.fetch_cwa_uv_live_observation()
+            live_stations = live_res.get("stations", [])
+            live_cmap = uv_data.get_county_realtime_uv_map(live_stations)
+
+            max_res = uv_data.fetch_cwa_uv_stations()
+            max_stations = max_res.get("stations", [])
+            max_cmap = uv_data.get_latest_uv_by_counties()
+
+            return jsonify({
+                "realtime": {
+                    "mode": "realtime",
+                    "mode_title": "即時觀測",
+                    "obs_time": live_res.get("obs_time", "") or max_res.get("obs_time", ""),
+                    "counties": live_cmap,
+                    "stations": live_stations,
+                    "max_uv": live_res.get("max_uv", max_res.get("max_uv", 0)),
+                    "avg_uv": live_res.get("avg_uv", max_res.get("avg_uv", 0))
+                },
+                "max": {
+                    "mode": "max",
+                    "mode_title": "今日最大值預報",
+                    "obs_time": max_res.get("obs_time", ""),
+                    "counties": max_cmap,
+                    "stations": max_stations,
+                    "max_uv": max_res.get("max_uv", 0),
+                    "avg_uv": max_res.get("avg_uv", 0)
+                }
+            })
+
         if mode == 'hourly' and hour is not None:
             h_int = int(hour)
-            res = uv_data.get_uv_stations_at_hour(h_int)
+            hour_token = f"{h_int:02d}:00"
+            res = uv_data.get_uv_stations_at_hour(hour_token)
+            cmap = uv_data.get_county_realtime_uv_map(res.get("stations", []))
+            return jsonify({
+                "mode": "hourly",
+                "mode_title": f"{hour_token} 逐時推估",
+                "hour": h_int,
+                "obs_time": res.get("obs_time", ""),
+                "counties": cmap,
+                "stations": res.get("stations", []),
+                "max_uv": res.get("max_uv", 0),
+                "avg_uv": res.get("avg_uv", 0),
+                "source_type": res.get("source_type", "逐時推估")
+            })
         elif mode == 'max':
             # Daily max mode
             stations_dict = uv_data.fetch_cwa_uv_stations()
@@ -176,9 +246,28 @@ def get_rainfall():
 
 @app.route('/api/typhoon')
 def get_typhoon():
+    target = request.args.get('target', 'live_cwa')
     try:
-        typ_data = typhoon_data.fetch_cwa_live_typhoon()
-        return jsonify(typ_data)
+        typ_data = None
+        if target == 'live_cwa':
+            try:
+                typ_data = typhoon_data.fetch_cwa_live_typhoon()
+            except Exception as e:
+                print(f"[WARN] Live typhoon fetch error: {e}")
+            if not typ_data:
+                # Seamless fallback to krathon_2024
+                fallback = typhoon_data.TYPHOON_CATALOG.get("krathon_2024", {}).get("data")
+                if fallback:
+                    typ_data = dict(fallback)
+                    typ_data["advisory_body"] = "目前 CWA 即時熱帶系統連線稍有延遲，已切換至歷史中度颱風 山陀兒資料供展示。"
+        elif target in typhoon_data.TYPHOON_CATALOG:
+            typ_data = typhoon_data.TYPHOON_CATALOG[target].get("data")
+
+        if not typ_data:
+            typ_data = typhoon_data.TYPHOON_CATALOG.get("krathon_2024", {}).get("data")
+
+        clean_data = sanitize_typhoon_data(typ_data, current_target=target)
+        return jsonify(clean_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

@@ -38,7 +38,7 @@
     <!-- Left Main Dashboard Panel (Glassmorphism) -->
     <aside class="panel left-panel">
         <div class="panel-header">
-            <div class="county-select-box">
+            <div class="county-select-box" id="county-select-box">
                 <label for="county-select">選擇縣市觀測</label>
                 <select id="county-select">
                     <option value="ALL">全台灣概覽 (22 縣市)</option>
@@ -66,9 +66,18 @@
                     <option value="連江縣">連江縣</option>
                 </select>
             </div>
+            <div class="county-select-box" id="typhoon-select-box" style="display: none;">
+                <label for="typhoon-select">🎯 觀測目標 / 颱風系統切換</label>
+                <select id="typhoon-select">
+                    <option value="live_cwa">🔴【即時連線】氣象署最新熱帶系統 (舒力基)</option>
+                    <option value="krathon_2024">🌪️【歷史展示】中度颱風 山陀兒 (登陸高雄)</option>
+                    <option value="gaemi_2024">🌪️【歷史展示】強烈颱風 凱米 (登陸宜蘭)</option>
+                    <option value="congrey_2024">🌪️【歷史展示】強烈颱風 康芮 (登陸台東)</option>
+                </select>
+            </div>
             <div class="meta-info">
                 <span>更新時間：<strong id="obs-time">載入中...</strong></span>
-                <span class="source-badge">CWA Open Data</span>
+                <span class="source-badge" id="source-badge">CWA Open Data</span>
             </div>
         </div>
 
