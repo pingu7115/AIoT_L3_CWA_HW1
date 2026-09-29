@@ -2765,10 +2765,10 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                     <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="width: 11px; height: 11px; background: #457b9d; border-radius: 3px; display: inline-block;"></span>
+                        <span style="width: 11px; height: 11px; background: #e5a93c; border-radius: 3px; display: inline-block;"></span>
                         <span style="color: #2b303a;">60 - 74%</span>
                     </div>
-                    <span style="color: #457b9d; font-weight: 700;">💧 略偏潮濕</span>
+                    <span style="color: #e5a93c; font-weight: 700;">💧 略偏潮濕</span>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                     <div style="display: flex; align-items: center; gap: 6px;">
@@ -2995,14 +2995,14 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
             <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 4px;">
                 <div style="background: #e07a5f;" title="<40% 極度乾燥"></div>
                 <div style="background: #2a9d8f;" title="40-59% 舒適宜人"></div>
-                <div style="background: #457b9d;" title="60-74% 略偏潮濕"></div>
+                <div style="background: #e5a93c;" title="60-74% 略偏潮濕"></div>
                 <div style="background: #2b82d9;" title="75-84% 潮濕悶熱"></div>
                 <div style="background: #5e548e;" title="85%+ 極度潮濕"></div>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.76rem; margin-top: 6px; flex-wrap: wrap; gap: 4px;">
                 <span style="color: #e07a5f; font-weight: 600;">🌵 &lt; 40% (極乾)</span>
                 <span style="color: #2a9d8f; font-weight: 600;">🍃 40-59% (適中)</span>
-                <span style="color: #457b9d; font-weight: 600;">💧 60-74% (稍潮)</span>
+                <span style="color: #e5a93c; font-weight: 600;">💧 60-74% (稍潮)</span>
                 <span style="color: #2b82d9; font-weight: 600;">🌧️ 75-84% (潮濕)</span>
                 <span style="color: #5e548e; font-weight: 600;">🌊 85%+ (極濕)</span>
             </div>

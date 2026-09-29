@@ -58,7 +58,7 @@ HUMIDITY_LEVELS = [
         "range_max": 74,
         "name": "略偏潮濕",
         "level": "略偏潮濕 (稍潮)",
-        "color": "#457b9d",       # 海青水藍
+        "color": "#e5a93c",       # 提示警戒黃色
         "icon": "💧",
         "feeling": "輕微悶黏 · 水氣漸增",
         "description": "稍微偏高但多數人尚可適應，厚重衣物晾曬需較長時間風乾。",
