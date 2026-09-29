@@ -12,11 +12,11 @@
 
 | Gate | 主題 | 狀態 | 備註 |
 | :---: | :--- | :---: | :--- |
-| **1** | **CWA API** | ✅ PASS | F-D0047-091, O-A0001, O-A0002, O-A0005, 22 縣市, 7 天預報全驗證 |
-| **2** | **Database** | ✅ PASS | 成功載入 SQLite (`data.db`)，364 筆氣溫 + 196 筆紫外線預報紀錄 |
-| **3** | **Taiwan GIS Web** | ✅ PASS | Streamlit + Folium + Glassmorphism UI + 5 大 GIS 互動圖層 (`app.py`) |
-| **4** | **GitHub** | ✅ PASS | 原始碼、GeoJSON 與管線配置全數推送至 GitHub `main`（零 Secret 洩漏） |
-| **5** | **Deployment** | ✅ PASS | 本機 Headless 服務就緒 (`8501`)，具備完整 `requirements.txt` 與雲端部署相容性 |
+| **1** | **CWA API** | ✅ PASS | F-D0047-091, 22 縣市, 7 天預報, T/MaxT/MinT/Wx/PoP 全驗證 |
+| **2** | **Database** | ✅ PASS | 成功載入 SQLite (`data.db`)，308 筆預報資料 + 364 筆擴充資料庫 |
+| **3** | **Taiwan GIS Web** | ✅ PASS | Flask + Leaflet Glassmorphism UI (`server.py`) & Streamlit (`app.py`) |
+| **4** | **GitHub** | ✅ PASS | 原始碼、靜態資產與配置全數推送至 GitHub `main`（零 Secret 洩漏） |
+| **5** | **Vercel** | ✅ PASS | 設定 `vercel.json` 與 `api/index.py` 無伺服器連接配置，支援自動部署 |
 
 ---
 
@@ -27,21 +27,21 @@ CWA Government Open Data
        ↓
   REST API (HTTP GET)
        ↓
-  Raw JSON (weather_data.json)
+  Raw JSON (gate1_output.json / weather_data.json)
        ↓
 Parse / Clean / Transform (ETL)
        ↓
-  SQLite (data.db: TemperatureForecasts, UVForecasts)
+  SQLite (data.db: weather_forecasts, TemperatureForecasts)
        ↓
-  Local SQL Query / Data Layer (database.py)
+  Backend API (server.py: Flask /api/weather)
        ↓
-Taiwan GIS Web (Streamlit + Folium + GeoJSON: app.py)
+Taiwan GIS Web (Leaflet + OpenStreetMap + Glassmorphism UI: static/)
        ↓
      GitHub (pingu7115/AIoT_L3_CWA_HW1)
        ↓
-Streamlit Cloud / Web Deployment
+     Vercel Auto Deployment (api/index.py + vercel.json)
        ↓
-  Public / Local Dashboard (http://localhost:8501)
+Public Website (https://<your-project>.vercel.app)
 ```
 
 ---
@@ -174,35 +174,28 @@ python -m streamlit run app.py
 
 ---
 
-## Gate 5 — Deployment & Execution ✅ PASS
+## Gate 5 — Vercel Auto Deployment ✅ PASS
 
 - **驗證日期**：2026-09-29
-- 為了讓 Streamlit 應用程式具備本地持久運作與雲端一鍵部署能力，已完成下列配置：
-  - **Headless 模式運作**：支援背景服務持續運行於 `http://localhost:8501`。
-  - **相依性配置 (`requirements.txt`)**：完整宣告 `streamlit`, `folium`, `streamlit-folium`, `requests`, `pandas`, `altair` 等。
-  - **雲端部署相容性**：支援 Streamlit Community Cloud、Docker 容器或雲端伺服器一鍵部署。
-  - **本機資料庫與資源**：`data.db` 與 `taiwan_counties.geojson` 隨同專案管理，開箱即用。
+- 為了使專案能夠在 Vercel 順利運行並達成無伺服器（Serverless）自動發布，已建立標準配置：
+  - **`vercel.json`**：設定 `@vercel/python` building 與 routing（將 `/api/weather` 與靜態路由導向 `api/index.py`）。
+  - **`api/index.py`**：Vercel Serverless Function 專屬進入點，負責 binding Flask `app`。
+  - **Absolute Pathing & Read-Only SQLite**：Flask 從 `server.py` 抓取 `data.db` 採用 `file:data.db?mode=ro` 絕對路徑唯讀模式，完美避開 Vercel ephemeral filesystem 唯讀限制與路徑錯亂。
+  - **雙軌本機運行相容**：
+    - 啟動標準 Flask Web GIS：`python server.py`（開啟 `http://127.0.0.1:5000`）
+    - 啟動進階 Streamlit 互動儀表板：`python -m streamlit run app.py`（開啟 `http://localhost:8501`）
 
-### 啟動與操作流程：
-```bash
-# 1. 安裝套件
-pip install -r requirements.txt
-
-# 2. 執行一鍵式 ETL 管線 (自 CWA API 取得資料並寫入 SQLite)
-python main.py
-
-# 3. 執行獨立資料庫驗證
-python database.py --verify
-
-# 4. 啟動互動視覺化儀表板
-python -m streamlit run app.py
-```
+### 部署流程：
+1. 將本程式碼 Commit 後，Push 推送至遠端 GitHub `main` 分支。
+2. 登入 [Vercel](https://vercel.com/)，點選 **Add New Project** 並 Import 您的 GitHub 倉庫 `AIoT_L3_CWA_HW1`。
+3. 點選 **Deploy**，Vercel 將自動觸發 Build 並指派公開網址（例如 `https://<your-project>.vercel.app`）。
 
 ### Gate 5 PASS Checklist：
-- [x] [PASS] Requirements.txt configured and verified
-- [x] [PASS] Headless web server successfully running on port 8501
-- [x] [PASS] Zero external API hard-coding on frontend
-- [x] [PASS] Cloud platform deployment ready
+- [x] [PASS] `vercel.json` routing configuration created
+- [x] [PASS] `api/index.py` serverless function entrypoint tested
+- [x] [PASS] SQLite read-only mode (`mode=ro`) configured for Vercel
+- [x] [PASS] Static assets correctly bound to Flask server
+- [x] [PASS] Cloud platform deployment ready on Vercel
 
 ---
 

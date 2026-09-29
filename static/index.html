@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣即時氣象</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Top Left Dashboard / Stats Panel -->
+    <div class="panel top-left-panel">
+        <div class="title-bar">
+            <h1>台灣即時氣象</h1>
+            <span class="badge">資料庫</span>
+        </div>
+        
+        <div class="meta-info">
+            <p>觀測時間：<span id="obs-time">載入中...</span></p>
+            <p>資料來源：CWA F-D0047-091</p>
+            <p>本次讀取：資料庫快取 (未呼叫 API)</p>
+            <p>測站數量：<span id="loc-count">22</span> 縣市</p>
+        </div>
+
+        <!-- 2x2 Stat Grid -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <span class="stat-title">最高溫</span>
+                <span class="stat-value"><span id="max-temp">-</span> <small>°C</small></span>
+                <span class="stat-sub" id="max-temp-loc">-</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-title">最低溫</span>
+                <span class="stat-value"><span id="min-temp">-</span> <small>°C</small></span>
+                <span class="stat-sub" id="min-temp-loc">-</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-title">最高降雨機率</span>
+                <span class="stat-value"><span id="max-rain">-</span> <small>%</small></span>
+                <span class="stat-sub" id="max-rain-loc">-</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-title">天氣現象</span>
+                <span class="stat-value-text" id="common-weather">-</span>
+                <span class="stat-sub">多數地區</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Control Sidebar -->
+    <div class="panel right-panel">
+        <div class="layer-group">
+            <div class="layer-title">圖層</div>
+            <button class="layer-btn active" id="btn-temp">🌡️ 氣溫</button>
+            <button class="layer-btn" id="btn-rain">🌧️ 降雨機率</button>
+        </div>
+        
+        <div class="layer-group">
+            <label class="checkbox-container">
+                <input type="checkbox" checked id="toggle-marker">
+                <span class="checkmark"></span>
+                氣溫/機率 數值標籤
+            </label>
+        </div>
+
+        <div class="layer-group">
+            <div class="layer-title">底圖</div>
+            <div class="map-switcher">
+                <button class="switcher-btn active" id="base-dark">深色</button>
+                <button class="switcher-btn" id="base-street">街道圖</button>
+            </div>
+        </div>
+        
+        <button class="btn-primary" id="btn-locate">📌 重新定位全台</button>
+    </div>
+
+    <!-- Bottom Legend -->
+    <div class="legend-panel">
+        <div class="legend-title" id="legend-title">°C</div>
+        <div class="legend-gradient" id="legend-gradient"></div>
+        <div class="legend-labels" id="legend-labels">
+            <span>5</span>
+            <span>10</span>
+            <span>15</span>
+            <span>20</span>
+            <span>24</span>
+            <span>28</span>
+            <span>32</span>
+            <span>36</span>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Custom JS -->
+    <script src="script.js"></script>
+</body>
+</html>
