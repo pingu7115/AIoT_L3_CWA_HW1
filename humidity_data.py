@@ -134,6 +134,95 @@ def calculate_dew_point(temp_c, rh_percent):
     except Exception:
         return None
 
+# 溫濕度指數 (THI) 5 階分級標準與代表色標
+THI_LEVELS = [
+    {
+        "range_min": 0,
+        "range_max": 64.9,
+        "name": "涼爽舒適",
+        "level": "涼爽舒適 (< 65)",
+        "color": "#457b9d",       # 莫蘭迪海水藍
+        "icon": "🍃",
+        "feeling": "清涼乾爽 · 體感舒暢",
+        "description": "氣溫與濕度搭配宜人，無悶熱感，人體自然散熱效率極高。",
+        "cooling_advice": "維持自然對流通風即可，無需開啟空調冷氣",
+        "activity_advice": "非常適合戶外慢跑、健走與各項體育鍛鍊"
+    },
+    {
+        "range_min": 65,
+        "range_max": 69.9,
+        "name": "舒適宜人",
+        "level": "舒適宜人 (65 - 69.9)",
+        "color": "#2a9d8f",       # 莫蘭迪翡翠綠
+        "icon": "🟢",
+        "feeling": "黃金體感 · 身心放鬆",
+        "description": "人體最舒服的溫濕黃金區間，不易出汗或發冷。",
+        "cooling_advice": "體感極佳，室內開窗維持自然微風即可",
+        "activity_advice": "全天候適宜各項居家休閒與戶外活動"
+    },
+    {
+        "range_min": 70,
+        "range_max": 74.9,
+        "name": "稍暖適中",
+        "level": "稍暖適中 (70 - 74.9)",
+        "color": "#e5a93c",       # 提醒黃色
+        "icon": "🟡",
+        "feeling": "微感溫熱 · 輕微出汗",
+        "description": "體感略顯溫暖，稍微活動後可能微出汗，需適度補水。",
+        "cooling_advice": "室內可開啟電風扇或循環扇促進對流",
+        "activity_advice": "外出活動請適量補充常溫開水"
+    },
+    {
+        "range_min": 75,
+        "range_max": 79.9,
+        "name": "悶熱稍黏",
+        "level": "悶熱稍黏 (75 - 79.9)",
+        "color": "#e07a5f",       # 警示磚橘色
+        "icon": "🟠",
+        "feeling": "排汗不順 · 黏膩悶重",
+        "description": "高溫與高濕相互疊加，汗水不易自然蒸發，易產生疲倦與燥熱感。",
+        "cooling_advice": "建議開啟空調或除濕機降溫除濕 (設定 26°C)",
+        "activity_advice": "戶外勞動注意定時於陰涼處歇息，補充水分"
+    },
+    {
+        "range_min": 80,
+        "range_max": 100,
+        "name": "極度悶熱",
+        "level": "極度悶熱 (≥ 80)",
+        "color": "#c94a4a",       # 警報紅色
+        "icon": "🔴",
+        "feeling": "酷熱難耐 · 中暑警戒",
+        "description": "溫濕度指數已達高度熱衰竭風險區間！體溫散熱受阻，極易發生熱痙攣或中暑。",
+        "cooling_advice": "⚠️ 室內務必開啟冷氣空調降溫，避免密閉高溫環境",
+        "activity_advice": "非必要避免正午烈日下高強度勞動，備妥電解質飲品"
+    }
+]
+
+def get_thi_category(thi_val):
+    """依據 THI 數值判定等級與防護建議"""
+    if thi_val is None:
+        return {
+            "name": "暫無數據",
+            "level": "暫無",
+            "color": "#94a3b8",
+            "icon": "⚪",
+            "feeling": "數據統計中",
+            "description": "暫無即時數值",
+            "cooling_advice": "請參考鄰近測站",
+            "activity_advice": "依天氣動態調整"
+        }
+    val = float(thi_val)
+    if val < 65:
+        return THI_LEVELS[0]
+    elif val < 70:
+        return THI_LEVELS[1]
+    elif val < 75:
+        return THI_LEVELS[2]
+    elif val < 80:
+        return THI_LEVELS[3]
+    else:
+        return THI_LEVELS[4]
+
 def calculate_thi(temp_c, rh_percent):
     """
     計算溫濕度舒適度指數 (THI - Temperature-Humidity Index)
@@ -146,17 +235,8 @@ def calculate_thi(temp_c, rh_percent):
         rh = float(rh_percent)
         thi = 0.81 * t + 0.01 * rh * (0.99 * t - 14.3) + 46.3
         thi_val = round(thi, 1)
-
-        if thi_val < 65:
-            return thi_val, "涼爽舒適", "#457b9d"
-        elif thi_val < 70:
-            return thi_val, "舒適宜人", "#2a9d8f"
-        elif thi_val < 75:
-            return thi_val, "稍暖適中", "#e5a93c"
-        elif thi_val < 80:
-            return thi_val, "悶熱稍黏", "#e07a5f"
-        else:
-            return thi_val, "極度悶熱", "#c94a4a"
+        cat = get_thi_category(thi_val)
+        return thi_val, cat["name"], cat["color"]
     except Exception:
         return None, "未知", "#94a3b8"
 
@@ -335,6 +415,14 @@ def fetch_cwa_humidity_live_observation(api_key=None):
     min_station = sorted_by_rh_asc[0] if sorted_by_rh_asc else None
     avg_rh = round(sum(s["rh"] for s in valid_stations) / len(valid_stations), 1) if valid_stations else 0.0
 
+    # 依溫濕舒適度指數 (THI) 排序
+    valid_thi = [s for s in valid_stations if s.get("thi") is not None]
+    sorted_by_thi_desc = sorted(valid_thi, key=lambda s: s["thi"], reverse=True)
+    sorted_by_thi_asc = sorted(valid_thi, key=lambda s: s["thi"])
+    max_thi_station = sorted_by_thi_desc[0] if sorted_by_thi_desc else None
+    min_thi_station = sorted_by_thi_asc[0] if sorted_by_thi_asc else None
+    avg_thi = round(sum(s["thi"] for s in valid_thi) / len(valid_thi), 1) if valid_thi else 0.0
+
     return {
         "obs_time": obs_time_str,
         "stations": stations,
@@ -343,15 +431,20 @@ def fetch_cwa_humidity_live_observation(api_key=None):
         "max_station": max_station,
         "min_station": min_station,
         "avg_rh": avg_rh,
+        "max_thi_station": max_thi_station,
+        "min_thi_station": min_thi_station,
+        "avg_thi": avg_thi,
         "top_humid_stations": sorted_by_rh_desc[:10],
         "top_dry_stations": sorted_by_rh_asc[:10],
+        "top_hot_stations": sorted_by_thi_desc[:10],
+        "top_cool_stations": sorted_by_thi_asc[:10],
         "is_mock": False
     }
 
 def get_county_realtime_humidity_map(stations_list):
     """
     以縣市為單位彙整轄內測站實測濕度與人體舒適度指標
-    回傳字典格式: { "臺北市": { "rh": 82, "avg_temp": 28.1, "category": {...}, ... } }
+    回傳字典格式: { "臺北市": { "rh": 82, "avg_temp": 28.1, "thi": 78.5, "category": {...}, ... } }
     """
     county_buckets = {}
     for s in stations_list:
@@ -374,6 +467,7 @@ def get_county_realtime_humidity_map(stations_list):
 
         cat = get_humidity_category(avg_rh)
         thi, thi_text, thi_color = calculate_thi(avg_temp, avg_rh)
+        thi_cat = get_thi_category(thi)
         dp = calculate_dew_point(avg_temp, avg_rh)
 
         sorted_local = sorted(sts, key=lambda s: s["rh"], reverse=True)
@@ -388,6 +482,7 @@ def get_county_realtime_humidity_map(stations_list):
             "thi": thi,
             "thi_text": thi_text,
             "thi_color": thi_color,
+            "thi_category": thi_cat,
             "category": cat,
             "station_count": len(sts),
             "max_local_station": max_local,

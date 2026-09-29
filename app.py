@@ -58,8 +58,10 @@ from humidity_data import (
     fetch_cwa_humidity_live_observation,
     get_county_realtime_humidity_map,
     get_humidity_category,
+    get_thi_category,
     calculate_thi,
-    calculate_dew_point
+    calculate_dew_point,
+    THI_LEVELS
 )
 
 GEOJSON_FILE = "taiwan_counties.geojson"
@@ -2619,59 +2621,112 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
 
     selected_hum_region = st.session_state["selected_hum_region"]
 
-    # 數據統計與 KPI 卡片
-    max_st = humidity_data.get("max_station") or {}
-    min_st = humidity_data.get("min_station") or {}
-    avg_rh = humidity_data.get("avg_rh", 0.0)
-
-    max_rh_val = max_st.get("rh", 0)
-    min_rh_val = min_st.get("rh", 0)
-    max_st_name = max_st.get("name", "觀測中")
-    min_st_name = min_st.get("name", "觀測中")
-
-    cat_max = get_humidity_category(max_rh_val)
-    cat_min = get_humidity_category(min_rh_val)
-    cat_avg = get_humidity_category(avg_rh)
+    is_thi_mode = "THI" in hum_view_mode
 
     distinct_counties = [c for c in sorted_regions if c in county_live_humidity]
-    high_humid_count = sum(1 for c in distinct_counties if county_live_humidity[c]["rh"] >= 75)
 
-    k1, k2, k3, k4 = st.columns(4)
-    with k1:
-        st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid {cat_max['color']};">
-            <div class="metric-title">🌊 全台最高實測濕度</div>
-            <div class="metric-value" style="color: {cat_max['color']};">{max_rh_val} <span style="font-size: 1.1rem; font-weight: 600;">%</span></div>
-            <div class="metric-caption">測站：<b>{max_st_name}</b> ({cat_max['icon']} {cat_max['name']})</div>
-        </div>
-        """, unsafe_allow_html=True)
+    if is_thi_mode:
+        max_thi_st = humidity_data.get("max_thi_station") or {}
+        min_thi_st = humidity_data.get("min_thi_station") or {}
+        avg_thi = humidity_data.get("avg_thi", 0.0)
 
-    with k2:
-        st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid {cat_min['color']};">
-            <div class="metric-title">🌵 全台最低實測濕度</div>
-            <div class="metric-value" style="color: {cat_min['color']};">{min_rh_val} <span style="font-size: 1.1rem; font-weight: 600;">%</span></div>
-            <div class="metric-caption">測站：<b>{min_st_name}</b> ({cat_min['icon']} {cat_min['name']})</div>
-        </div>
-        """, unsafe_allow_html=True)
+        max_thi_val = max_thi_st.get("thi", 0.0)
+        min_thi_val = min_thi_st.get("thi", 0.0)
+        max_thi_name = max_thi_st.get("name", "觀測中")
+        min_thi_name = min_thi_st.get("name", "觀測中")
 
-    with k3:
-        st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid {cat_avg['color']};">
-            <div class="metric-title">📊 測站即時平均濕度</div>
-            <div class="metric-value" style="color: {cat_avg['color']};">{avg_rh} <span style="font-size: 1.1rem; font-weight: 600;">%</span></div>
-            <div class="metric-caption">全島實測均值 ({cat_avg['icon']} {cat_avg['name']})</div>
-        </div>
-        """, unsafe_allow_html=True)
+        cat_max_thi = get_thi_category(max_thi_val)
+        cat_min_thi = get_thi_category(min_thi_val)
+        cat_avg_thi = get_thi_category(avg_thi)
 
-    with k4:
-        st.markdown(f"""
-        <div class="glass-card" style="border-top: 3px solid #2b82d9;">
-            <div class="metric-title">🛡️ 全台防霉除濕警戒</div>
-            <div class="metric-value" style="color: #2b82d9;">{high_humid_count} <span style="font-size: 1.1rem; font-weight: 600;">縣市</span></div>
-            <div class="metric-caption">濕度 ≥ 75% 建議開啟除濕機</div>
-        </div>
-        """, unsafe_allow_html=True)
+        high_thi_count = sum(1 for c in distinct_counties if county_live_humidity[c].get("thi", 0) >= 75)
+
+        k1, k2, k3, k4 = st.columns(4)
+        with k1:
+            st.markdown(f"""
+            <div class="glass-card" style="border-top: 3px solid {cat_max_thi['color']};">
+                <div class="metric-title">🔥 全台最高體感負荷</div>
+                <div class="metric-value" style="color: {cat_max_thi['color']};">{max_thi_val} <span style="font-size: 1.05rem; font-weight: 600;">THI</span></div>
+                <div class="metric-caption">測站：<b>{max_thi_name}</b> ({cat_max_thi['icon']} {cat_max_thi['name']})</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with k2:
+            st.markdown(f"""
+            <div class="glass-card" style="border-top: 3px solid {cat_min_thi['color']};">
+                <div class="metric-title">🍃 全台最舒適/清涼</div>
+                <div class="metric-value" style="color: {cat_min_thi['color']};">{min_thi_val} <span style="font-size: 1.05rem; font-weight: 600;">THI</span></div>
+                <div class="metric-caption">測站：<b>{min_thi_name}</b> ({cat_min_thi['icon']} {cat_min_thi['name']})</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with k3:
+            st.markdown(f"""
+            <div class="glass-card" style="border-top: 3px solid {cat_avg_thi['color']};">
+                <div class="metric-title">📊 全島平均體感負荷</div>
+                <div class="metric-value" style="color: {cat_avg_thi['color']};">{avg_thi} <span style="font-size: 1.05rem; font-weight: 600;">THI</span></div>
+                <div class="metric-caption">全島實測均值 ({cat_avg_thi['icon']} {cat_avg_thi['name']})</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with k4:
+            st.markdown(f"""
+            <div class="glass-card" style="border-top: 3px solid #e07a5f;">
+                <div class="metric-title">🥵 全台悶熱中暑警戒</div>
+                <div class="metric-value" style="color: #e07a5f;">{high_thi_count} <span style="font-size: 1.1rem; font-weight: 600;">縣市</span></div>
+                <div class="metric-caption">THI ≥ 75 建議開啟冷氣空調</div>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        # 數據統計與 KPI 卡片 (相對濕度 RH %)
+        max_st = humidity_data.get("max_station") or {}
+        min_st = humidity_data.get("min_station") or {}
+        avg_rh = humidity_data.get("avg_rh", 0.0)
+
+        max_rh_val = max_st.get("rh", 0)
+        min_rh_val = min_st.get("rh", 0)
+        max_st_name = max_st.get("name", "觀測中")
+        min_st_name = min_st.get("name", "觀測中")
+
+        cat_max = get_humidity_category(max_rh_val)
+        cat_min = get_humidity_category(min_rh_val)
+        cat_avg = get_humidity_category(avg_rh)
+
+        high_humid_count = sum(1 for c in distinct_counties if county_live_humidity[c]["rh"] >= 75)
+
+        k1, k2, k3, k4 = st.columns(4)
+        with k1:
+            st.markdown(f"""
+            <div class="glass-card" style="border-top: 3px solid {cat_max['color']};">
+                <div class="metric-title">🌊 全台最高實測濕度</div>
+                <div class="metric-value" style="color: {cat_max['color']};">{max_rh_val} <span style="font-size: 1.1rem; font-weight: 600;">%</span></div>
+                <div class="metric-caption">測站：<b>{max_st_name}</b> ({cat_max['icon']} {cat_max['name']})</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with k2:
+            st.markdown(f"""
+            <div class="glass-card" style="border-top: 3px solid {cat_min['color']};">
+                <div class="metric-title">🌵 全台最低實測濕度</div>
+                <div class="metric-value" style="color: {cat_min['color']};">{min_rh_val} <span style="font-size: 1.1rem; font-weight: 600;">%</span></div>
+                <div class="metric-caption">測站：<b>{min_st_name}</b> ({cat_min['icon']} {cat_min['name']})</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with k3:
+            st.markdown(f"""
+            <div class="glass-card" style="border-top: 3px solid {cat_avg['color']};">
+                <div class="metric-title">📊 測站即時平均濕度</div>
+                <div class="metric-value" style="color: {cat_avg['color']};">{avg_rh} <span style="font-size: 1.1rem; font-weight: 600;">%</span></div>
+                <div class="metric-caption">全島實測均值 ({cat_avg['icon']} {cat_avg['name']})</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with k4:
+            st.markdown(f"""
+            <div class="glass-card" style="border-top: 3px solid #2b82d9;">
+                <div class="metric-title">🛡️ 全台防霉除濕警戒</div>
+                <div class="metric-value" style="color: #2b82d9;">{high_humid_count} <span style="font-size: 1.1rem; font-weight: 600;">縣市</span></div>
+                <div class="metric-caption">濕度 ≥ 75% 建議開啟除濕機</div>
+            </div>
+            """, unsafe_allow_html=True)
 
     st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
@@ -2679,8 +2734,12 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
     col_hum_map, col_hum_details = st.columns([1.65, 1.35])
 
     with col_hum_map:
-        st.markdown("### 🗺️ 全台 22 縣市即時平均濕度熱力圖")
-        st.caption("縣市面狀顏色依當前實測平均濕度渲染，每個縣市直接標註其即時平均相對濕度；點擊或懸停可查看該縣市完整體感與除濕指引。")
+        if is_thi_mode:
+            st.markdown("### 🗺️ 全台 22 縣市即時溫濕舒適度指數 (THI) 熱力圖")
+            st.caption("縣市面狀顏色依溫濕度體感指數 (THI) 渲染，每個縣市標註體感指數；數值越高代表體感越悶熱難耐，點擊或懸停可查看防中暑與空調指引。")
+        else:
+            st.markdown("### 🗺️ 全台 22 縣市即時平均濕度熱力圖")
+            st.caption("縣市面狀顏色依當前實測平均濕度渲染，每個縣市直接標註其即時平均相對濕度；點擊或懸停可查看該縣市完整體感與除濕指引。")
 
         # 建立地圖實例
         m_hum = folium.Map(
@@ -2726,70 +2785,132 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
         </style>
         """))
 
-        # 右上角濕度指數色階圖例 (浮動半透明擬物卡片)
-        hum_legend_html = """
-        <div id="hum-color-legend" style="
-            position: absolute;
-            top: 14px;
-            right: 14px;
-            z-index: 1000;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 12px;
-            padding: 10px 14px;
-            color: #2b303a;
-            box-shadow: 0 4px 16px rgba(60, 50, 40, 0.08);
-            font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
-            min-width: 154px;
-            pointer-events: auto;
-        ">
-            <div style="font-weight: 700; font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px;">
-                <span>💧 相對濕度圖例</span>
+        # 右上角色階圖例 (浮動半透明擬物卡片)
+        if is_thi_mode:
+            hum_legend_html = """
+            <div id="hum-color-legend" style="
+                position: absolute;
+                top: 14px;
+                right: 14px;
+                z-index: 1000;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(0, 0, 0, 0.08);
+                border-radius: 12px;
+                padding: 10px 14px;
+                color: #2b303a;
+                box-shadow: 0 4px 16px rgba(60, 50, 40, 0.08);
+                font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+                min-width: 154px;
+                pointer-events: auto;
+            ">
+                <div style="font-weight: 700; font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px;">
+                    <span>🌡️ 溫濕舒適度 (THI) 圖例</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 5px; font-size: 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 11px; height: 11px; background: #457b9d; border-radius: 3px; display: inline-block;"></span>
+                            <span style="color: #2b303a;">&lt; 65</span>
+                        </div>
+                        <span style="color: #457b9d; font-weight: 700;">🍃 涼爽舒適</span>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 11px; height: 11px; background: #2a9d8f; border-radius: 3px; display: inline-block;"></span>
+                            <span style="color: #2b303a;">65 - 69.9</span>
+                        </div>
+                        <span style="color: #2a9d8f; font-weight: 700;">🟢 舒適宜人</span>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 11px; height: 11px; background: #e5a93c; border-radius: 3px; display: inline-block;"></span>
+                            <span style="color: #2b303a;">70 - 74.9</span>
+                        </div>
+                        <span style="color: #e5a93c; font-weight: 700;">🟡 稍暖適中</span>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 11px; height: 11px; background: #e07a5f; border-radius: 3px; display: inline-block;"></span>
+                            <span style="color: #2b303a;">75 - 79.9</span>
+                        </div>
+                        <span style="color: #e07a5f; font-weight: 700;">🟠 悶熱稍黏</span>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 11px; height: 11px; background: #c94a4a; border-radius: 3px; display: inline-block;"></span>
+                            <span style="color: #2b303a;">≥ 80</span>
+                        </div>
+                        <span style="color: #c94a4a; font-weight: 700;">🔴 極度悶熱</span>
+                    </div>
+                </div>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 5px; font-size: 12px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="width: 11px; height: 11px; background: #e07a5f; border-radius: 3px; display: inline-block;"></span>
-                        <span style="color: #2b303a;">&lt; 40%</span>
-                    </div>
-                    <span style="color: #e07a5f; font-weight: 700;">🌵 極度乾燥</span>
+            """
+        else:
+            hum_legend_html = """
+            <div id="hum-color-legend" style="
+                position: absolute;
+                top: 14px;
+                right: 14px;
+                z-index: 1000;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(0, 0, 0, 0.08);
+                border-radius: 12px;
+                padding: 10px 14px;
+                color: #2b303a;
+                box-shadow: 0 4px 16px rgba(60, 50, 40, 0.08);
+                font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+                min-width: 154px;
+                pointer-events: auto;
+            ">
+                <div style="font-weight: 700; font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px;">
+                    <span>💧 相對濕度圖例</span>
                 </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="width: 11px; height: 11px; background: #2a9d8f; border-radius: 3px; display: inline-block;"></span>
-                        <span style="color: #2b303a;">40 - 59%</span>
+                <div style="display: flex; flex-direction: column; gap: 5px; font-size: 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 11px; height: 11px; background: #e07a5f; border-radius: 3px; display: inline-block;"></span>
+                            <span style="color: #2b303a;">&lt; 40%</span>
+                        </div>
+                        <span style="color: #e07a5f; font-weight: 700;">🌵 極度乾燥</span>
                     </div>
-                    <span style="color: #2a9d8f; font-weight: 700;">🍃 舒適宜人</span>
-                </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="width: 11px; height: 11px; background: #e5a93c; border-radius: 3px; display: inline-block;"></span>
-                        <span style="color: #2b303a;">60 - 74%</span>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 11px; height: 11px; background: #2a9d8f; border-radius: 3px; display: inline-block;"></span>
+                            <span style="color: #2b303a;">40 - 59%</span>
+                        </div>
+                        <span style="color: #2a9d8f; font-weight: 700;">🍃 舒適宜人</span>
                     </div>
-                    <span style="color: #e5a93c; font-weight: 700;">💧 略偏潮濕</span>
-                </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="width: 11px; height: 11px; background: #2b82d9; border-radius: 3px; display: inline-block;"></span>
-                        <span style="color: #2b303a;">75 - 84%</span>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 11px; height: 11px; background: #e5a93c; border-radius: 3px; display: inline-block;"></span>
+                            <span style="color: #2b303a;">60 - 74%</span>
+                        </div>
+                        <span style="color: #e5a93c; font-weight: 700;">💧 略偏潮濕</span>
                     </div>
-                    <span style="color: #2b82d9; font-weight: 700;">🌧️ 潮濕悶熱</span>
-                </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="width: 11px; height: 11px; background: #5e548e; border-radius: 3px; display: inline-block;"></span>
-                        <span style="color: #2b303a;">85%+</span>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 11px; height: 11px; background: #2b82d9; border-radius: 3px; display: inline-block;"></span>
+                            <span style="color: #2b303a;">75 - 84%</span>
+                        </div>
+                        <span style="color: #2b82d9; font-weight: 700;">🌧️ 潮濕悶熱</span>
                     </div>
-                    <span style="color: #5e548e; font-weight: 700;">🌊 極度潮濕</span>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="width: 11px; height: 11px; background: #5e548e; border-radius: 3px; display: inline-block;"></span>
+                            <span style="color: #2b303a;">85%+</span>
+                        </div>
+                        <span style="color: #5e548e; font-weight: 700;">🌊 極度潮濕</span>
+                    </div>
                 </div>
             </div>
-        </div>
-        """
+            """
         m_hum.get_root().html.add_child(folium.Element(hum_legend_html))
 
-        # 疊加全台 22 縣市 GeoJSON 面狀熱力著色 (依據即時實測濕度渲染)
+        # 疊加全台 22 縣市 GeoJSON 面狀熱力著色
         if os.path.exists(GEOJSON_FILE):
             with open(GEOJSON_FILE, "r", encoding="utf-8") as gf:
                 geojson_hum_data = json.load(gf)
@@ -2809,72 +2930,138 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
                 if h_info:
                     val = h_info["rh"]
                     cat = h_info["category"]
+                    thi_val = h_info.get("thi", 0.0)
+                    thi_cat = h_info.get("thi_category") or get_thi_category(thi_val)
                     t_val = f"{h_info['avg_temp']}°C" if h_info.get("avg_temp") else "觀測中"
                     thi_txt = h_info.get("thi_text", "舒適")
                     dp_val = f"{h_info['dew_point']}°C" if h_info.get("dew_point") else "無"
 
-                    props["tooltip_card"] = f"""
-                    <div style="
-                        background: rgba(43, 48, 58, 0.92);
-                        backdrop-filter: blur(8px);
-                        -webkit-backdrop-filter: blur(8px);
-                        color: #FFFFFF;
-                        padding: 5px 11px;
-                        border-radius: 8px;
-                        font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
-                        font-size: 12px;
-                        font-weight: 600;
-                        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-                        white-space: nowrap;
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 6px;
-                        pointer-events: none;
-                    ">
-                        <span>📍 {c_name}</span>
-                        <span style="color: #64dfdf; font-weight: 800;">{val}% RH</span>
-                        <span style="background: {cat['color']}; padding: 1px 6px; border-radius: 999px; font-size: 10.5px;">{cat['icon']} {cat['name']}</span>
-                        <span style="color: #cbd5e1; font-weight: 400; font-size: 11px;">({t_val} · {thi_txt})</span>
-                    </div>
-                    """
-                    props["popup_card"] = f"""
-                    <div style="
-                        font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
-                        min-width: 250px;
-                        color: #2b303a;
-                        padding: 6px 4px;
-                        line-height: 1.55;
-                    ">
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid rgba(0, 0, 0, 0.08); padding-bottom: 6px; margin-bottom: 8px;">
-                            <div>
-                                <span style="font-size: 16px; font-weight: 800; color: #2b303a;">📍 {c_name}【即時濕度與體感】</span>
-                                <div style="font-size: 11px; color: #6c757d;">{h_info.get('source_desc', '測站即時實測')}</div>
+                    if is_thi_mode:
+                        props["tooltip_card"] = f"""
+                        <div style="
+                            background: rgba(43, 48, 58, 0.92);
+                            backdrop-filter: blur(8px);
+                            -webkit-backdrop-filter: blur(8px);
+                            color: #FFFFFF;
+                            padding: 5px 11px;
+                            border-radius: 8px;
+                            font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+                            font-size: 12px;
+                            font-weight: 600;
+                            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+                            white-space: nowrap;
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 6px;
+                            pointer-events: none;
+                        ">
+                            <span>📍 {c_name}</span>
+                            <span style="color: #ffd166; font-weight: 800;">THI {thi_val}</span>
+                            <span style="background: {thi_cat['color']}; padding: 1px 6px; border-radius: 999px; font-size: 10.5px;">{thi_cat['icon']} {thi_cat['name']}</span>
+                            <span style="color: #cbd5e1; font-weight: 400; font-size: 11px;">({t_val} · RH {val}%)</span>
+                        </div>
+                        """
+                        props["popup_card"] = f"""
+                        <div style="
+                            font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+                            min-width: 250px;
+                            color: #2b303a;
+                            padding: 6px 4px;
+                            line-height: 1.55;
+                        ">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid rgba(0, 0, 0, 0.08); padding-bottom: 6px; margin-bottom: 8px;">
+                                <div>
+                                    <span style="font-size: 16px; font-weight: 800; color: #2b303a;">📍 {c_name}【溫濕體感舒適度】</span>
+                                    <div style="font-size: 11px; color: #6c757d;">{h_info.get('source_desc', '測站即時實測')}</div>
+                                </div>
+                                <span style="font-size: 11px; font-weight: 700; padding: 2.5px 8px; border-radius: 999px; background: {thi_cat['color']}22; color: {thi_cat['color']}; border: 1px solid {thi_cat['color']}55;">
+                                    {thi_cat['icon']} {thi_cat['name']}
+                                </span>
                             </div>
-                            <span style="font-size: 11px; font-weight: 700; padding: 2.5px 8px; border-radius: 999px; background: {cat['color']}22; color: {cat['color']}; border: 1px solid {cat['color']}55;">
-                                {cat['icon']} {cat['name']}
-                            </span>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                            <div style="background: #f8f9fa; padding: 6px 8px; border-radius: 6px;">
-                                <div style="font-size: 11px; color: #6c757d;">即時相對濕度</div>
-                                <div style="font-size: 18px; font-weight: 800; color: {cat['color']};">{val}% RH</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                                <div style="background: #f8f9fa; padding: 6px 8px; border-radius: 6px;">
+                                    <div style="font-size: 11px; color: #6c757d;">體感舒適度 (THI)</div>
+                                    <div style="font-size: 18px; font-weight: 800; color: {thi_cat['color']};">{thi_val} <span style="font-size: 12px; font-weight: 600;">指數</span></div>
+                                </div>
+                                <div style="background: #f8f9fa; padding: 6px 8px; border-radius: 6px;">
+                                    <div style="font-size: 11px; color: #6c757d;">即時相對濕度</div>
+                                    <div style="font-size: 15px; font-weight: 700; color: #2b303a; margin-top: 2px;">{val}% RH</div>
+                                </div>
                             </div>
-                            <div style="background: #f8f9fa; padding: 6px 8px; border-radius: 6px;">
-                                <div style="font-size: 11px; color: #6c757d;">體感舒適度 (THI)</div>
-                                <div style="font-size: 14px; font-weight: 700; color: #2b303a; margin-top: 2px;">{thi_txt}</div>
+                            <div style="font-size: 12.5px; margin-bottom: 4px; color: #2b303a;">
+                                🌡️ <b>平均氣溫：</b>{t_val} ｜ 💧 <b>露點溫度：</b>{dp_val}
+                            </div>
+                            <div style="font-size: 12.5px; margin-bottom: 4px; color: #2b303a;">
+                                ❄️ <b>空調散熱建議：</b>{thi_cat['cooling_advice']}
+                            </div>
+                            <div style="background: #fdfbf7; border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: #495057; line-height: 1.45; margin-top: 6px;">
+                                🛡️ <b>體感評估：</b>{thi_cat['feeling']} · {thi_cat['description']}
                             </div>
                         </div>
-                        <div style="font-size: 12.5px; margin-bottom: 4px; color: #2b303a;">
-                            🌡️ <b>平均氣溫：</b>{t_val} ｜ 💧 <b>露點溫度：</b>{dp_val}
+                        """
+                    else:
+                        props["tooltip_card"] = f"""
+                        <div style="
+                            background: rgba(43, 48, 58, 0.92);
+                            backdrop-filter: blur(8px);
+                            -webkit-backdrop-filter: blur(8px);
+                            color: #FFFFFF;
+                            padding: 5px 11px;
+                            border-radius: 8px;
+                            font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+                            font-size: 12px;
+                            font-weight: 600;
+                            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+                            white-space: nowrap;
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 6px;
+                            pointer-events: none;
+                        ">
+                            <span>📍 {c_name}</span>
+                            <span style="color: #64dfdf; font-weight: 800;">{val}% RH</span>
+                            <span style="background: {cat['color']}; padding: 1px 6px; border-radius: 999px; font-size: 10.5px;">{cat['icon']} {cat['name']}</span>
+                            <span style="color: #cbd5e1; font-weight: 400; font-size: 11px;">({t_val} · {thi_txt})</span>
                         </div>
-                        <div style="font-size: 12.5px; margin-bottom: 4px; color: #2b303a;">
-                            💨 <b>除濕運轉建議：</b>{cat['dehumidifier_advice']}
+                        """
+                        props["popup_card"] = f"""
+                        <div style="
+                            font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+                            min-width: 250px;
+                            color: #2b303a;
+                            padding: 6px 4px;
+                            line-height: 1.55;
+                        ">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid rgba(0, 0, 0, 0.08); padding-bottom: 6px; margin-bottom: 8px;">
+                                <div>
+                                    <span style="font-size: 16px; font-weight: 800; color: #2b303a;">📍 {c_name}【即時濕度與體感】</span>
+                                    <div style="font-size: 11px; color: #6c757d;">{h_info.get('source_desc', '測站即時實測')}</div>
+                                </div>
+                                <span style="font-size: 11px; font-weight: 700; padding: 2.5px 8px; border-radius: 999px; background: {cat['color']}22; color: {cat['color']}; border: 1px solid {cat['color']}55;">
+                                    {cat['icon']} {cat['name']}
+                                </span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                                <div style="background: #f8f9fa; padding: 6px 8px; border-radius: 6px;">
+                                    <div style="font-size: 11px; color: #6c757d;">即時相對濕度</div>
+                                    <div style="font-size: 18px; font-weight: 800; color: {cat['color']};">{val}% RH</div>
+                                </div>
+                                <div style="background: #f8f9fa; padding: 6px 8px; border-radius: 6px;">
+                                    <div style="font-size: 11px; color: #6c757d;">體感舒適度 (THI)</div>
+                                    <div style="font-size: 14px; font-weight: 700; color: #2b303a; margin-top: 2px;">{thi_txt}</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 12.5px; margin-bottom: 4px; color: #2b303a;">
+                                🌡️ <b>平均氣溫：</b>{t_val} ｜ 💧 <b>露點溫度：</b>{dp_val}
+                            </div>
+                            <div style="font-size: 12.5px; margin-bottom: 4px; color: #2b303a;">
+                                💨 <b>除濕運轉建議：</b>{cat['dehumidifier_advice']}
+                            </div>
+                            <div style="background: #fdfbf7; border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: #495057; line-height: 1.45; margin-top: 6px;">
+                                🛡️ <b>健康提示：</b>{cat['description']}
+                            </div>
                         </div>
-                        <div style="background: #fdfbf7; border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: #495057; line-height: 1.45; margin-top: 6px;">
-                            🛡️ <b>健康提示：</b>{cat['description']}
-                        </div>
-                    </div>
-                    """
+                        """
                 else:
                     props["tooltip_card"] = f"""
                     <div style="background: rgba(43, 48, 58, 0.9); border-radius: 6px; padding: 5px 9px; color: #ffffff; font-size: 12px;">
@@ -2888,7 +3075,10 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
                 c_name = props.get("COUNTYNAME") or props.get("name")
                 h_info = resolve_hum(c_name)
                 is_cur = (c_name == selected_hum_region or (c_name and c_name.replace("臺", "台") == selected_hum_region.replace("臺", "台")))
-                color = h_info["category"]["color"] if h_info else "#e8e4dc"
+                if is_thi_mode:
+                    color = h_info["thi_category"]["color"] if (h_info and "thi_category" in h_info) else "#e8e4dc"
+                else:
+                    color = h_info["category"]["color"] if h_info else "#e8e4dc"
 
                 return {
                     "fillColor": color,
@@ -2922,109 +3112,200 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
                 )
             ).add_to(m_hum)
 
-        # 疊加全台 22 縣市即時平均相對濕度懸浮標籤 (一個縣市一個，比照氣溫圖層樣式)
+        # 疊加全台 22 縣市即時懸浮標籤 (一個縣市一個，比照氣溫圖層樣式)
         for c_name, coords in COUNTY_CENTROIDS.items():
             if c_name.endswith("地區"):
                 continue
             h_info = resolve_hum(c_name)
             if not h_info:
                 continue
-            avg_rh = h_info["rh"]
-            cat = h_info["category"]
-            color = cat["color"]
-            is_cur = (c_name == selected_hum_region or (c_name and c_name.replace("臺", "台") == selected_hum_region.replace("臺", "台")))
-            
-            badge_border = "2px solid #2b303a" if is_cur else "1.5px solid #FFFFFF"
-            icon_html = f"""
-            <div style="
-                background: {color};
-                color: #FFFFFF;
-                font-weight: 800;
-                font-size: 11px;
-                padding: 2px 7px;
-                border-radius: 999px;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                gap: 3px;
-                white-space: nowrap;
-                box-shadow: 0 2px 8px rgba(60, 50, 40, 0.25);
-                border: {badge_border};
-                min-width: 52px;
-                margin-left: -26px;
-                margin-top: -10px;
-                cursor: pointer;
-                letter-spacing: -0.2px;
-            "><span style="font-size: 10.5px; line-height: 1;">💧</span><span>{avg_rh}%</span></div>
-            """
 
-            folium.Marker(
-                location=coords,
-                icon=folium.DivIcon(html=icon_html),
-                tooltip=folium.Tooltip(
-                    f"""
-                    <div style="
-                        background: rgba(43, 48, 58, 0.92);
-                        color: #FFFFFF;
-                        border-radius: 8px;
-                        padding: 5px 10px;
-                        font-size: 12px;
-                        font-weight: 600;
-                        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-                        white-space: nowrap;
-                        font-family: 'Outfit', sans-serif;
-                    ">
-                        📍 {c_name} · 即時平均濕度 {avg_rh}% ({cat['name']})
-                    </div>
-                    """,
-                    sticky=False
-                ),
-                popup=folium.Popup(
-                    f"""
-                    <div style="font-family: 'Outfit', sans-serif; min-width: 220px; padding: 6px 4px; color: #2b303a; line-height: 1.5;">
-                        <h4 style="margin: 0 0 4px 0; color: #2b303a; border-bottom: 1.5px solid rgba(0,0,0,0.07); padding-bottom: 4px;">📍 {c_name}【即時平均濕度】</h4>
-                        <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px;">觀測時間：{obs_date}</div>
-                        <p style="margin: 3px 0; font-size: 13px;">即時平均濕度：<b style="color: {color}; font-size: 16px;">{avg_rh}% RH</b> ({cat['name']})</p>
-                        <p style="margin: 3px 0; font-size: 13px;">平均氣溫：<b>{h_info.get('avg_temp', '無')} °C</b> ｜ 露點：<b>{h_info.get('dew_point', '無')} °C</b></p>
-                        <p style="margin: 3px 0; font-size: 13px;">體感舒適度：<b>{h_info.get('thi_text', '舒適')}</b> (THI {h_info.get('thi', '無')})</p>
-                        <p style="margin: 3px 0; font-size: 12.5px; color: #6c757d;">💨 {cat['dehumidifier_advice']}</p>
-                    </div>
-                    """,
-                    max_width=260
-                )
-            ).add_to(m_hum)
+            is_cur = (c_name == selected_hum_region or (c_name and c_name.replace("臺", "台") == selected_hum_region.replace("臺", "台")))
+            badge_border = "2px solid #2b303a" if is_cur else "1.5px solid #FFFFFF"
+
+            if is_thi_mode:
+                thi_val = h_info.get("thi", 0.0)
+                thi_cat = h_info.get("thi_category") or get_thi_category(thi_val)
+                color = thi_cat["color"]
+
+                icon_html = f"""
+                <div style="
+                    background: {color};
+                    color: #FFFFFF;
+                    font-weight: 800;
+                    font-size: 11px;
+                    padding: 2px 7px;
+                    border-radius: 999px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 3px;
+                    white-space: nowrap;
+                    box-shadow: 0 2px 8px rgba(60, 50, 40, 0.25);
+                    border: {badge_border};
+                    min-width: 52px;
+                    margin-left: -26px;
+                    margin-top: -10px;
+                    cursor: pointer;
+                    letter-spacing: -0.2px;
+                "><span style="font-size: 10.5px; line-height: 1;">🌡️</span><span>{thi_val}</span></div>
+                """
+
+                folium.Marker(
+                    location=coords,
+                    icon=folium.DivIcon(html=icon_html),
+                    tooltip=folium.Tooltip(
+                        f"""
+                        <div style="
+                            background: rgba(43, 48, 58, 0.92);
+                            color: #FFFFFF;
+                            border-radius: 8px;
+                            padding: 5px 10px;
+                            font-size: 12px;
+                            font-weight: 600;
+                            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+                            white-space: nowrap;
+                            font-family: 'Outfit', sans-serif;
+                        ">
+                            📍 {c_name} · 體感指數 {thi_val} ({thi_cat['name']})
+                        </div>
+                        """,
+                        sticky=False
+                    ),
+                    popup=folium.Popup(
+                        f"""
+                        <div style="font-family: 'Outfit', sans-serif; min-width: 220px; padding: 6px 4px; color: #2b303a; line-height: 1.5;">
+                            <h4 style="margin: 0 0 4px 0; color: #2b303a; border-bottom: 1.5px solid rgba(0,0,0,0.07); padding-bottom: 4px;">📍 {c_name}【體感舒適度】</h4>
+                            <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px;">觀測時間：{obs_date}</div>
+                            <p style="margin: 3px 0; font-size: 13px;">溫濕舒適度指數：<b style="color: {color}; font-size: 16px;">THI {thi_val}</b> ({thi_cat['name']})</p>
+                            <p style="margin: 3px 0; font-size: 13px;">平均氣溫：<b>{h_info.get('avg_temp', '無')} °C</b> ｜ 相對濕度：<b>{h_info['rh']}% RH</b></p>
+                            <p style="margin: 3px 0; font-size: 13px;">體感評估：<b>{thi_cat['feeling']}</b></p>
+                            <p style="margin: 3px 0; font-size: 12.5px; color: #6c757d;">❄️ {thi_cat['cooling_advice']}</p>
+                        </div>
+                        """,
+                        max_width=260
+                    )
+                ).add_to(m_hum)
+            else:
+                avg_rh = h_info["rh"]
+                cat = h_info["category"]
+                color = cat["color"]
+
+                icon_html = f"""
+                <div style="
+                    background: {color};
+                    color: #FFFFFF;
+                    font-weight: 800;
+                    font-size: 11px;
+                    padding: 2px 7px;
+                    border-radius: 999px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 3px;
+                    white-space: nowrap;
+                    box-shadow: 0 2px 8px rgba(60, 50, 40, 0.25);
+                    border: {badge_border};
+                    min-width: 52px;
+                    margin-left: -26px;
+                    margin-top: -10px;
+                    cursor: pointer;
+                    letter-spacing: -0.2px;
+                "><span style="font-size: 10.5px; line-height: 1;">💧</span><span>{avg_rh}%</span></div>
+                """
+
+                folium.Marker(
+                    location=coords,
+                    icon=folium.DivIcon(html=icon_html),
+                    tooltip=folium.Tooltip(
+                        f"""
+                        <div style="
+                            background: rgba(43, 48, 58, 0.92);
+                            color: #FFFFFF;
+                            border-radius: 8px;
+                            padding: 5px 10px;
+                            font-size: 12px;
+                            font-weight: 600;
+                            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+                            white-space: nowrap;
+                            font-family: 'Outfit', sans-serif;
+                        ">
+                            📍 {c_name} · 即時平均濕度 {avg_rh}% ({cat['name']})
+                        </div>
+                        """,
+                        sticky=False
+                    ),
+                    popup=folium.Popup(
+                        f"""
+                        <div style="font-family: 'Outfit', sans-serif; min-width: 220px; padding: 6px 4px; color: #2b303a; line-height: 1.5;">
+                            <h4 style="margin: 0 0 4px 0; color: #2b303a; border-bottom: 1.5px solid rgba(0,0,0,0.07); padding-bottom: 4px;">📍 {c_name}【即時平均濕度】</h4>
+                            <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px;">觀測時間：{obs_date}</div>
+                            <p style="margin: 3px 0; font-size: 13px;">即時平均濕度：<b style="color: {color}; font-size: 16px;">{avg_rh}% RH</b> ({cat['name']})</p>
+                            <p style="margin: 3px 0; font-size: 13px;">平均氣溫：<b>{h_info.get('avg_temp', '無')} °C</b> ｜ 露點：<b>{h_info.get('dew_point', '無')} °C</b></p>
+                            <p style="margin: 3px 0; font-size: 13px;">體感舒適度：<b>{h_info.get('thi_text', '舒適')}</b> (THI {h_info.get('thi', '無')})</p>
+                            <p style="margin: 3px 0; font-size: 12.5px; color: #6c757d;">💨 {cat['dehumidifier_advice']}</p>
+                        </div>
+                        """,
+                        max_width=260
+                    )
+                ).add_to(m_hum)
 
         st_folium(m_hum, width="stretch", height=500, returned_objects=[], key="hum_folium_map")
 
         # 底部色階標尺與圖例說明
-        st.markdown("""
-        <div class="map-legend-panel">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 0.82rem; font-weight: 600; color: #2b303a;">💧 氣象署即時相對濕度與環境健康分級標尺</span>
-                <span style="font-size: 0.75rem; color: #6c757d;">人體最適區間為 40%~60% · 膠囊標籤代表各縣市現場測站實測之平均相對濕度</span>
+        if is_thi_mode:
+            st.markdown("""
+            <div class="map-legend-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 0.82rem; font-weight: 600; color: #2b303a;">🌡️ 溫濕舒適度指數 (THI) 體感與防中暑分級標尺</span>
+                    <span style="font-size: 0.75rem; color: #6c757d;">黃金舒適為 65~70 · 膠囊標籤代表各縣市現場測站實測之平均 THI 體感指數</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 4px;">
+                    <div style="background: #457b9d;" title="<65 涼爽舒適"></div>
+                    <div style="background: #2a9d8f;" title="65-69.9 舒適宜人"></div>
+                    <div style="background: #e5a93c;" title="70-74.9 稍暖適中"></div>
+                    <div style="background: #e07a5f;" title="75-79.9 悶熱稍黏"></div>
+                    <div style="background: #c94a4a;" title="≥80 極度悶熱"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.76rem; margin-top: 6px; flex-wrap: wrap; gap: 4px;">
+                    <span style="color: #457b9d; font-weight: 600;">🍃 &lt; 65 (涼爽)</span>
+                    <span style="color: #2a9d8f; font-weight: 600;">🟢 65-70 (舒適)</span>
+                    <span style="color: #e5a93c; font-weight: 600;">🟡 70-75 (稍暖)</span>
+                    <span style="color: #e07a5f; font-weight: 600;">🟠 75-80 (悶熱)</span>
+                    <span style="color: #c94a4a; font-weight: 600;">🔴 ≥ 80 (酷熱)</span>
+                </div>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 4px;">
-                <div style="background: #e07a5f;" title="<40% 極度乾燥"></div>
-                <div style="background: #2a9d8f;" title="40-59% 舒適宜人"></div>
-                <div style="background: #e5a93c;" title="60-74% 略偏潮濕"></div>
-                <div style="background: #2b82d9;" title="75-84% 潮濕悶熱"></div>
-                <div style="background: #5e548e;" title="85%+ 極度潮濕"></div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="map-legend-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 0.82rem; font-weight: 600; color: #2b303a;">💧 氣象署即時相對濕度與環境健康分級標尺</span>
+                    <span style="font-size: 0.75rem; color: #6c757d;">人體最適區間為 40%~60% · 膠囊標籤代表各縣市現場測站實測之平均相對濕度</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 4px;">
+                    <div style="background: #e07a5f;" title="<40% 極度乾燥"></div>
+                    <div style="background: #2a9d8f;" title="40-59% 舒適宜人"></div>
+                    <div style="background: #e5a93c;" title="60-74% 略偏潮濕"></div>
+                    <div style="background: #2b82d9;" title="75-84% 潮濕悶熱"></div>
+                    <div style="background: #5e548e;" title="85%+ 極度潮濕"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.76rem; margin-top: 6px; flex-wrap: wrap; gap: 4px;">
+                    <span style="color: #e07a5f; font-weight: 600;">🌵 &lt; 40% (極乾)</span>
+                    <span style="color: #2a9d8f; font-weight: 600;">🍃 40-59% (適中)</span>
+                    <span style="color: #e5a93c; font-weight: 600;">💧 60-74% (稍潮)</span>
+                    <span style="color: #2b82d9; font-weight: 600;">🌧️ 75-84% (潮濕)</span>
+                    <span style="color: #5e548e; font-weight: 600;">🌊 85%+ (極濕)</span>
+                </div>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.76rem; margin-top: 6px; flex-wrap: wrap; gap: 4px;">
-                <span style="color: #e07a5f; font-weight: 600;">🌵 &lt; 40% (極乾)</span>
-                <span style="color: #2a9d8f; font-weight: 600;">🍃 40-59% (適中)</span>
-                <span style="color: #e5a93c; font-weight: 600;">💧 60-74% (稍潮)</span>
-                <span style="color: #2b82d9; font-weight: 600;">🌧️ 75-84% (潮濕)</span>
-                <span style="color: #5e548e; font-weight: 600;">🌊 85%+ (極濕)</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
     with col_hum_details:
         # 縣市選擇下拉選單
         cur_hum_idx = sorted_regions.index(selected_hum_region) if selected_hum_region in sorted_regions else 0
+        selector_label = "📍 選擇檢視縣市【溫濕舒適度】資訊：" if is_thi_mode else "📍 選擇檢視縣市【即時濕度】資訊："
         selected_hum_region = st.selectbox(
-            "📍 選擇檢視縣市【即時濕度】資訊：",
+            selector_label,
             options=sorted_regions,
             index=cur_hum_idx,
             key="hum_region_selector"
@@ -3043,87 +3324,167 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
         cur_dp = cur_live_h.get("dew_point", 20.0)
         cur_thi = cur_live_h.get("thi", 75.0)
         cur_thi_txt = cur_live_h.get("thi_text", "舒適")
+        cur_thi_cat = cur_live_h.get("thi_category") or get_thi_category(cur_thi)
         cur_source = cur_live_h.get("source_desc", "局屬氣象測站實測")
 
         # 該縣市轄內測站實測標籤
         local_stations = cur_live_h.get("local_stations", [])
         if local_stations:
-            st_badges_html = "".join([
-                f"""<div style="background: #ffffff; border: 1px solid rgba(0,0,0,0.08); border-left: 3.5px solid {s['category']['color']}; border-radius: 8px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 8px; margin: 3px 6px 3px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.03);"><span style="font-weight: 700; color: #2b303a; font-size: 0.82rem;">📍 {s['name']}測站 ({s['town']})</span><span style="color: {s['category']['color']}; font-weight: 800; font-size: 0.95rem;">{s['rh']}%</span><span style="font-size: 0.72rem; color: #6c757d;">{s.get('temp', '')}°C</span><span style="font-size: 0.72rem; padding: 1px 6px; border-radius: 999px; background: {s['category']['color']}18; color: {s['category']['color']}; font-weight: 700;">{s['category']['name']}</span></div>"""
-                for s in local_stations
-            ])
-            local_stations_section = f"""<div style="margin-top: 12px; background: #fdfbf7; border: 1px dashed rgba(92, 124, 138, 0.35); border-radius: 10px; padding: 10px 14px;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;"><span style="font-size: 0.82rem; font-weight: 700; color: #2b303a;">📡 轄內氣象測站即時實測觀測：</span><span style="font-size: 0.72rem; color: #6c757d;">CWA 實測連線 (共 {len(local_stations)} 站)</span></div><div style="display: flex; flex-wrap: wrap;">{st_badges_html}</div></div>"""
+            if is_thi_mode:
+                st_badges_html = "".join([
+                    f"""<div style="background: #ffffff; border: 1px solid rgba(0,0,0,0.08); border-left: 3.5px solid {get_thi_category(s.get('thi'))['color']}; border-radius: 8px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 8px; margin: 3px 6px 3px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.03);"><span style="font-weight: 700; color: #2b303a; font-size: 0.82rem;">📍 {s['name']}測站 ({s['town']})</span><span style="color: {get_thi_category(s.get('thi'))['color']}; font-weight: 800; font-size: 0.95rem;">THI {s.get('thi', '-')}</span><span style="font-size: 0.72rem; color: #6c757d;">{s.get('temp', '')}°C / {s['rh']}%</span><span style="font-size: 0.72rem; padding: 1px 6px; border-radius: 999px; background: {get_thi_category(s.get('thi'))['color']}18; color: {get_thi_category(s.get('thi'))['color']}; font-weight: 700;">{get_thi_category(s.get('thi'))['name']}</span></div>"""
+                    for s in local_stations
+                ])
+                local_stations_section = f"""<div style="margin-top: 12px; background: #fdfbf7; border: 1px dashed rgba(92, 124, 138, 0.35); border-radius: 10px; padding: 10px 14px;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;"><span style="font-size: 0.82rem; font-weight: 700; color: #2b303a;">📡 轄內氣象測站即時體感指數：</span><span style="font-size: 0.72rem; color: #6c757d;">CWA 實測連線 (共 {len(local_stations)} 站)</span></div><div style="display: flex; flex-wrap: wrap;">{st_badges_html}</div></div>"""
+            else:
+                st_badges_html = "".join([
+                    f"""<div style="background: #ffffff; border: 1px solid rgba(0,0,0,0.08); border-left: 3.5px solid {s['category']['color']}; border-radius: 8px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 8px; margin: 3px 6px 3px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.03);"><span style="font-weight: 700; color: #2b303a; font-size: 0.82rem;">📍 {s['name']}測站 ({s['town']})</span><span style="color: {s['category']['color']}; font-weight: 800; font-size: 0.95rem;">{s['rh']}%</span><span style="font-size: 0.72rem; color: #6c757d;">{s.get('temp', '')}°C</span><span style="font-size: 0.72rem; padding: 1px 6px; border-radius: 999px; background: {s['category']['color']}18; color: {s['category']['color']}; font-weight: 700;">{s['category']['name']}</span></div>"""
+                    for s in local_stations
+                ])
+                local_stations_section = f"""<div style="margin-top: 12px; background: #fdfbf7; border: 1px dashed rgba(92, 124, 138, 0.35); border-radius: 10px; padding: 10px 14px;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;"><span style="font-size: 0.82rem; font-weight: 700; color: #2b303a;">📡 轄內氣象測站即時實測觀測：</span><span style="font-size: 0.72rem; color: #6c757d;">CWA 實測連線 (共 {len(local_stations)} 站)</span></div><div style="display: flex; flex-wrap: wrap;">{st_badges_html}</div></div>"""
         else:
             local_stations_section = """<div style="margin-top: 12px; background: #fdfbf7; border: 1px dashed rgba(92, 124, 138, 0.35); border-radius: 10px; padding: 10px 14px;"><div style="font-size: 0.8rem; color: #6c757d;">📡 轄內測站實測數據同步中。</div></div>"""
 
-        # 縣市濕度重點大卡片 (避免 Markdown 4 空格縮排誤判)
-        card_hum_html = (
-            f'<div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; box-shadow: 0 4px 14px rgba(60, 50, 40, 0.05);">'
-            f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); padding-bottom: 8px;">'
-            f'<div><span style="font-size: 1.25rem; font-weight: 700; color: #2b303a;">📍 {selected_hum_region} 【即時濕度與體感】</span>'
-            f'<div style="font-size: 0.8rem; color: #6c757d;">{cur_source} · 觀測時間：{obs_date}</div></div>'
-            f'<span style="font-size: 0.88rem; font-weight: 700; padding: 4px 12px; border-radius: 999px; background: {cur_cat["color"]}18; color: {cur_cat["color"]}; border: 1.5px solid {cur_cat["color"]}55;">'
-            f'{cur_cat["icon"]} {cur_cat["name"]}</span></div>'
-            f'<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px;">'
-            f'<div style="background: #fdfcf9; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 10px; padding: 12px;">'
-            f'<div style="font-size: 0.8rem; color: #6c757d;">即時平均相對濕度</div>'
-            f'<div style="font-size: 1.8rem; font-weight: 800; color: {cur_cat["color"]}; line-height: 1.2;">'
-            f'{cur_rh} <span style="font-size: 0.95rem; font-weight: 600;">%</span></div>'
-            f'<div style="font-size: 0.75rem; color: #6c757d; margin-top: 2px;">體感：{cur_cat["feeling"]}</div></div>'
-            f'<div style="background: #fdfcf9; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 10px; padding: 12px;">'
-            f'<div style="font-size: 0.8rem; color: #6c757d;">溫濕舒適度指數 (THI)</div>'
-            f'<div style="font-size: 1.15rem; font-weight: 800; color: #2b303a; margin-top: 4px; line-height: 1.2;">{cur_thi_txt} <span style="font-size: 0.85rem; font-weight: 600; color: #6c757d;">(指數 {cur_thi})</span></div>'
-            f'<div style="font-size: 0.75rem; color: #5c7c8a; font-weight: 600; margin-top: 4px;">氣溫 {cur_temp}°C ｜ 露點 {cur_dp}°C</div></div></div>'
-            f'<div style="background: {cur_cat["color"]}12; border-left: 4px solid {cur_cat["color"]}; border-radius: 6px; padding: 10px 14px; font-size: 0.84rem; color: #2b303a; line-height: 1.5; margin-bottom: 8px;">'
-            f'💨 <b>除濕運轉指引</b>：{cur_cat["dehumidifier_advice"]}<br>'
-            f'🪟 <b>通風開窗指引</b>：{cur_cat["window_advice"]}<br>'
-            f'💡 <b>健康提示</b>：{cur_cat["description"]}</div>'
-            f'{local_stations_section}'
-            f'</div>'
-        )
+        # 縣市重點大卡片 (避免 Markdown 4 空格縮排誤判)
+        if is_thi_mode:
+            card_hum_html = (
+                f'<div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; box-shadow: 0 4px 14px rgba(60, 50, 40, 0.05);">'
+                f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); padding-bottom: 8px;">'
+                f'<div><span style="font-size: 1.25rem; font-weight: 700; color: #2b303a;">📍 {selected_hum_region} 【溫濕體感舒適度】</span>'
+                f'<div style="font-size: 0.8rem; color: #6c757d;">{cur_source} · 觀測時間：{obs_date}</div></div>'
+                f'<span style="font-size: 0.88rem; font-weight: 700; padding: 4px 12px; border-radius: 999px; background: {cur_thi_cat["color"]}18; color: {cur_thi_cat["color"]}; border: 1.5px solid {cur_thi_cat["color"]}55;">'
+                f'{cur_thi_cat["icon"]} {cur_thi_cat["name"]}</span></div>'
+                f'<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px;">'
+                f'<div style="background: #fdfcf9; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 10px; padding: 12px;">'
+                f'<div style="font-size: 0.8rem; color: #6c757d;">溫濕舒適度指數 (THI)</div>'
+                f'<div style="font-size: 1.8rem; font-weight: 800; color: {cur_thi_cat["color"]}; line-height: 1.2;">'
+                f'{cur_thi} <span style="font-size: 0.95rem; font-weight: 600;">指數</span></div>'
+                f'<div style="font-size: 0.75rem; color: #6c757d; margin-top: 2px;">評語：{cur_thi_cat["feeling"]}</div></div>'
+                f'<div style="background: #fdfcf9; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 10px; padding: 12px;">'
+                f'<div style="font-size: 0.8rem; color: #6c757d;">即時相對濕度與氣溫</div>'
+                f'<div style="font-size: 1.15rem; font-weight: 800; color: #2b303a; margin-top: 4px; line-height: 1.2;">{cur_rh}% RH <span style="font-size: 0.85rem; font-weight: 600; color: #6c757d;">(氣溫 {cur_temp}°C)</span></div>'
+                f'<div style="font-size: 0.75rem; color: #5c7c8a; font-weight: 600; margin-top: 4px;">露點 {cur_dp}°C ｜ 狀態：{cur_cat["name"]}</div></div></div>'
+                f'<div style="background: {cur_thi_cat["color"]}12; border-left: 4px solid {cur_thi_cat["color"]}; border-radius: 6px; padding: 10px 14px; font-size: 0.84rem; color: #2b303a; line-height: 1.5; margin-bottom: 8px;">'
+                f'❄️ <b>空調散熱指引</b>：{cur_thi_cat["cooling_advice"]}<br>'
+                f'🏃 <b>活動運動指引</b>：{cur_thi_cat["activity_advice"]}<br>'
+                f'💡 <b>體感評估說明</b>：{cur_thi_cat["description"]}</div>'
+                f'{local_stations_section}'
+                f'</div>'
+            )
+        else:
+            card_hum_html = (
+                f'<div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; box-shadow: 0 4px 14px rgba(60, 50, 40, 0.05);">'
+                f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); padding-bottom: 8px;">'
+                f'<div><span style="font-size: 1.25rem; font-weight: 700; color: #2b303a;">📍 {selected_hum_region} 【即時濕度與體感】</span>'
+                f'<div style="font-size: 0.8rem; color: #6c757d;">{cur_source} · 觀測時間：{obs_date}</div></div>'
+                f'<span style="font-size: 0.88rem; font-weight: 700; padding: 4px 12px; border-radius: 999px; background: {cur_cat["color"]}18; color: {cur_cat["color"]}; border: 1.5px solid {cur_cat["color"]}55;">'
+                f'{cur_cat["icon"]} {cur_cat["name"]}</span></div>'
+                f'<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px;">'
+                f'<div style="background: #fdfcf9; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 10px; padding: 12px;">'
+                f'<div style="font-size: 0.8rem; color: #6c757d;">即時平均相對濕度</div>'
+                f'<div style="font-size: 1.8rem; font-weight: 800; color: {cur_cat["color"]}; line-height: 1.2;">'
+                f'{cur_rh} <span style="font-size: 0.95rem; font-weight: 600;">%</span></div>'
+                f'<div style="font-size: 0.75rem; color: #6c757d; margin-top: 2px;">體感：{cur_cat["feeling"]}</div></div>'
+                f'<div style="background: #fdfcf9; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 10px; padding: 12px;">'
+                f'<div style="font-size: 0.8rem; color: #6c757d;">溫濕舒適度指數 (THI)</div>'
+                f'<div style="font-size: 1.15rem; font-weight: 800; color: #2b303a; margin-top: 4px; line-height: 1.2;">{cur_thi_txt} <span style="font-size: 0.85rem; font-weight: 600; color: #6c757d;">(指數 {cur_thi})</span></div>'
+                f'<div style="font-size: 0.75rem; color: #5c7c8a; font-weight: 600; margin-top: 4px;">氣溫 {cur_temp}°C ｜ 露點 {cur_dp}°C</div></div></div>'
+                f'<div style="background: {cur_cat["color"]}12; border-left: 4px solid {cur_cat["color"]}; border-radius: 6px; padding: 10px 14px; font-size: 0.84rem; color: #2b303a; line-height: 1.5; margin-bottom: 8px;">'
+                f'💨 <b>除濕運轉指引</b>：{cur_cat["dehumidifier_advice"]}<br>'
+                f'🪟 <b>通風開窗指引</b>：{cur_cat["window_advice"]}<br>'
+                f'💡 <b>健康提示</b>：{cur_cat["description"]}</div>'
+                f'{local_stations_section}'
+                f'</div>'
+            )
         st.markdown(card_hum_html, unsafe_allow_html=True)
 
         # 下方分頁：全台實測排行 vs 22 縣市總覽 vs 生活健康指南
-        tab_rank, tab_table, tab_guide = st.tabs([
-            "🏆 全台測站濕度極值排行",
-            "📊 22 縣市濕度總覽",
-            "💡 居家健康生活指南"
-        ])
+        if is_thi_mode:
+            tab_rank, tab_table, tab_guide = st.tabs([
+                "🏆 全台測站體感極值排行",
+                "📊 22 縣市體感指數 (THI) 總覽",
+                "💡 溫濕度舒適度 (THI) 原理與防中暑指南"
+            ])
+        else:
+            tab_rank, tab_table, tab_guide = st.tabs([
+                "🏆 全台測站濕度極值排行",
+                "📊 22 縣市濕度總覽",
+                "💡 居家健康生活指南"
+            ])
 
         with tab_rank:
-            top_humid = humidity_data.get("top_humid_stations", [])
-            top_dry = humidity_data.get("top_dry_stations", [])
+            if is_thi_mode:
+                top_hot = humidity_data.get("top_hot_stations", [])
+                top_cool = humidity_data.get("top_cool_stations", [])
 
-            sub_col1, sub_col2 = st.columns(2)
-            with sub_col1:
-                st.markdown("<span style='font-size: 0.85rem; font-weight: 700; color: #2b82d9;'>🌊 Top 10 最潮濕測站</span>", unsafe_allow_html=True)
-                if top_humid:
-                    df_humid = pd.DataFrame([
-                        {
-                            "排名": f"#{idx+1}",
-                            "測站": s["name"],
-                            "縣市": s["county"],
-                            "濕度": f"{s['rh']}%",
-                            "氣溫": f"{s['temp']}°C"
-                        }
-                        for idx, s in enumerate(top_humid)
-                    ])
-                    st.dataframe(df_humid, width="stretch", hide_index=True)
+                sub_col1, sub_col2 = st.columns(2)
+                with sub_col1:
+                    st.markdown("<span style='font-size: 0.85rem; font-weight: 700; color: #c94a4a;'>🔥 Top 10 最悶熱測站 (THI 最高)</span>", unsafe_allow_html=True)
+                    if top_hot:
+                        df_hot = pd.DataFrame([
+                            {
+                                "排名": f"#{idx+1}",
+                                "測站": s["name"],
+                                "縣市": s["county"],
+                                "THI 指數": s.get("thi", "-"),
+                                "體感評語": s.get("thi_text", "-"),
+                                "氣溫": f"{s.get('temp', '-') }°C",
+                                "濕度": f"{s.get('rh', '-')}%"
+                            }
+                            for idx, s in enumerate(top_hot)
+                        ])
+                        st.dataframe(df_hot, width="stretch", hide_index=True)
 
-            with sub_col2:
-                st.markdown("<span style='font-size: 0.85rem; font-weight: 700; color: #e07a5f;'>🌵 Top 10 最乾燥測站</span>", unsafe_allow_html=True)
-                if top_dry:
-                    df_dry = pd.DataFrame([
-                        {
-                            "排名": f"#{idx+1}",
-                            "測站": s["name"],
-                            "縣市": s["county"],
-                            "濕度": f"{s['rh']}%",
-                            "氣溫": f"{s['temp']}°C"
-                        }
-                        for idx, s in enumerate(top_dry)
-                    ])
-                    st.dataframe(df_dry, width="stretch", hide_index=True)
+                with sub_col2:
+                    st.markdown("<span style='font-size: 0.85rem; font-weight: 700; color: #457b9d;'>🍃 Top 10 最清涼測站 (THI 最低)</span>", unsafe_allow_html=True)
+                    if top_cool:
+                        df_cool = pd.DataFrame([
+                            {
+                                "排名": f"#{idx+1}",
+                                "測站": s["name"],
+                                "縣市": s["county"],
+                                "THI 指數": s.get("thi", "-"),
+                                "體感評語": s.get("thi_text", "-"),
+                                "氣溫": f"{s.get('temp', '-') }°C",
+                                "濕度": f"{s.get('rh', '-')}%"
+                            }
+                            for idx, s in enumerate(top_cool)
+                        ])
+                        st.dataframe(df_cool, width="stretch", hide_index=True)
+            else:
+                top_humid = humidity_data.get("top_humid_stations", [])
+                top_dry = humidity_data.get("top_dry_stations", [])
+
+                sub_col1, sub_col2 = st.columns(2)
+                with sub_col1:
+                    st.markdown("<span style='font-size: 0.85rem; font-weight: 700; color: #2b82d9;'>🌊 Top 10 最潮濕測站</span>", unsafe_allow_html=True)
+                    if top_humid:
+                        df_humid = pd.DataFrame([
+                            {
+                                "排名": f"#{idx+1}",
+                                "測站": s["name"],
+                                "縣市": s["county"],
+                                "濕度": f"{s['rh']}%",
+                                "氣溫": f"{s['temp']}°C"
+                            }
+                            for idx, s in enumerate(top_humid)
+                        ])
+                        st.dataframe(df_humid, width="stretch", hide_index=True)
+
+                with sub_col2:
+                    st.markdown("<span style='font-size: 0.85rem; font-weight: 700; color: #e07a5f;'>🌵 Top 10 最乾燥測站</span>", unsafe_allow_html=True)
+                    if top_dry:
+                        df_dry = pd.DataFrame([
+                            {
+                                "排名": f"#{idx+1}",
+                                "測站": s["name"],
+                                "縣市": s["county"],
+                                "濕度": f"{s['rh']}%",
+                                "氣溫": f"{s['temp']}°C"
+                            }
+                            for idx, s in enumerate(top_dry)
+                        ])
+                        st.dataframe(df_dry, width="stretch", hide_index=True)
 
         with tab_table:
             table_rows = []
@@ -3133,45 +3494,89 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
                     alt_c = c.replace("臺", "台") if "臺" in c else c.replace("台", "臺")
                     c_info = county_live_humidity.get(alt_c)
                 if c_info:
-                    table_rows.append({
-                        "縣市": c,
-                        "即時濕度": f"{c_info['rh']}%",
-                        "平均氣溫": f"{c_info['avg_temp']}°C" if c_info.get("avg_temp") else "-",
-                        "露點溫度": f"{c_info['dew_point']}°C" if c_info.get("dew_point") else "-",
-                        "體感舒適度": c_info.get("thi_text", "舒適"),
-                        "環境狀態": f"{c_info['category']['icon']} {c_info['category']['name']}",
-                        "除濕指引": c_info["category"]["dehumidifier_advice"]
-                    })
+                    if is_thi_mode:
+                        thi_c = c_info.get("thi_category") or get_thi_category(c_info.get("thi"))
+                        table_rows.append({
+                            "縣市": c,
+                            "體感指數": c_info.get("thi", 0.0),
+                            "體感狀態": f"{thi_c['icon']} {thi_c['name']}",
+                            "平均氣溫": f"{c_info['avg_temp']}°C" if c_info.get("avg_temp") else "-",
+                            "相對濕度": f"{c_info['rh']}%",
+                            "露點溫度": f"{c_info['dew_point']}°C" if c_info.get("dew_point") else "-",
+                            "空調散熱建議": thi_c.get("cooling_advice", "維持通風")
+                        })
+                    else:
+                        table_rows.append({
+                            "縣市": c,
+                            "即時濕度": f"{c_info['rh']}%",
+                            "平均氣溫": f"{c_info['avg_temp']}°C" if c_info.get("avg_temp") else "-",
+                            "露點溫度": f"{c_info['dew_point']}°C" if c_info.get("dew_point") else "-",
+                            "體感舒適度": c_info.get("thi_text", "舒適"),
+                            "環境狀態": f"{c_info['category']['icon']} {c_info['category']['name']}",
+                            "除濕指引": c_info["category"]["dehumidifier_advice"]
+                        })
 
             if table_rows:
-                df_county_table = pd.DataFrame(table_rows)
-                st.dataframe(
-                    df_county_table,
-                    width="stretch",
-                    hide_index=True,
-                    column_config={
-                        "縣市": st.column_config.TextColumn("縣市", width="small"),
-                        "即時濕度": st.column_config.TextColumn("實測濕度", width="small"),
-                        "平均氣溫": st.column_config.TextColumn("氣溫", width="small"),
-                        "露點溫度": st.column_config.TextColumn("露點", width="small"),
-                        "體感舒適度": st.column_config.TextColumn("體感", width="small"),
-                        "環境狀態": st.column_config.TextColumn("等級", width="medium"),
-                        "除濕指引": st.column_config.TextColumn("除濕建議")
-                    }
-                )
+                if is_thi_mode:
+                    table_rows.sort(key=lambda r: float(r["體感指數"]) if isinstance(r["體感指數"], (int, float)) else 0, reverse=True)
+                    df_county_table = pd.DataFrame(table_rows)
+                    st.dataframe(
+                        df_county_table,
+                        width="stretch",
+                        hide_index=True,
+                        column_config={
+                            "縣市": st.column_config.TextColumn("縣市", width="small"),
+                            "體感指數": st.column_config.NumberColumn("THI 指數", width="small", format="%.1f"),
+                            "體感狀態": st.column_config.TextColumn("舒適等級", width="medium"),
+                            "平均氣溫": st.column_config.TextColumn("氣溫", width="small"),
+                            "相對濕度": st.column_config.TextColumn("濕度", width="small"),
+                            "露點溫度": st.column_config.TextColumn("露點", width="small"),
+                            "空調散熱建議": st.column_config.TextColumn("空調降溫建議")
+                        }
+                    )
+                else:
+                    df_county_table = pd.DataFrame(table_rows)
+                    st.dataframe(
+                        df_county_table,
+                        width="stretch",
+                        hide_index=True,
+                        column_config={
+                            "縣市": st.column_config.TextColumn("縣市", width="small"),
+                            "即時濕度": st.column_config.TextColumn("實測濕度", width="small"),
+                            "平均氣溫": st.column_config.TextColumn("氣溫", width="small"),
+                            "露點溫度": st.column_config.TextColumn("露點", width="small"),
+                            "體感舒適度": st.column_config.TextColumn("體感", width="small"),
+                            "環境狀態": st.column_config.TextColumn("等級", width="medium"),
+                            "除濕指引": st.column_config.TextColumn("除濕建議")
+                        }
+                    )
 
         with tab_guide:
-            st.markdown("""
-            <div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 12px; padding: 14px 18px; box-shadow: 0 4px 12px rgba(60, 50, 40, 0.05); font-size: 0.82rem; color: #2b303a; line-height: 1.6;">
-                <div style="font-weight: 700; font-size: 0.92rem; color: #457b9d; margin-bottom: 6px;">
-                    💡 居家濕度控制與健康除濕指南：
+            if is_thi_mode:
+                st.markdown("""
+                <div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 12px; padding: 14px 18px; box-shadow: 0 4px 12px rgba(60, 50, 40, 0.05); font-size: 0.82rem; color: #2b303a; line-height: 1.6;">
+                    <div style="font-weight: 700; font-size: 0.92rem; color: #c94a4a; margin-bottom: 6px;">
+                        💡 溫濕度舒適度指數 (THI) 科學原理與防中暑指南：
+                    </div>
+                    <ul style="margin: 0; padding-left: 20px; color: #495057;">
+                        <li><b>為什麼濕度會放大熱度？</b>：人體主要靠排汗蒸發帶走熱量。當相對濕度高時，空氣中水分飽和，汗水不易蒸發，體熱無法散出，導致體感溫度比實際氣溫高出許多。</li>
+                        <li><b>THI 舒適度臨界點 (THI ≥ 75)</b>：當 THI 指數超過 75 時，人體開始感到悶熱難受，中暑機率增加；若 THI ≥ 80，即進入高度熱衰竭警戒期。</li>
+                        <li><b>高溫高濕防護建議</b>：室內開啟冷氣與除濕降溫降濕（設定 26°C 最省電又舒適），外出定時補充鹽分與水分，避免在密閉悶熱車廂或無通風處停留。</li>
+                    </ul>
                 </div>
-                <ul style="margin: 0; padding-left: 20px; color: #495057;">
-                    <li><b>人體黃金舒適濕度 (40% ~ 60%)</b>：醫學研究證實，相對濕度維持在 50% 左右時，人體呼吸道纖毛運動最活躍，皮膚角質屏障最強韌，流感病毒與黴菌活性最低。</li>
-                    <li><b>塵蟎與黴菌繁殖警戒線 (&gt; 70% ~ 75%)</b>：當濕度超過 75% 時，塵蟎繁殖速度倍增，牆壁與壁櫥極易產生黑色黴斑與壁癌，誘發過敏性鼻炎與皮膚濕疹。</li>
-                    <li><b>除濕機高效省電技巧</b>：除濕時請緊閉門窗、拉上窗簾；除濕機放置於房間中央並開啟衣櫃抽屜；搭配電風扇或循環扇帶動對流，可提升除濕效率達 30% 以上。</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 12px; padding: 14px 18px; box-shadow: 0 4px 12px rgba(60, 50, 40, 0.05); font-size: 0.82rem; color: #2b303a; line-height: 1.6;">
+                    <div style="font-weight: 700; font-size: 0.92rem; color: #457b9d; margin-bottom: 6px;">
+                        💡 居家濕度控制與健康除濕指南：
+                    </div>
+                    <ul style="margin: 0; padding-left: 20px; color: #495057;">
+                        <li><b>人體黃金舒適濕度 (40% ~ 60%)</b>：醫學研究證實，相對濕度維持在 50% 左右時，人體呼吸道纖毛運動最活躍，皮膚角質屏障最強韌，流感病毒與黴菌活性最低。</li>
+                        <li><b>塵蟎與黴菌繁殖警戒線 (&gt; 70% ~ 75%)</b>：當濕度超過 75% 時，塵蟎繁殖速度倍增，牆壁與壁櫥極易產生黑色黴斑與壁癌，誘發過敏性鼻炎與皮膚濕疹。</li>
+                        <li><b>除濕機高效省電技巧</b>：除濕時請緊閉門窗、拉上窗簾；除濕機放置於房間中央並開啟衣櫃抽屜；搭配電風扇或循環扇帶動對流，可提升除濕效率達 30% 以上。</li>
+                    </ul>
+                </div>
+                """, unsafe_allow_html=True)
 
     st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
