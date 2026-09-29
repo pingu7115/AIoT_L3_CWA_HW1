@@ -1906,7 +1906,7 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
             "14:00 (午後斜照 · 8.8 UVI)",
             "15:00 (午後漸弱 · 6.4 UVI)",
             "16:00 (傍晚前夕 · 3.8 UVI)",
-            "17:00 (日落黃昏 · 1.3 UVI)",
+            "17:00 (日落黃昏 · 現場實測對齊)",
             "18:00 (日落暮色 · 0.0 UVI)"
         ]
         with mode_col2:
@@ -1920,7 +1920,8 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
         uv_stations_data = get_cached_uv_hourly_stations(hour_token)
         mode_badge = f"{hour_token} 逐時演變"
         mode_title = f"{hour_token} 指定時間"
-        mode_sub = f"依太陽天頂角與當日最大實測推估 {hour_token} 紫外線強度"
+        is_cur_hr = uv_stations_data.get("source_type") == "現場實測對齊"
+        mode_sub = "與 CWA 局屬氣象站現場實測儀器資料精確對齊" if is_cur_hr else f"依太陽天頂角與當日最大實測推估 {hour_token} 紫外線強度"
         obs_date = uv_stations_data.get("obs_time", "")
     elif uv_mode == "📡 即時觀測":
         with st.spinner("正在連線中央氣象署 API (O-A0003-001) 取得全台測站最新小時即時紫外線觀測數據..."):
@@ -1964,7 +1965,7 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                 <span style="font-size: 0.9rem; font-weight: 700; color: #2b303a;">當前檢視時間：<span style="color: #2b82d9; font-size: 1.05rem; font-weight: 800;">{obs_date}</span></span>
             </div>
             <div style="font-size: 0.82rem; color: #6c757d;">
-                💡 太陽輻射強度係數：<b style="color: #2b82d9;">{int(get_solar_uv_factor(float(hour_token.split(':')[0]))*100)}%</b> · {mode_sub}
+                💡 <b>數據說明</b>：{mode_sub} · 全台數值比照氣象署官方採整數顯示
             </div>
         </div>
         """, unsafe_allow_html=True)

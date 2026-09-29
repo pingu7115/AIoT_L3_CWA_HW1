@@ -403,11 +403,10 @@ def get_solar_uv_factor(hour_float):
 
 def get_uv_stations_at_hour(hour_str, api_key=None):
     """
-    依據指定時間 (如 '12:00', '10:00', '17:00')，以測站當日實測最大值為基準計算該時間之紫外線數值
+    依據指定時間 (如 '12:00', '10:00', '17:00')，計算該時間之紫外線數值
+    - 若指定的時間即為當前實測小時 (例如當前時間約 17:00~17:59)，優先對齊 CWA 局屬測站現場實測值
+    - 數值比照氣象署官方標準採四捨五入整數規範 (0, 1, 2, ... 11)
     """
-    max_data = fetch_cwa_uv_stations(api_key=api_key)
-    max_stations = max_data.get("stations", [])
-    
     try:
         clean_hour_token = hour_str.split(" ")[0].strip()
         parts = clean_hour_token.split(":")
@@ -416,16 +415,48 @@ def get_uv_stations_at_hour(hour_str, api_key=None):
         h_val = 12.0
         clean_hour_token = "12:00"
 
-    factor = get_solar_uv_factor(h_val)
     today_str = datetime.date.today().strftime("%Y/%m/%d")
     obs_time_str = f"{today_str} {clean_hour_token}"
+
+    now_hour = datetime.datetime.now().hour
+    is_current_hour = (int(h_val) == now_hour)
+
+    if is_current_hour:
+        # 當前小時：直接使用 CWA 局屬氣象站現場即時實測觀測資料，保證完全一致
+        live_data = fetch_cwa_uv_live_observation(api_key=api_key)
+        stations = live_data.get("stations", [])
+        return {
+            "obs_time": obs_time_str,
+            "obs_date": obs_time_str,
+            "mode": "hourly",
+            "mode_title": f"{clean_hour_token} 逐時觀測",
+            "stations": stations,
+            "top_stations": [s for s in stations if not s.get("is_offline")],
+            "max_station": live_data.get("max_station"),
+            "max_uv": live_data.get("max_uv", 0.0),
+            "avg_uv": live_data.get("avg_uv", 0.0),
+            "total_stations": len(stations),
+            "is_live": True,
+            "source_type": "現場實測對齊"
+        }
+
+    # 其他歷史/未來整點：以當日實測最大值為基準乘上天頂角衰減，比照 CWA 官方整數規格
+    max_data = fetch_cwa_uv_stations(api_key=api_key)
+    max_stations = max_data.get("stations", [])
+
+    factor = get_solar_uv_factor(h_val)
 
     stations = []
     for s in max_stations:
         orig_peak = s.get("uv_index", 0.0)
-        calc_uv = round(orig_peak * factor, 1)
+        calc_uv = float(round(orig_peak * factor))
+        if h_val >= 17.5 or h_val <= 6.0:
+            calc_uv = 0.0
+        elif h_val >= 17.0 and calc_uv > 1.0:
+            calc_uv = 1.0
+
         cat = get_uv_category(calc_uv)
-        disp = str(int(calc_uv)) if calc_uv.is_integer() else f"{calc_uv:.1f}"
+        disp = str(int(calc_uv))
 
         stations.append({
             "station_id": s["station_id"],
@@ -445,10 +476,11 @@ def get_uv_stations_at_hour(hour_str, api_key=None):
             "spf_advice": cat["spf_advice"]
         })
 
-    stations.sort(key=lambda s: s["uv_index"], reverse=True)
-    max_station = stations[0] if stations else None
+    valid_stations = [s for s in stations if not s.get("is_offline")]
+    valid_stations.sort(key=lambda s: s["uv_index"], reverse=True)
+    max_station = valid_stations[0] if valid_stations else None
     max_uv = max_station["uv_index"] if max_station else 0.0
-    avg_uv = round(sum(s["uv_index"] for s in stations) / len(stations), 1) if stations else 0.0
+    avg_uv = round(sum(s["uv_index"] for s in valid_stations) / len(valid_stations), 1) if valid_stations else 0.0
 
     return {
         "obs_time": obs_time_str,
@@ -456,12 +488,13 @@ def get_uv_stations_at_hour(hour_str, api_key=None):
         "mode": "hourly",
         "mode_title": f"{clean_hour_token} 逐時觀測",
         "stations": stations,
-        "top_stations": stations,
+        "top_stations": valid_stations,
         "max_station": max_station,
         "max_uv": max_uv,
         "avg_uv": avg_uv,
         "total_stations": len(stations),
-        "is_live": True
+        "is_live": True,
+        "source_type": "天頂角時序推估"
     }
 
 def get_county_realtime_uv_map(stations_list):
