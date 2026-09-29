@@ -424,35 +424,45 @@ body {
     color: #64748b;
 }
 
+.detail-list.typhoon-mode {
+    max-height: none !important;
+    overflow: visible !important;
+}
+
 .typhoon-table-wrap {
     max-height: 220px;
-    overflow-y: auto;
+    overflow: auto;
     border-radius: var(--radius-sm);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(15, 23, 42, 0.65);
+    margin-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
 }
 
 .typhoon-table {
     width: 100%;
+    min-width: 460px;
     border-collapse: collapse;
     font-size: 0.72rem;
     color: var(--text-primary);
+    white-space: nowrap;
 }
 
 .typhoon-table th {
     position: sticky;
     top: 0;
-    background: rgba(30, 41, 59, 0.95);
+    background: rgba(30, 41, 59, 0.98);
     color: var(--text-secondary);
-    padding: 6px 8px;
+    padding: 7px 10px;
     text-align: left;
-    font-weight: 600;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    font-weight: 700;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
     z-index: 2;
 }
 
 .typhoon-table td {
-    padding: 6px 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 6px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .typhoon-alert-grid {

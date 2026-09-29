@@ -1,0 +1,2202 @@
+{
+  "南投縣": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "多雲時晴",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 33.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 34.0,
+      "weather": "多雲時陰",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "多雲",
+      "rain_probability": null
+    }
+  ],
+  "嘉義市": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "多雲時陰",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 33.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 34.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "多雲時陰",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "多雲",
+      "rain_probability": null
+    }
+  ],
+  "嘉義縣": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "多雲時陰",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 30.0,
+      "weather": "多雲",
+      "rain_probability": null
+    }
+  ],
+  "基隆市": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 26.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": 30.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 26.0,
+      "weather": "多雲時晴",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 26.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 28.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 27.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "陰時多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 27.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    }
+  ],
+  "宜蘭縣": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 27.0,
+      "weather": "多雲時晴",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 27.0,
+      "weather": "陰時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 32.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 27.0,
+      "weather": "多雲時陰短暫陣雨",
+      "rain_probability": null
+    }
+  ],
+  "屏東縣": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 33.0,
+      "weather": "多雲午後短暫陣雨",
+      "rain_probability": 30.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": 30.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 29.0,
+      "weather": "多雲時晴",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 33.0,
+      "weather": "多雲午後短暫陣雨",
+      "rain_probability": 40.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 29.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 34.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 30.0,
+      "weather": "多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 33.0,
+      "weather": "多雲時陰",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 29.0,
+      "weather": "多雲",
+      "rain_probability": null
+    }
+  ],
+  "彰化縣": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 32.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 29.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 33.0,
+      "weather": "多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 30.0,
+      "weather": "多雲",
+      "rain_probability": null
+    }
+  ],
+  "新北市": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 31.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 28.0,
+      "weather": "陰時多雲短暫陣雨",
+      "rain_probability": null
+    }
+  ],
+  "新竹市": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 32.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "多雲",
+      "rain_probability": null
+    }
+  ],
+  "新竹縣": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 31.0,
+      "weather": "多雲時晴",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 31.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 32.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "多雲",
+      "rain_probability": null
+    }
+  ],
+  "桃園市": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 33.0,
+      "weather": "多雲時晴",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 34.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 31.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    }
+  ],
+  "澎湖縣": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 30.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 29.0,
+      "weather": "多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 27.0,
+      "weather": "多雲",
+      "rain_probability": null
+    }
+  ],
+  "臺中市": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 34.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 34.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 30.0,
+      "weather": "多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 34.0,
+      "weather": "多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 28.0,
+      "max_temp": 32.0,
+      "weather": "多雲",
+      "rain_probability": null
+    }
+  ],
+  "臺北市": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 34.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 32.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "多雲時陰短暫陣雨",
+      "rain_probability": null
+    }
+  ],
+  "臺南市": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 32.0,
+      "weather": "多雲時晴",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 32.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 32.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 32.0,
+      "weather": "多雲時陰",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 30.0,
+      "weather": "多雲時陰",
+      "rain_probability": null
+    }
+  ],
+  "臺東縣": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "多雲時晴",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 31.0,
+      "weather": "多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 31.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 32.0,
+      "weather": "多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "多雲時陰",
+      "rain_probability": null
+    }
+  ],
+  "花蓮縣": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 31.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "多雲時陰",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 32.0,
+      "weather": "多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 29.0,
+      "weather": "多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 31.0,
+      "weather": "多雲短暫陣雨",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "多雲時陰短暫陣雨",
+      "rain_probability": null
+    }
+  ],
+  "苗栗縣": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 22.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 22.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 22.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 22.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 22.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 22.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 22.0,
+      "max_temp": 31.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 23.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    }
+  ],
+  "連江縣": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 26.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "多雲時晴",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 26.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 26.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 26.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 26.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 26.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    }
+  ],
+  "金門縣": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 27.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 31.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    }
+  ],
+  "雲林縣": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 32.0,
+      "weather": "陰時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "多雲時晴",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 10.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 28.0,
+      "weather": "晴時多雲",
+      "rain_probability": 0.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 24.0,
+      "max_temp": 33.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 29.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 25.0,
+      "max_temp": 33.0,
+      "weather": "多雲時陰",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 26.0,
+      "max_temp": 29.0,
+      "weather": "多雲",
+      "rain_probability": null
+    }
+  ],
+  "高雄市": [
+    {
+      "forecast_start": "2026-09-23T06:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 32.0,
+      "weather": "多雲時陰",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-23T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-24T06:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-24T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 30.0,
+      "weather": "多雲時晴",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T06:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-25T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": 20.0
+    },
+    {
+      "forecast_start": "2026-09-26T06:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-26T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T06:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 32.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-27T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 30.0,
+      "weather": "晴時多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T06:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 32.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-28T18:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 30.0,
+      "weather": "多雲時晴",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T06:00:00+08:00",
+      "min_temp": 27.0,
+      "max_temp": 32.0,
+      "weather": "多雲",
+      "rain_probability": null
+    },
+    {
+      "forecast_start": "2026-09-29T18:00:00+08:00",
+      "min_temp": 28.0,
+      "max_temp": 30.0,
+      "weather": "多雲",
+      "rain_probability": null
+    }
+  ]
+}

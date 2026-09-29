@@ -143,10 +143,27 @@ function getUVColor(uvi) {
     return '#7209b7';                         // 危險 (紫)
 }
 
+function getWeatherIcon(weatherStr) {
+    if (!weatherStr) return '🌤️';
+    const s = String(weatherStr);
+    if (s.includes('雷')) return '⛈️';
+    if (s.includes('大雨') || s.includes('豪雨') || s.includes('強降雨')) return '🌧️';
+    if (s.includes('雨') || s.includes('陣雨')) return '🌦️';
+    if (s.includes('晴') && s.includes('多雲')) return '🌤️';
+    if (s.includes('晴')) return '☀️';
+    if (s.includes('陰') && s.includes('多雲')) return '🌥️';
+    if (s.includes('陰')) return '☁️';
+    if (s.includes('多雲')) return '⛅';
+    if (s.includes('霧')) return '🌫️';
+    return '🌤️';
+}
+
 function getRainColor(r) {
-    if (r >= 80) return '#3b82f6';
-    if (r >= 50) return '#0ea5e9';
-    if (r >= 20) return '#10b981';
+    const val = Number(r) || 0;
+    if (val > 130) return '#a8523b'; // 豪雨 (莫蘭迪深赭紅)
+    if (val > 50) return '#c47d66';  // 大雨 (莫蘭迪陶土色)
+    if (val > 10) return '#7d6b8d';  // 中雨 (莫蘭迪紫)
+    if (val > 0) return '#8faec2';   // 小雨 (薄霧水藍)
     return '#94a3b8';
 }
 
@@ -666,12 +683,13 @@ function renderCurrentLayer() {
 function renderTempMarkers() {
     weatherData.forEach(d => {
         const color = getTempColor(d.max_temp);
+        const wIcon = getWeatherIcon(d.weather);
         const marker = createPillMarker(
             [d.lat, d.lon],
             d.location,
-            `${d.max_temp}°C`,
+            `${wIcon} ${d.max_temp}°C`,
             color,
-            `<strong>${d.location} 氣溫預報</strong><br>天氣狀況：${d.weather}<br>最高溫：${d.max_temp}°C<br>最低溫：${d.min_temp}°C<br>降雨機率：${d.pop !== null ? d.pop + '%' : '未提供'}`
+            `<strong>${d.location} 氣溫預報</strong><br>天氣狀況：${wIcon} ${d.weather}<br>最高溫：${d.max_temp}°C<br>最低溫：${d.min_temp}°C<br>降雨機率：${d.pop !== null ? d.pop + '%' : '未提供'}`
         );
         marker.addTo(markerGroup);
     });
@@ -688,11 +706,11 @@ function renderHumidityMarkers() {
         if (humidityMode === 'rh') {
             displayVal = `${h.rh}%`;
             color = getHumidityColor(h.rh);
-            popupContent = `<strong>${cname} 相對濕度</strong><br>濕度：${h.rh}% (${h.category.name})<br>體感：${h.category.feeling}<br>建議：${h.category.dehumidifier_advice}`;
+            popupContent = `<strong>${cname} 相對濕度</strong><br>濕度：${h.rh}% (${h.category ? h.category.name : ''})<br>體感：${h.category ? h.category.feeling : ''}<br>建議：${h.category ? h.category.dehumidifier_advice : ''}`;
         } else {
             displayVal = `THI ${h.thi}`;
             color = getTHIColor(h.thi);
-            popupContent = `<strong>${cname} 體感舒適度 (THI)</strong><br>舒適度：${h.thi_text} (指數 ${h.thi})<br>感覺：${h.thi_category.feeling}<br>涼感建議：${h.thi_category.cooling_advice}`;
+            popupContent = `<strong>${cname} 體感舒適度 (THI)</strong><br>舒適度：${h.thi_text} (指數 ${h.thi})<br>感覺：${h.thi_category ? h.thi_category.feeling : ''}<br>涼感建議：${h.thi_category ? h.thi_category.cooling_advice : ''}`;
         }
 
         const marker = createPillMarker(coords, cname, displayVal, color, popupContent);
@@ -719,19 +737,54 @@ function renderUVMarkers() {
 function renderRainMarkers() {
     if (!rainfallData || !rainfallData.stations) return;
 
-    rainfallData.stations.forEach(s => {
-        if (s.rain24 <= 0) return;
-        const color = getRainColor(s.rain24);
-        
+    // 依據氣象署測站即時雨量繪製 Morandi 圓點標記 (僅標記有雨量地區，無降雨地區保持乾淨)
+    const stations = rainfallData.stations || [];
+    let rainyCount = 0;
+
+    stations.forEach(s => {
+        const val = Number(s.rain_today !== undefined ? s.rain_today : (s.rain24 !== undefined ? s.rain24 : 0)) || 0;
+        if (val <= 0.0) return;
+        rainyCount++;
+
+        const stName = s.name || s.station_name || '測站';
+        const county = s.county || '';
+        const town = s.town || '';
+        const color = getRainColor(val);
+
+        // 莫蘭迪階層半徑
+        let radius = 4.0;
+        let gradeLabel = '小雨';
+        if (val > 130.0) { radius = 9.0; gradeLabel = '豪雨'; }
+        else if (val > 50.0) { radius = 7.0; gradeLabel = '大雨'; }
+        else if (val > 10.0) { radius = 5.0; gradeLabel = '中雨'; }
+
         const circle = L.circleMarker([s.lat, s.lon], {
-            radius: Math.min(Math.max(s.rain24 * 0.4, 4), 18),
+            radius: radius,
+            color: color,
+            weight: 1.5,
+            fill: true,
             fillColor: color,
-            fillOpacity: 0.75,
-            color: '#ffffff',
-            weight: 1.5
+            fillOpacity: 0.85
         });
 
-        circle.bindPopup(`<strong>${s.station_name} (${s.county})</strong><br>24h 累積雨量：${s.rain24} mm<br>觀測時間：${s.obs_time}`);
+        circle.bindTooltip(`
+            <div style="font-size: 11.5px; font-weight: 700; color: #1e293b; background: rgba(255,255,255,0.96); padding: 3px 8px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); white-space: nowrap;">
+                <b>${stName}</b> (${county} ${town}): <span style="color: ${color}; font-weight: 800;">${val.toFixed(1)} mm</span> <span style="font-size: 10px; color: ${color};">(${gradeLabel})</span>
+            </div>
+        `, { sticky: true });
+
+        circle.bindPopup(`
+            <div style="min-width: 200px; font-size: 12px; color: #0f172a; line-height: 1.55;">
+                <div style="font-weight: 800; font-size: 13px; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px;">
+                    📍 ${stName} (${county} ${town})
+                </div>
+                <div>🌧️ <b>本日累積雨量</b>：<b style="color: ${color}; font-size: 13.5px;">${val.toFixed(1)} mm</b></div>
+                <div>⏱️ <b>過去 1 小時</b>：${Number(s.past1hr || 0).toFixed(1)} mm</div>
+                <div>📅 <b>過去 24 小時</b>：${Number(s.past24hr || val).toFixed(1)} mm</div>
+                <div style="color: #64748b; font-size: 11px; margin-top: 5px; border-top: 1px dashed #e2e8f0; padding-top: 4px;">📡 自動雨量站代碼：${s.station_id || '-'}</div>
+            </div>
+        `);
+
         circle.addTo(markerGroup);
     });
 }
@@ -957,29 +1010,33 @@ function updateDashboard() {
             title1.innerText = '全台最高溫'; val1.innerHTML = `${maxT} <small>°C</small>`; sub1.innerText = maxLoc;
             title2.innerText = '全台最低溫'; val2.innerHTML = `${minT} <small>°C</small>`; sub2.innerText = minLoc;
             title3.innerText = '全台平均溫'; val3.innerHTML = `${(sumT / count).toFixed(1)} <small>°C</small>`; sub3.innerText = '22 縣市';
-            title4.innerText = '常見天氣'; val4.innerText = '多雲偏暖'; sub4.innerText = '多數縣市';
+            title4.innerText = '常見天氣'; val4.innerHTML = `<span style="font-size:1.15rem;">⛅ 多雲偏暖</span>`; sub4.innerText = '多數縣市';
 
             adviceIcon.innerText = '💡';
             adviceHead.innerText = '氣候穿著指引';
             adviceBody.innerText = '今日各地白天氣溫微熱，日夜溫差約 6-8°C，清晨外出建構洋蔥式穿法。';
+            contextTitle.innerText = `📈 臺北市 一週氣溫走勢 (MaxT vs MinT)`;
             renderForecastChart('臺北市');
         } else {
             const item = weatherData.find(d => d.location === selectedCounty);
             if (item) {
+                const wIcon = getWeatherIcon(item.weather);
                 title1.innerText = '預報最高溫'; val1.innerHTML = `${item.max_temp} <small>°C</small>`; sub1.innerText = item.location;
                 title2.innerText = '預報最低溫'; val2.innerHTML = `${item.min_temp} <small>°C</small>`; sub2.innerText = item.location;
                 title3.innerText = '降雨機率'; val3.innerHTML = `${item.pop !== null ? item.pop : 0} <small>%</small>`; sub3.innerText = '12hr 預報';
-                title4.innerText = '天氣現象'; val4.innerText = item.weather; sub4.innerText = item.location;
+                title4.innerText = '天氣現象'; val4.innerHTML = `<span style="font-size:1.15rem;">${wIcon} ${item.weather}</span>`; sub4.innerText = item.location;
 
-                adviceIcon.innerText = '🌤️';
+                adviceIcon.innerText = wIcon;
                 adviceHead.innerText = `${selectedCounty} 生活建議`;
                 adviceBody.innerText = `預報狀況為「${item.weather}」，降雨機率約 ${item.pop || 0}%，溫差注意保暖。`;
             }
+            contextTitle.innerText = `📈 ${selectedCounty} 一週氣溫走勢 (MaxT vs MinT)`;
             renderForecastChart(selectedCounty);
         }
     } else if (activeTab === 'humidity') {
         chartWrap.style.display = 'none';
         detailList.style.display = 'flex';
+        detailList.className = 'detail-list';
         contextTitle.innerText = `💧 轄區濕度與測站明細 (${selectedCounty})`;
 
         if (!humidityData || !humidityData.counties) return;
@@ -1006,19 +1063,23 @@ function updateDashboard() {
         } else {
             const h = humidityData.counties[selectedCounty];
             if (h) {
-                title1.innerText = '相對濕度 (RH)'; val1.innerHTML = `${h.rh} <small>%</small>`; sub1.innerText = h.category.name;
-                title2.innerText = '舒適度指數 (THI)'; val2.innerHTML = `${h.thi}`; sub2.innerText = h.thi_text;
-                title3.innerText = '平均氣溫'; val3.innerHTML = `${h.temp} <small>°C</small>`; sub3.innerText = '測站均溫';
-                title4.innerText = '體感描述'; val4.innerText = h.thi_category.feeling.split('·')[0]; sub4.innerText = selectedCounty;
+                const rhCat = h.category || {};
+                const thiCat = h.thi_category || {};
+                const avgTemp = h.avg_temp !== undefined ? h.avg_temp : (h.temp !== undefined ? h.temp : '-');
+
+                title1.innerText = '相對濕度 (RH)'; val1.innerHTML = `${h.rh} <small>%</small>`; sub1.innerText = rhCat.name || '濕度等級';
+                title2.innerText = '舒適度指數 (THI)'; val2.innerHTML = `${h.thi}`; sub2.innerText = h.thi_text || '舒適度';
+                title3.innerText = '平均氣溫'; val3.innerHTML = `${avgTemp} <small>°C</small>`; sub3.innerText = '測站均溫';
+                title4.innerText = '體感描述'; val4.innerText = thiCat.feeling ? thiCat.feeling.split('·')[0] : '舒適'; sub4.innerText = selectedCounty;
 
                 adviceIcon.innerText = '💡';
                 adviceHead.innerText = `${selectedCounty} 防潮降溫指引`;
-                adviceBody.innerText = `${h.category.advice} ${h.thi_category.cooling_advice}`;
+                adviceBody.innerText = `${rhCat.advice || ''} ${thiCat.cooling_advice || ''}`;
 
                 detailList.innerHTML = (h.local_stations || []).map(st => `
                     <div class="detail-item">
-                        <span>${st.name} (${st.town})</span>
-                        <strong style="color: ${getHumidityColor(st.rh)}">${st.rh}% · ${st.temp}°C</strong>
+                        <span>${st.name} (${st.town || ''})</span>
+                        <strong style="color: ${getHumidityColor(st.rh)}">${st.rh}% · ${st.temp || '-'}°C</strong>
                     </div>
                 `).join('');
             }
@@ -1026,6 +1087,7 @@ function updateDashboard() {
     } else if (activeTab === 'uv') {
         chartWrap.style.display = 'none';
         detailList.style.display = 'flex';
+        detailList.className = 'detail-list';
         contextTitle.innerText = `☀️ 局屬紫外線觀測站實測數據 (${selectedCounty})`;
 
         if (!uvData || !uvData.counties) return;
@@ -1069,29 +1131,44 @@ function updateDashboard() {
     } else if (activeTab === 'rain') {
         chartWrap.style.display = 'none';
         detailList.style.display = 'flex';
+        detailList.className = 'detail-list';
         contextTitle.innerText = `🌧️ 24 小時累積雨量排行 Top 10`;
 
         if (rainfallData) {
-            title1.innerText = '最大降雨量'; val1.innerHTML = `${rainfallData.max_rain || 0} <small>mm</small>`; sub1.innerText = rainfallData.max_station || '局屬測站';
+            let maxStationDesc = '暫無降雨';
+            if (rainfallData.max_station) {
+                if (typeof rainfallData.max_station === 'object') {
+                    const st = rainfallData.max_station;
+                    maxStationDesc = `${st.name || ''} (${st.county || ''} ${st.town || ''})`.trim();
+                } else {
+                    maxStationDesc = String(rainfallData.max_station);
+                }
+            }
+
+            title1.innerText = '最大降雨量'; val1.innerHTML = `${rainfallData.max_rain || 0} <small>mm</small>`; sub1.innerText = maxStationDesc;
             title2.innerText = '降雨警示等級'; val2.innerText = rainfallData.advisory_title || '無警報'; sub2.innerText = '全台監控中';
             title3.innerText = '累積降雨測站'; val3.innerHTML = `${rainfallData.total_rainy_stations || 0} <small>站</small>`; sub3.innerText = `總數 ${rainfallData.total_stations || 1300}`;
-            title4.innerText = '降雨狀態'; val4.innerText = rainfallData.advisory_title ? '有局部雨' : '大致穩定'; sub4.innerText = 'CWA 即時連線';
+            title4.innerText = '降雨狀態'; val4.innerText = (rainfallData.total_rainy_stations > 0) ? '有局部雨' : '大致穩定'; sub4.innerText = 'CWA 即時連線';
 
             adviceIcon.innerText = '🌧️';
             adviceHead.innerText = '降雨警報與出門提醒';
-            adviceBody.innerText = rainfallData.advisory_desc || '全台目前無豪雨警戒，山區請留意午後短暫陣雨。';
+            adviceBody.innerText = rainfallData.advisory_desc || '全台目前無豪雨警戒，山區請留意短暫陣雨。';
 
-            detailList.innerHTML = (rainfallData.top_stations || []).slice(0, 10).map(st => `
-                <div class="detail-item">
-                    <span>${st.station_name} (${st.county})</span>
-                    <strong style="color: ${getRainColor(st.rain24)}">${st.rain24} mm</strong>
-                </div>
-            `).join('');
+            detailList.innerHTML = (rainfallData.top_stations || []).slice(0, 10).map(st => {
+                const stName = st.name || st.station_name || '測站';
+                const rVal = Number(st.rain_today !== undefined ? st.rain_today : (st.rain24 !== undefined ? st.rain24 : 0)) || 0;
+                return `
+                    <div class="detail-item">
+                        <span>${stName} (${st.county || ''} ${st.town || ''})</span>
+                        <strong style="color: ${getRainColor(rVal)}">${rVal.toFixed(1)} mm</strong>
+                    </div>
+                `;
+            }).join('');
         }
     } else if (activeTab === 'typhoon') {
         chartWrap.style.display = 'none';
         detailList.style.display = 'flex';
-        detailList.style.flexDirection = 'column';
+        detailList.className = 'detail-list typhoon-mode';
         contextTitle.innerText = `📅 官方預報路徑節點數據表`;
 
         if (typhoonData) {
@@ -1176,15 +1253,22 @@ function updateDashboard() {
 // =============================================================================
 async function renderForecastChart(county) {
     try {
-        const res = await fetch(`/api/forecast/${county}`);
+        const res = await fetch(`/api/forecast?county=` + encodeURIComponent(county));
         const data = await res.json();
         if (!data || data.length === 0) return;
 
-        const labels = data.map(d => d.forecast_start.substring(5, 10).replace('-', '/'));
+        const labels = data.map(d => {
+            const dt = d.forecast_start || '';
+            const md = dt.substring(5, 10).replace('-', '/');
+            const hour = dt.substring(11, 13);
+            return hour ? `${md} ${hour}h` : md;
+        });
         const maxTemps = data.map(d => d.max_temp);
         const minTemps = data.map(d => d.min_temp);
 
-        const ctx = document.getElementById('forecastChart').getContext('2d');
+        const canvas = document.getElementById('forecastChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
         if (forecastChart) {
             forecastChart.destroy();
         }
@@ -1195,41 +1279,83 @@ async function renderForecastChart(county) {
                 labels: labels,
                 datasets: [
                     {
-                        label: '最高溫 (°C)',
+                        label: '最高溫 (MaxT)',
                         data: maxTemps,
-                        borderColor: '#f59e0b',
-                        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                        borderColor: '#b86b53',
+                        backgroundColor: 'rgba(184, 107, 83, 0.18)',
                         fill: true,
                         tension: 0.35,
-                        pointRadius: 3
+                        pointRadius: 3.5,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#b86b53',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1.5,
+                        borderWidth: 2.5
                     },
                     {
-                        label: '最低溫 (°C)',
+                        label: '最低溫 (MinT)',
                         data: minTemps,
-                        borderColor: '#38bdf8',
-                        backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                        borderColor: '#5c7c8a',
+                        backgroundColor: 'rgba(92, 124, 138, 0.18)',
                         fill: true,
                         tension: 0.35,
-                        pointRadius: 3
+                        pointRadius: 3.5,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#5c7c8a',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1.5,
+                        borderWidth: 2.5
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
                 plugins: {
                     legend: {
-                        labels: { color: '#94a3b8', font: { size: 10 } }
+                        position: 'top',
+                        labels: {
+                            color: '#cbd5e1',
+                            font: { size: 11, family: 'Inter', weight: '600' },
+                            boxWidth: 12,
+                            padding: 8
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                        titleColor: '#f8fafc',
+                        bodyColor: '#cbd5e1',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1,
+                        padding: 8,
+                        callbacks: {
+                            label: function(ctx) {
+                                return ` ${ctx.dataset.label}: ${ctx.parsed.y} °C`;
+                            }
+                        }
                     }
                 },
                 scales: {
                     x: {
-                        ticks: { color: '#64748b', font: { size: 9 } },
-                        grid: { color: 'rgba(255,255,255,0.05)' }
+                        ticks: {
+                            color: '#94a3b8',
+                            font: { size: 9 },
+                            maxRotation: 40,
+                            minRotation: 0
+                        },
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
                     },
                     y: {
-                        ticks: { color: '#64748b', font: { size: 9 } },
-                        grid: { color: 'rgba(255,255,255,0.05)' }
+                        ticks: {
+                            color: '#94a3b8',
+                            font: { size: 9 },
+                            callback: function(v) { return v + '°C'; }
+                        },
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
                     }
                 }
             }

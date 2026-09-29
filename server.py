@@ -15,12 +15,22 @@ import sys
 import json
 import sqlite3
 import pandas as pd
+import urllib.parse
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, static_folder=os.path.join(BASE_DIR, 'static'))
 CORS(app)
+
+FORECAST_CACHE = {}
+forecast_cache_path = os.path.join(BASE_DIR, 'forecast_cache.json')
+if os.path.exists(forecast_cache_path):
+    try:
+        with open(forecast_cache_path, 'r', encoding='utf-8') as f:
+            FORECAST_CACHE = json.load(f)
+    except Exception as e:
+        print(f"[WARN] Failed to load forecast_cache.json: {e}")
 
 # 導入專業模組
 try:
@@ -96,9 +106,31 @@ def get_weather():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/forecast', defaults={'county': None})
 @app.route('/api/forecast/<county>')
 def get_county_forecast(county):
     try:
+        target = request.args.get('county') or county or '臺北市'
+        target = urllib.parse.unquote(str(target)).strip()
+        try:
+            target_fix = target.encode('latin1').decode('utf-8')
+            if target_fix in FORECAST_CACHE or target_fix in COORDINATES:
+                target = target_fix
+        except Exception:
+            pass
+        if target == '台北市':
+            target = '臺北市'
+        elif target == '台中市':
+            target = '臺中市'
+        elif target == '台南市':
+            target = '臺南市'
+        elif target == '台東縣':
+            target = '臺東縣'
+
+        if target in FORECAST_CACHE and len(FORECAST_CACHE[target]) > 0:
+            return jsonify(FORECAST_CACHE[target])
+
+        # fallback to db
         conn = get_db_connection()
         query = '''
             SELECT forecast_start, min_temp, max_temp, weather, rain_probability
@@ -107,9 +139,21 @@ def get_county_forecast(county):
             ORDER BY forecast_start ASC
             LIMIT 14
         '''
-        df = pd.read_sql_query(query, conn, params=(county,))
+        df = pd.read_sql_query(query, conn, params=(target,))
         conn.close()
-        return jsonify(df.to_dict(orient='records'))
+        records = []
+        for _, row in df.iterrows():
+            import math
+            records.append({
+                "forecast_start": row['forecast_start'],
+                "min_temp": None if pd.isna(row['min_temp']) else float(row['min_temp']),
+                "max_temp": None if pd.isna(row['max_temp']) else float(row['max_temp']),
+                "weather": None if pd.isna(row['weather']) else str(row['weather']),
+                "rain_probability": None if pd.isna(row['rain_probability']) else float(row['rain_probability'])
+            })
+        if records:
+            return jsonify(records)
+        return jsonify(FORECAST_CACHE.get('臺北市', []))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
