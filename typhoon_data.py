@@ -15,7 +15,7 @@ import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-DEFAULT_CWA_API_KEY = "YOUR_CWA_API_KEY"
+DEFAULT_CWA_API_KEY = ""
 
 # 氣象署官方颱風英文代碼至中文譯名對照表 (確保氣象署官方中文譯名始終優先)
 WMO_TO_CWA_ZH = {

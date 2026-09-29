@@ -72,7 +72,7 @@ def get_cwa_api_key():
                     val = line.split("=", 1)[1].strip()
                     if val:
                         return val
-    return "YOUR_CWA_API_KEY"
+    return ""
 
 def get_uv_category(uv_val):
     """
