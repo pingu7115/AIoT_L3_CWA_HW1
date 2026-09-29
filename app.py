@@ -43,6 +43,7 @@ from main import run_pipeline
 from typhoon_data import fetch_cwa_live_typhoon, TYPHOON_CATALOG
 from rainfall_data import fetch_cwa_rainfall_data, get_rain_color
 from uv_data import (
+    fetch_cwa_uv_live_observation,
     fetch_cwa_uv_stations,
     get_uv_category,
     get_uv_color,
@@ -64,9 +65,14 @@ def get_cached_rainfall():
     """快取 5 分鐘避免頻繁呼叫 CWA 雨量 API"""
     return fetch_cwa_rainfall_data()
 
+@st.cache_data(ttl=120)
+def get_cached_uv_live_stations():
+    """快取 2 分鐘，從 O-A0003-001 取得全台測站最新小時即時紫外線觀測數據"""
+    return fetch_cwa_uv_live_observation()
+
 @st.cache_data(ttl=300)
-def get_cached_uv_stations():
-    """快取 5 分鐘避免頻繁呼叫 CWA 紫外線測站 API"""
+def get_cached_uv_max_stations():
+    """快取 5 分鐘，從 O-A0005-001 取得全台測站當日最大紫外線數據"""
     return fetch_cwa_uv_stations()
 
 # -------------------------------------------------------------
@@ -1868,11 +1874,44 @@ elif selected_layer == "🌀 颱風路徑動態":
 # 圖層 4: ☀️ 紫外線指數觀測與預報 (UV Index Observation & Forecast)
 # =============================================================
 elif selected_layer == "☀️ 紫外線指數觀測與預報":
-    # 讀取 CWA 測站即時實測資料與全台各縣市即時偵測
-    with st.spinner("正在連線中央氣象署 API (O-A0005-001) 取得全台 30 處測站即時紫外線偵測數據..."):
-        uv_stations_data = get_cached_uv_stations()
-        county_live_uv = get_county_realtime_uv_map(uv_stations_data.get("stations", []))
-        county_uv_map = get_latest_uv_by_counties()
+    # 模式切換：即時觀測 vs 今日最大值 (完全同款 CWA 官方雙頁籤切換)
+    mode_col1, mode_col2 = st.columns([1.3, 2.7])
+    with mode_col1:
+        uv_mode = st.radio(
+            "觀測模式：",
+            options=["即時觀測", "今日最大值"],
+            index=0,
+            horizontal=True,
+            key="uv_obs_mode"
+        )
+
+    # 依據選擇的模式載入對應之 CWA 資料
+    if uv_mode == "即時觀測":
+        with st.spinner("正在連線中央氣象署 API (O-A0003-001) 取得全台測站最新小時即時紫外線觀測數據..."):
+            uv_stations_data = get_cached_uv_live_stations()
+            mode_badge = "O-A0003-001 最新小時實測"
+            mode_title = "即時觀測"
+            mode_sub = "每小時同步 CWA 局屬氣象站現場實測儀器即時資料"
+    else:
+        with st.spinner("正在連線中央氣象署 API (O-A0005-001) 取得全台測站當日最大紫外線數據..."):
+            uv_stations_data = get_cached_uv_max_stations()
+            mode_badge = "O-A0005-001 當日最大值"
+            mode_title = "今日最大值"
+            mode_sub = "全台各測站當日瞬間測得最大值記錄"
+
+    county_live_uv = get_county_realtime_uv_map(uv_stations_data.get("stations", []))
+    county_uv_map = get_latest_uv_by_counties()
+    obs_date = uv_stations_data.get("obs_time") or uv_stations_data.get("obs_date", "")
+
+    # 頂部即時狀態橫幅 (完全比照 CWA 官方 觀測時間: YYYY/MM/DD HH:mm 樣式)
+    with mode_col2:
+        st.markdown(f"""
+        <div style="display: flex; align-items: center; justify-content: flex-end; height: 100%; gap: 10px; padding-top: 4px; flex-wrap: wrap;">
+            <span style="font-size: 1.02rem; font-weight: 700; color: #2b303a;">觀測時間: <span style="color: #2b82d9; font-weight: 800;">{obs_date}</span></span>
+            <span class="pill-badge green">{mode_badge}</span>
+            <span class="pill-badge">局屬 31 測站連線</span>
+        </div>
+        """, unsafe_allow_html=True)
 
     # 取得排序區域清單
     all_db_regions = get_distinct_regions(DEFAULT_DB_PATH)
@@ -1891,27 +1930,9 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
     max_st_uv = max_station.get("uv_index", 0.0) if max_station else 0.0
     max_st_name = max_station.get("name", "觀測中") if max_station else "觀測中"
     avg_st_uv = uv_stations_data.get("avg_uv", 0.0)
-    obs_date = uv_stations_data.get("obs_date", "")
 
     # 各縣市即時偵測警戒統計 (過量/危險: uvi >= 8.0)
     high_uv_count = sum(1 for c_info in county_live_uv.values() if c_info.get("uvi", 0) >= 8.0)
-
-    # 頂部即時連線橫幅
-    st.markdown(f"""
-    <div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; box-shadow: 0 4px 12px rgba(60, 50, 40, 0.05);">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 1.25rem;">☀️</span>
-            <div>
-                <div style="color: #2b303a; font-weight: 700; font-size: 0.92rem;">中央氣象署 (CWA) 全台即時紫外線監測與偵測系統</div>
-                <div style="color: #6c757d; font-size: 0.8rem;">資料來源: O-A0005-001 (全台 30 測站即時實測連線) · 觀測時間: <b>{obs_date}</b></div>
-            </div>
-        </div>
-        <div style="display: flex; gap: 8px;">
-            <span class="pill-badge green">局屬 30 測站實時連線</span>
-            <span class="pill-badge">22 縣市即時熱力偵測</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
 
     # 頂部 4 大重點指標卡片
     cat_max = get_uv_category(max_st_uv)
@@ -1921,7 +1942,7 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
     with m1:
         st.markdown(f"""
         <div class="glass-card" style="border-top: 3px solid {cat_max['color']};">
-            <div class="metric-title">☀️ 全台最高實測紫外線</div>
+            <div class="metric-title">☀️ 全台最高實測 ({mode_title})</div>
             <div class="metric-value" style="color: {cat_max['color']};">{max_st_uv} <span style="font-size: 1.1rem; font-weight: 600;">UVI</span></div>
             <div class="metric-caption">測站：<b>{max_st_name}</b> ({cat_max['icon']} {cat_max['level']})</div>
         </div>
@@ -1941,16 +1962,16 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
         <div class="glass-card" style="border-top: 3px solid #c94a4a;">
             <div class="metric-title">⚠️ 即時警戒/危險縣市</div>
             <div class="metric-value" style="color: #c94a4a;">{high_uv_count} <span style="font-size: 1.1rem; font-weight: 600;">縣市</span></div>
-            <div class="metric-caption">即時指數 ≥ 8.0 強烈曝曬警戒</div>
+            <div class="metric-caption">指數 ≥ 8.0 強烈曝曬警戒</div>
         </div>
         """, unsafe_allow_html=True)
 
     with m4:
-        st.markdown("""
+        st.markdown(f"""
         <div class="glass-card" style="border-top: 3px solid #2b82d9;">
-            <div class="metric-title">🛡️ 今日外出即時防曬建議</div>
-            <div class="metric-value" style="color: #2b82d9; font-size: 1.65rem;">SPF50+ / PA++++</div>
-            <div class="metric-caption">10:00-14:00 盡量減少烈日曝曬</div>
+            <div class="metric-title">🛡️ {mode_title}防護建議</div>
+            <div class="metric-value" style="color: #2b82d9; font-size: 1.45rem;">{cat_max['spf_advice']}</div>
+            <div class="metric-caption">{cat_max['sunburn_time']}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -2196,11 +2217,15 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                 )
             ).add_to(m_uv)
 
-        # 疊加局屬 30 處氣象測站實測標記 (Circle / DivIcon)
+        # 疊加局屬 31 處氣象測站實測標記 (Circle / DivIcon)
         for st_item in uv_stations_data.get("stations", []):
-            st_color = st_item["color"]
-            st_val = st_item["uv_index"]
+            is_off = st_item.get("is_offline", False) or st_item.get("uv_index") is None
+            st_color = "#8d99ae" if is_off else st_item["color"]
+            st_val = "-" if is_off else st_item.get("display_val", f"{st_item['uv_index']}")
             st_name = st_item["name"]
+            st_level = "儀器檢修中" if is_off else st_item["level"]
+            val_suffix = "" if is_off else " UVI"
+
             st_icon_html = f"""
             <div style="
                 background: {st_color};
@@ -2216,8 +2241,8 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                 white-space: nowrap;
                 box-shadow: 0 2px 8px rgba(60, 50, 40, 0.3);
                 border: 1.5px solid #FFFFFF;
-                min-width: 48px;
-                margin-left: -24px;
+                min-width: 44px;
+                margin-left: -22px;
                 margin-top: -10px;
                 cursor: pointer;
             "><span>☀️</span><span>{st_val}</span></div>
@@ -2239,7 +2264,7 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
                         white-space: nowrap;
                     ">
-                        📍 測站：{st_name} · <span style="color: #ffd166;">{st_val} UVI</span> ({st_item['level']}) · (點擊查看測站卡)
+                        📍 測站：{st_name} · <span style="color: {'#cbd5e1' if is_off else '#ffd166'}; font-weight: 700;">{st_val}{val_suffix}</span> ({st_level}) · (點擊查看測站卡)
                     </div>
                     """,
                     sticky=False
@@ -2247,11 +2272,11 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                 popup=folium.Popup(
                     f"""
                     <div style="font-family: 'Outfit', sans-serif; min-width: 210px; padding: 6px 4px; color: #2b303a; line-height: 1.5;">
-                        <h4 style="margin: 0 0 4px 0; color: #2b303a; border-bottom: 1.5px solid rgba(0,0,0,0.07); padding-bottom: 4px;">📍 {st_name} 氣象測站【即時觀測實測】</h4>
-                        <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px;">單點儀器當日瞬間最大測得值</div>
+                        <h4 style="margin: 0 0 4px 0; color: #2b303a; border-bottom: 1.5px solid rgba(0,0,0,0.07); padding-bottom: 4px;">📍 {st_name} 氣象測站【{mode_title}】</h4>
+                        <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px;">{mode_sub}</div>
                         <p style="margin: 3px 0; font-size: 13px;">站碼：<b>{st_item['station_id']}</b></p>
                         <p style="margin: 3px 0; font-size: 13px;">行政區：<b>{st_item['county']} {st_item['town']}</b></p>
-                        <p style="margin: 3px 0; font-size: 13px;">當日最大實測：<b style="color: {st_color}; font-size: 16px;">{st_val} UVI</b> ({st_item['level']})</p>
+                        <p style="margin: 3px 0; font-size: 13px;">實測數值：<b style="color: {st_color}; font-size: 16px;">{st_val}{val_suffix}</b> ({st_level})</p>
                         <p style="margin: 3px 0; font-size: 12.5px; color: #6c757d;">⏱️ {st_item['sunburn_time']}</p>
                         <p style="margin: 3px 0; font-size: 13px;">建議防護：<b>{st_item['spf_advice']}</b></p>
                     </div>
@@ -2291,7 +2316,7 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
         # 縣市選擇下拉選單
         cur_idx = sorted_regions.index(selected_uv_region) if selected_uv_region in sorted_regions else 0
         selected_uv_region = st.selectbox(
-            "📍 選擇檢視縣市即時紫外線偵測資訊：",
+            f"📍 選擇檢視縣市【{mode_title}】資訊：",
             options=sorted_regions,
             index=cur_idx,
             key="uv_region_selector"
@@ -2306,7 +2331,7 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
 
         cur_uvi = cur_live.get("uvi", 0.0)
         cur_cat = get_uv_category(cur_uvi)
-        cur_source = cur_live.get("source_desc", "局屬氣象測站即時實測")
+        cur_source = cur_live.get("source_desc", "局屬氣象測站實測")
 
         # 尋找該縣市轄內之局屬氣象測站 (提供即時實測觀測)
         local_stations = [
@@ -2316,25 +2341,25 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
 
         if local_stations:
             st_badges_html = "".join([
-                f"""<div style="background: #ffffff; border: 1px solid rgba(0,0,0,0.08); border-left: 3.5px solid {s['color']}; border-radius: 8px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 8px; margin: 3px 6px 3px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.03);"><span style="font-weight: 700; color: #2b303a; font-size: 0.82rem;">📍 {s['name']}氣象站 ({s['town']})</span><span style="color: {s['color']}; font-weight: 800; font-size: 0.95rem;">{s['uv_index']} UVI</span><span style="font-size: 0.72rem; padding: 1px 6px; border-radius: 999px; background: {s['color']}18; color: {s['color']}; font-weight: 700;">{s['level']}</span></div>"""
+                f"""<div style="background: #ffffff; border: 1px solid rgba(0,0,0,0.08); border-left: 3.5px solid {s['color'] if not s.get('is_offline') else '#8d99ae'}; border-radius: 8px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 8px; margin: 3px 6px 3px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.03);"><span style="font-weight: 700; color: #2b303a; font-size: 0.82rem;">📍 {s['name']}氣象站 ({s['town']})</span><span style="color: {s['color'] if not s.get('is_offline') else '#8d99ae'}; font-weight: 800; font-size: 0.95rem;">{s.get('display_val', s.get('uv_index'))} {'UVI' if not s.get('is_offline') else ''}</span><span style="font-size: 0.72rem; padding: 1px 6px; border-radius: 999px; background: {s['color'] if not s.get('is_offline') else '#8d99ae'}18; color: {s['color'] if not s.get('is_offline') else '#8d99ae'}; font-weight: 700;">{s['level']}</span></div>"""
                 for s in local_stations
             ])
-            local_stations_section = f"""<div style="margin-top: 12px; background: #fdfbf7; border: 1px dashed rgba(92, 124, 138, 0.35); border-radius: 10px; padding: 10px 14px;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;"><span style="font-size: 0.82rem; font-weight: 700; color: #2b303a;">📡 轄內氣象測站即時實測觀測：</span><span style="font-size: 0.72rem; color: #6c757d;">CWA 即時實測 (O-A0005-001)</span></div><div style="display: flex; flex-wrap: wrap;">{st_badges_html}</div></div>"""
+            local_stations_section = f"""<div style="margin-top: 12px; background: #fdfbf7; border: 1px dashed rgba(92, 124, 138, 0.35); border-radius: 10px; padding: 10px 14px;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;"><span style="font-size: 0.82rem; font-weight: 700; color: #2b303a;">📡 轄內氣象測站【{mode_title}】：</span><span style="font-size: 0.72rem; color: #6c757d;">CWA {mode_badge}</span></div><div style="display: flex; flex-wrap: wrap;">{st_badges_html}</div></div>"""
         else:
             primary_st = cur_live.get("primary_station", "鄰近測站")
             local_stations_section = f"""<div style="margin-top: 12px; background: #fdfbf7; border: 1px dashed rgba(92, 124, 138, 0.35); border-radius: 10px; padding: 10px 14px;"><div style="font-size: 0.8rem; color: #6c757d;">📡 轄內無獨立局屬測站，當前數據依據鄰近<b>{primary_st}氣象站</b>實測推估。</div></div>"""
 
-        # 縣市即時紫外線偵測重點大卡片 (避免 Markdown 4 空格縮排誤判為代碼塊)
+        # 縣市紫外線重點大卡片 (避免 Markdown 4 空格縮排誤判為代碼塊)
         card_html = (
             f'<div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; box-shadow: 0 4px 14px rgba(60, 50, 40, 0.05);">'
             f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); padding-bottom: 8px;">'
-            f'<div><span style="font-size: 1.25rem; font-weight: 700; color: #2b303a;">📍 {selected_uv_region} 即時紫外線偵測</span>'
+            f'<div><span style="font-size: 1.25rem; font-weight: 700; color: #2b303a;">📍 {selected_uv_region} 【{mode_title}】</span>'
             f'<div style="font-size: 0.8rem; color: #6c757d;">{cur_source} · 觀測時間：{obs_date}</div></div>'
             f'<span style="font-size: 0.88rem; font-weight: 700; padding: 4px 12px; border-radius: 999px; background: {cur_cat["color"]}18; color: {cur_cat["color"]}; border: 1.5px solid {cur_cat["color"]}55;">'
             f'{cur_cat["icon"]} {cur_cat["level"]}</span></div>'
             f'<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px;">'
             f'<div style="background: #fdfcf9; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 10px; padding: 12px;">'
-            f'<div style="font-size: 0.8rem; color: #6c757d;">即時實測紫外線指數</div>'
+            f'<div style="font-size: 0.8rem; color: #6c757d;">{mode_title}紫外線指數</div>'
             f'<div style="font-size: 1.8rem; font-weight: 800; color: {cur_cat["color"]}; line-height: 1.2;">'
             f'{cur_uvi} <span style="font-size: 0.95rem; font-weight: 600;">UVI</span></div>'
             f'<div style="font-size: 0.75rem; color: #6c757d; margin-top: 2px;">指數範圍：{cur_cat["range"]}</div></div>'
@@ -2343,14 +2368,14 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
             f'<div style="font-size: 0.95rem; font-weight: 700; color: #2b303a; margin-top: 4px; line-height: 1.3;">⏱️ {cur_cat["sunburn_time"]}</div>'
             f'<div style="font-size: 0.75rem; color: #5c7c8a; font-weight: 600; margin-top: 4px;">推薦 {cur_cat["spf_advice"]}</div></div></div>'
             f'<div style="background: {cur_cat["color"]}12; border-left: 4px solid {cur_cat["color"]}; border-radius: 6px; padding: 10px 14px; font-size: 0.84rem; color: #2b303a; line-height: 1.5;">'
-            f'🛡️ <b>即時防曬指引</b>：{cur_cat["advice"]}</div>'
+            f'🛡️ <b>防曬指引</b>：{cur_cat["advice"]}</div>'
             f'{local_stations_section}'
             f'</div>'
         )
         st.markdown(card_html, unsafe_allow_html=True)
 
         # 下方功能分頁：全台實測排行 vs 一週趨勢預報
-        tab_rank, tab_forecast = st.tabs(["🏆 全台 30 測站即時實測排行", f"📅 {selected_uv_region} 一週預報趨勢"])
+        tab_rank, tab_forecast = st.tabs([f"🏆 全台測站【{mode_title}】排行", f"📅 {selected_uv_region} 一週預報趨勢"])
 
         with tab_rank:
             top_stations = uv_stations_data.get("top_stations", [])
@@ -2361,7 +2386,7 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                         "測站名稱": s["name"],
                         "縣市": s["county"],
                         "行政區": s["town"],
-                        "實測 UVI": s["uv_index"],
+                        "實測 UVI": f"{s.get('display_val', s.get('uv_index'))}",
                         "等級": f"{s['icon']} {s['level']}",
                         "防護裝備": s["spf_advice"]
                     }
@@ -2377,7 +2402,7 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                         "測站名稱": st.column_config.TextColumn("測站"),
                         "縣市": st.column_config.TextColumn("縣市"),
                         "行政區": st.column_config.TextColumn("鄉鎮區"),
-                        "實測 UVI": st.column_config.NumberColumn("實測指數", format="%.1f"),
+                        "實測 UVI": st.column_config.TextColumn("實測指數"),
                         "等級": st.column_config.TextColumn("等級"),
                         "防護裝備": st.column_config.TextColumn("防護建議")
                     }

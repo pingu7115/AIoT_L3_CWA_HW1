@@ -40,6 +40,7 @@ UV_STATIONS_META = {
     "467270": {"name": "田中", "county": "彰化縣", "town": "田中鎮", "lat": 23.8738, "lon": 120.5813},
     "467650": {"name": "日月潭", "county": "南投縣", "town": "魚池鄉", "lat": 23.8813, "lon": 120.9081},
     "467550": {"name": "玉山", "county": "南投縣", "town": "信義鄉", "lat": 23.4872, "lon": 120.9594},
+    "467530": {"name": "阿里山", "county": "嘉義縣", "town": "阿里山鄉", "lat": 23.5082, "lon": 120.8133},
     "467290": {"name": "古坑", "county": "雲林縣", "town": "古坑鄉", "lat": 23.6335, "lon": 120.5519},
     "467480": {"name": "嘉義", "county": "嘉義市", "town": "西區", "lat": 23.4959, "lon": 120.4329},
     "467410": {"name": "臺南", "county": "臺南市", "town": "中西區", "lat": 22.9933, "lon": 120.2049},
@@ -148,9 +149,135 @@ def get_uv_color(uv_val):
     """取得對應紫外線數值的代表色碼"""
     return get_uv_category(uv_val)["color"]
 
+def fetch_cwa_uv_live_observation(api_key=None):
+    """
+    從 CWA API O-A0003-001 (現在天氣觀測報告-局屬氣象站)
+    抓取全台局屬測站當前最新一小時即時紫外線觀測實測數據 (即時觀測)
+    """
+    if not api_key:
+        api_key = get_cwa_api_key()
+
+    url = f"https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization={api_key}"
+    
+    obs_time_str = datetime.datetime.now().strftime("%Y/%m/%d %H:00")
+    stations = []
+
+    try:
+        r = requests.get(url, timeout=12, verify=False)
+        if r.status_code == 200:
+            data = r.json()
+            all_stations = data.get("records", {}).get("Station", [])
+            st_map = {s.get("StationId"): s for s in all_stations}
+
+            latest_dt = ""
+            for sid, meta in UV_STATIONS_META.items():
+                st = st_map.get(sid)
+                if not st:
+                    continue
+
+                ot = st.get("ObsTime", {}).get("DateTime", "")
+                if ot and ot > latest_dt:
+                    latest_dt = ot
+
+                uv_raw = st.get("WeatherElement", {}).get("UVIndex")
+                try:
+                    uv_float = float(uv_raw) if uv_raw is not None else -99.0
+                except (ValueError, TypeError):
+                    uv_float = -99.0
+
+                if uv_float < 0:
+                    stations.append({
+                        "station_id": sid,
+                        "name": meta["name"],
+                        "county": meta["county"],
+                        "town": meta["town"],
+                        "lat": meta["lat"],
+                        "lon": meta["lon"],
+                        "uv_index": None,
+                        "display_val": "-",
+                        "is_offline": True,
+                        "level": "儀器檢修 / 無數據",
+                        "color": "#94a3b8",
+                        "icon": "⚪",
+                        "sunburn_time": "暫無觀測",
+                        "advice": "測站檢修或校正中，請參考鄰近測站即時指數。",
+                        "spf_advice": "常規基礎防護"
+                    })
+                else:
+                    cat = get_uv_category(uv_float)
+                    disp = str(int(uv_float)) if uv_float.is_integer() else f"{uv_float:.1f}"
+                    stations.append({
+                        "station_id": sid,
+                        "name": meta["name"],
+                        "county": meta["county"],
+                        "town": meta["town"],
+                        "lat": meta["lat"],
+                        "lon": meta["lon"],
+                        "uv_index": uv_float,
+                        "display_val": disp,
+                        "is_offline": False,
+                        "level": cat["level"],
+                        "color": cat["color"],
+                        "icon": cat["icon"],
+                        "sunburn_time": cat["sunburn_time"],
+                        "advice": cat["advice"],
+                        "spf_advice": cat["spf_advice"]
+                    })
+
+            if latest_dt:
+                try:
+                    clean_dt = latest_dt.split("+")[0].replace("T", " ")
+                    obs_time_str = clean_dt[:16].replace("-", "/")
+                except Exception:
+                    obs_time_str = latest_dt[:16]
+    except Exception as e:
+        print(f"[WARN] 抓取 CWA 即時紫外線觀測 (O-A0003-001) 失敗: {e}")
+
+    if not stations:
+        for sid, meta in UV_STATIONS_META.items():
+            uv_val = 0.0
+            cat = get_uv_category(uv_val)
+            stations.append({
+                "station_id": sid,
+                "name": meta["name"],
+                "county": meta["county"],
+                "town": meta["town"],
+                "lat": meta["lat"],
+                "lon": meta["lon"],
+                "uv_index": uv_val,
+                "display_val": "0",
+                "is_offline": False,
+                "level": cat["level"],
+                "color": cat["color"],
+                "icon": cat["icon"],
+                "sunburn_time": cat["sunburn_time"],
+                "advice": cat["advice"],
+                "spf_advice": cat["spf_advice"]
+            })
+
+    valid_stations = [s for s in stations if not s.get("is_offline") and s.get("uv_index") is not None]
+    valid_stations.sort(key=lambda s: s["uv_index"], reverse=True)
+    max_station = valid_stations[0] if valid_stations else None
+    max_uv = max_station["uv_index"] if max_station else 0.0
+    avg_uv = round(sum(s["uv_index"] for s in valid_stations) / len(valid_stations), 1) if valid_stations else 0.0
+
+    return {
+        "obs_time": obs_time_str,
+        "obs_date": obs_time_str,
+        "mode": "realtime",
+        "mode_title": "即時觀測",
+        "stations": stations,
+        "top_stations": valid_stations,
+        "max_station": max_station,
+        "max_uv": max_uv,
+        "avg_uv": avg_uv,
+        "total_stations": len(stations),
+        "is_live": True
+    }
+
 def fetch_cwa_uv_stations(api_key=None):
     """
-    從 CWA API O-A0005-001 抓取全台局屬測站之當日紫外線最大值與最新觀測數據
+    從 CWA API O-A0005-001 抓取全台局屬測站之當日紫外線最大值與觀測數據 (今日最大值)
     """
     if not api_key:
         api_key = get_cwa_api_key()
@@ -179,7 +306,6 @@ def fetch_cwa_uv_stations(api_key=None):
                     except ValueError:
                         uv_float = 0.0
 
-                    # 排除儀器故障、負值 (-99.0) 或異常數值
                     if uv_float < 0:
                         continue
 
@@ -192,6 +318,7 @@ def fetch_cwa_uv_stations(api_key=None):
                     })
 
                     cat = get_uv_category(uv_float)
+                    disp = str(int(uv_float)) if uv_float.is_integer() else f"{uv_float:.1f}"
                     stations.append({
                         "station_id": sid,
                         "name": meta["name"],
@@ -200,6 +327,8 @@ def fetch_cwa_uv_stations(api_key=None):
                         "lat": meta["lat"],
                         "lon": meta["lon"],
                         "uv_index": uv_float,
+                        "display_val": disp,
+                        "is_offline": False,
                         "level": cat["level"],
                         "color": cat["color"],
                         "icon": cat["icon"],
@@ -208,14 +337,13 @@ def fetch_cwa_uv_stations(api_key=None):
                         "spf_advice": cat["spf_advice"]
                     })
     except Exception as e:
-        print(f"[WARN] 抓取 CWA 測站紫外線 (O-A0005-001) 失敗: {e}")
+        print(f"[WARN] 抓取 CWA 測站紫外線當日最大值 (O-A0005-001) 失敗: {e}")
 
-    # 若 API 回傳空或失敗，建立全台標準 30 測站合理模擬值以確保展示不中斷
     if not stations:
-        print("[INFO] 使用離線標準測站備援資料...")
         for sid, meta in UV_STATIONS_META.items():
             mock_uv = 9.0 if "臺北" in meta["name"] or "新北" in meta["name"] else (10.0 if "東" in meta["county"] or "南" in meta["county"] else 8.0)
             cat = get_uv_category(mock_uv)
+            disp = str(int(mock_uv)) if mock_uv.is_integer() else f"{mock_uv:.1f}"
             stations.append({
                 "station_id": sid,
                 "name": meta["name"],
@@ -224,6 +352,8 @@ def fetch_cwa_uv_stations(api_key=None):
                 "lat": meta["lat"],
                 "lon": meta["lon"],
                 "uv_index": mock_uv,
+                "display_val": disp,
+                "is_offline": False,
                 "level": cat["level"],
                 "color": cat["color"],
                 "icon": cat["icon"],
@@ -232,18 +362,20 @@ def fetch_cwa_uv_stations(api_key=None):
                 "spf_advice": cat["spf_advice"]
             })
 
-    # 排序：由高至低
     stations.sort(key=lambda s: s["uv_index"], reverse=True)
-    
     max_station = stations[0] if stations else None
     max_uv = max_station["uv_index"] if max_station else 0.0
     avg_uv = round(sum(s["uv_index"] for s in stations) / len(stations), 1) if stations else 0.0
 
+    formatted_time = obs_date.replace("-", "/")
     return {
-        "obs_date": obs_date,
+        "obs_time": formatted_time,
+        "obs_date": formatted_time,
+        "mode": "daily_max",
+        "mode_title": "今日最大值",
         "element_name": element_name,
         "stations": stations,
-        "top_stations": stations[:15],
+        "top_stations": stations,
         "max_station": max_station,
         "max_uv": max_uv,
         "avg_uv": avg_uv,
@@ -253,13 +385,13 @@ def fetch_cwa_uv_stations(api_key=None):
 
 def get_county_realtime_uv_map(stations_list):
     """
-    從局屬氣象測站即時實測觀測資料，計算全台 22 縣市當前即時偵測紫外線指數
-    若該縣市轄內有多處測站，取即時實測最大值 (Peak Detection) 作為該縣市當前代表強度
+    從局屬氣象測站觀測資料，計算全台 22 縣市當前代表紫外線指數
+    若該縣市轄內有多處測站，取實測最大值 (Peak Detection) 作為該縣市當前代表強度
     若該縣市無獨立測站 (如新竹市、嘉義縣)，對應至鄰近核心氣象站實測
     """
     county_stations = {}
     for st in stations_list:
-        if st.get("uv_index", -1) >= 0:
+        if not st.get("is_offline") and st.get("uv_index") is not None and st.get("uv_index") >= 0:
             c = st["county"]
             county_stations.setdefault(c, []).append(st)
 
@@ -300,10 +432,10 @@ def get_county_realtime_uv_map(stations_list):
                 "source_desc": f"局屬{best_st['name']}氣象站 ({best_st['town']}) 即時實測" if target_c == c else f"鄰近{best_st['name']}氣象站實測推估"
             }
         else:
-            cat = get_uv_category(8.0)
+            cat = get_uv_category(0.0)
             result[c] = {
                 "regionName": c,
-                "uvi": 8.0,
+                "uvi": 0.0,
                 "exposureLevel": cat["level"],
                 "color": cat["color"],
                 "icon": cat["icon"],
@@ -314,7 +446,7 @@ def get_county_realtime_uv_map(stations_list):
                 "primary_town": "",
                 "stations": [],
                 "is_interpolated": True,
-                "source_desc": "區域推估"
+                "source_desc": "暫無測站資料或夜間無紫外線"
             }
     return result
 
