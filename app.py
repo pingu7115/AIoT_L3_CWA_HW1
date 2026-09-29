@@ -1991,7 +1991,9 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
         if r not in sorted_regions:
             sorted_regions.append(r)
 
-    if "selected_uv_region" not in st.session_state or st.session_state["selected_uv_region"] not in sorted_regions:
+    if "uv_region_selector" in st.session_state and st.session_state["uv_region_selector"] in sorted_regions:
+        st.session_state["selected_uv_region"] = st.session_state["uv_region_selector"]
+    elif "selected_uv_region" not in st.session_state or st.session_state["selected_uv_region"] not in sorted_regions:
         st.session_state["selected_uv_region"] = "臺北市" if "臺北市" in sorted_regions else sorted_regions[0]
 
     selected_uv_region = st.session_state["selected_uv_region"]
@@ -2258,15 +2260,15 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
 
                 return {
                     "fillColor": color,
-                    "color": "#2b303a" if is_cur else "rgba(92, 124, 138, 0.35)",
-                    "weight": 3.0 if is_cur else 1.2,
-                    "fillOpacity": 0.88 if is_cur else 0.72,
+                    "color": "#0f172a" if is_cur else "rgba(92, 124, 138, 0.35)",
+                    "weight": 3.8 if is_cur else 1.2,
+                    "fillOpacity": 0.90 if is_cur else 0.72,
                 }
 
             def uv_highlight_fn(feature):
                 return {
-                    "weight": 3.2,
-                    "color": "#2b303a",
+                    "weight": 3.5,
+                    "color": "#0f172a",
                     "fillOpacity": 0.95
                 }
 
@@ -2287,6 +2289,26 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                     style="background: transparent; border: none; padding: 0; box-shadow: none;"
                 )
             ).add_to(m_uv)
+
+            # 特別為當前選定縣市疊加頂層高亮粗框線，確保邊界不被鄰近多邊形覆蓋
+            selected_uv_features = [
+                feat for feat in geojson_uv_data.get("features", [])
+                if (feat.get("properties", {}).get("COUNTYNAME") == selected_uv_region
+                    or feat.get("properties", {}).get("name") == selected_uv_region
+                    or (feat.get("properties", {}).get("COUNTYNAME") and feat.get("properties", {}).get("COUNTYNAME").replace("臺", "台") == selected_uv_region.replace("臺", "台")))
+            ]
+            if selected_uv_features:
+                folium.GeoJson(
+                    {"type": "FeatureCollection", "features": selected_uv_features},
+                    name="Selected UV County Outline",
+                    style_function=lambda f: {
+                        "fillColor": "none",
+                        "fillOpacity": 0,
+                        "color": "#0f172a",
+                        "weight": 4.5,
+                        "opacity": 1.0
+                    }
+                ).add_to(m_uv)
 
         # 疊加局屬 31 處氣象測站實測標記 (Circle / DivIcon)
         for st_item in uv_stations_data.get("stations", []):
@@ -2356,7 +2378,7 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                 )
             ).add_to(m_uv)
 
-        st_folium(m_uv, width="stretch", height=500, returned_objects=[], key="uv_folium_map")
+        st_folium(m_uv, width="stretch", height=500, returned_objects=[], key=f"uv_folium_map_{uv_mode}_{selected_uv_region}")
 
         # 底部色階標尺與圖例說明 (安全: 藍色, 一般: 綠色, 警戒: 黃色, 極高: 紅色, 危險: 紫色)
         st.markdown("""
@@ -2385,12 +2407,16 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
 
     with col_details:
         # 縣市選擇下拉選單
+        def on_uv_region_change():
+            st.session_state["selected_uv_region"] = st.session_state["uv_region_selector"]
+
         cur_idx = sorted_regions.index(selected_uv_region) if selected_uv_region in sorted_regions else 0
         selected_uv_region = st.selectbox(
             f"📍 選擇檢視縣市【{mode_title}】資訊：",
             options=sorted_regions,
             index=cur_idx,
-            key="uv_region_selector"
+            key="uv_region_selector",
+            on_change=on_uv_region_change
         )
         st.session_state["selected_uv_region"] = selected_uv_region
 
@@ -2616,7 +2642,9 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
         if r not in sorted_regions:
             sorted_regions.append(r)
 
-    if "selected_hum_region" not in st.session_state or st.session_state["selected_hum_region"] not in sorted_regions:
+    if "hum_region_selector" in st.session_state and st.session_state["hum_region_selector"] in sorted_regions:
+        st.session_state["selected_hum_region"] = st.session_state["hum_region_selector"]
+    elif "selected_hum_region" not in st.session_state or st.session_state["selected_hum_region"] not in sorted_regions:
         st.session_state["selected_hum_region"] = "臺北市" if "臺北市" in sorted_regions else sorted_regions[0]
 
     selected_hum_region = st.session_state["selected_hum_region"]
@@ -3082,15 +3110,15 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
 
                 return {
                     "fillColor": color,
-                    "color": "#2b303a" if is_cur else "rgba(92, 124, 138, 0.35)",
-                    "weight": 3.0 if is_cur else 1.2,
-                    "fillOpacity": 0.88 if is_cur else 0.72,
+                    "color": "#0f172a" if is_cur else "rgba(92, 124, 138, 0.35)",
+                    "weight": 3.8 if is_cur else 1.2,
+                    "fillOpacity": 0.90 if is_cur else 0.72,
                 }
 
             def hum_highlight_fn(feature):
                 return {
-                    "weight": 3.2,
-                    "color": "#2b303a",
+                    "weight": 3.5,
+                    "color": "#0f172a",
                     "fillOpacity": 0.95
                 }
 
@@ -3112,6 +3140,26 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
                 )
             ).add_to(m_hum)
 
+            # 特別為當前選定縣市疊加頂層高亮粗框線，確保邊界不被鄰近多邊形覆蓋
+            selected_hum_features = [
+                feat for feat in geojson_hum_data.get("features", [])
+                if (feat.get("properties", {}).get("COUNTYNAME") == selected_hum_region
+                    or feat.get("properties", {}).get("name") == selected_hum_region
+                    or (feat.get("properties", {}).get("COUNTYNAME") and feat.get("properties", {}).get("COUNTYNAME").replace("臺", "台") == selected_hum_region.replace("臺", "台")))
+            ]
+            if selected_hum_features:
+                folium.GeoJson(
+                    {"type": "FeatureCollection", "features": selected_hum_features},
+                    name="Selected Humidity County Outline",
+                    style_function=lambda f: {
+                        "fillColor": "none",
+                        "fillOpacity": 0,
+                        "color": "#0f172a",
+                        "weight": 4.5,
+                        "opacity": 1.0
+                    }
+                ).add_to(m_hum)
+
         # 疊加全台 22 縣市即時懸浮標籤 (一個縣市一個，比照氣溫圖層樣式)
         for c_name, coords in COUNTY_CENTROIDS.items():
             if c_name.endswith("地區"):
@@ -3121,7 +3169,8 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
                 continue
 
             is_cur = (c_name == selected_hum_region or (c_name and c_name.replace("臺", "台") == selected_hum_region.replace("臺", "台")))
-            badge_border = "2px solid #2b303a" if is_cur else "1.5px solid #FFFFFF"
+            badge_border = "3px solid #0f172a" if is_cur else "1.5px solid #FFFFFF"
+            badge_shadow = "0 0 10px rgba(15, 23, 42, 0.85)" if is_cur else "0 2px 8px rgba(60, 50, 40, 0.25)"
 
             if is_thi_mode:
                 thi_val = h_info.get("thi", 0.0)
@@ -3141,7 +3190,7 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
                     justify-content: center;
                     gap: 3px;
                     white-space: nowrap;
-                    box-shadow: 0 2px 8px rgba(60, 50, 40, 0.25);
+                    box-shadow: {badge_shadow};
                     border: {badge_border};
                     min-width: 52px;
                     margin-left: -26px;
@@ -3204,7 +3253,7 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
                     justify-content: center;
                     gap: 3px;
                     white-space: nowrap;
-                    box-shadow: 0 2px 8px rgba(60, 50, 40, 0.25);
+                    box-shadow: {badge_shadow};
                     border: {badge_border};
                     min-width: 52px;
                     margin-left: -26px;
@@ -3250,7 +3299,7 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
                     )
                 ).add_to(m_hum)
 
-        st_folium(m_hum, width="stretch", height=500, returned_objects=[], key="hum_folium_map")
+        st_folium(m_hum, width="stretch", height=500, returned_objects=[], key=f"hum_folium_map_{hum_view_mode}_{selected_hum_region}")
 
         # 底部色階標尺與圖例說明
         if is_thi_mode:
@@ -3302,13 +3351,17 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
 
     with col_hum_details:
         # 縣市選擇下拉選單
+        def on_hum_region_change():
+            st.session_state["selected_hum_region"] = st.session_state["hum_region_selector"]
+
         cur_hum_idx = sorted_regions.index(selected_hum_region) if selected_hum_region in sorted_regions else 0
         selector_label = "📍 選擇檢視縣市【溫濕舒適度】資訊：" if is_thi_mode else "📍 選擇檢視縣市【即時濕度】資訊："
         selected_hum_region = st.selectbox(
             selector_label,
             options=sorted_regions,
             index=cur_hum_idx,
-            key="hum_region_selector"
+            key="hum_region_selector",
+            on_change=on_hum_region_change
         )
         st.session_state["selected_hum_region"] = selected_hum_region
 
