@@ -818,36 +818,26 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
 
                     tooltip_html = f"""
                     <div style="
-                        background: rgba(255, 255, 255, 0.97);
-                        backdrop-filter: blur(12px);
-                        -webkit-backdrop-filter: blur(12px);
-                        border: 1px solid rgba(0, 0, 0, 0.08);
-                        border-top: 3.5px solid {cat['color']};
-                        border-radius: 12px;
-                        padding: 10px 14px;
-                        min-width: 220px;
-                        box-shadow: 0 6px 20px rgba(60, 50, 40, 0.1);
-                        font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                        color: #2b303a;
-                        line-height: 1.5;
+                        background: rgba(43, 48, 58, 0.92);
+                        backdrop-filter: blur(8px);
+                        -webkit-backdrop-filter: blur(8px);
+                        color: #FFFFFF;
+                        padding: 5px 11px;
+                        border-radius: 8px;
+                        font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+                        font-size: 12px;
+                        font-weight: 600;
+                        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+                        white-space: nowrap;
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 6px;
+                        pointer-events: none;
                     ">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); padding-bottom: 5px;">
-                            <span style="font-size: 15px; font-weight: 700; color: #2b303a;">📍 地區：{c_name}</span>
-                            <span style="font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: {cat['color']}18; color: {cat['color']}; border: 1px solid {cat['color']}44;">{cat['icon']} {cat['label']}</span>
-                        </div>
-                        <div style="font-size: 13.5px; margin-bottom: 3px; display: flex; align-items: baseline; gap: 4px;">
-                            <span style="color: #6c757d;">🌡️ 均溫：</span>
-                            <b style="color: #2b303a; font-size: 16px; font-weight: 700;">{icon} {avg_t}°C</b>
-                            <span style="color: #6c757d; font-size: 11.5px; margin-left: 2px;">({range_str})</span>
-                        </div>
-                        <div style="font-size: 13px; margin-bottom: 5px;">
-                            <span style="color: #6c757d;">🌤️ 預報：</span>
-                            <span style="color: #2b303a; font-weight: 600;">{icon} {condition}</span>
-                        </div>
-                        <div style="font-size: 11px; color: #6c757d; margin-top: 5px; border-top: 1px dashed rgba(0, 0, 0, 0.08); padding-top: 4px; display: flex; justify-content: space-between;">
-                            <span>溫差: {diff_t}°C</span>
-                            <span style="color: #5c7c8a; font-weight: 600;">點擊在地圖切換 👆</span>
-                        </div>
+                        <span>📍 {c_name}</span>
+                        <span style="color: #ffd166; font-weight: 800;">{icon} {avg_t}°C</span>
+                        <span style="background: {cat['color']}; padding: 1px 6px; border-radius: 999px; font-size: 10.5px;">{cat['icon']} {cat['label']}</span>
+                        <span style="color: #cbd5e1; font-weight: 400; font-size: 11px;">(點擊開啟資訊卡)</span>
                     </div>
                     """
                     
@@ -914,7 +904,7 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
                 tooltip=folium.GeoJsonTooltip(
                     fields=["tooltip_card"],
                     labels=False,
-                    sticky=True,
+                    sticky=False,
                     style="background: transparent; border: none; padding: 0; box-shadow: none;"
                 ),
                 popup=folium.GeoJsonPopup(
@@ -964,37 +954,24 @@ if selected_layer == "🌡️ 各縣市溫度分佈":
                 tooltip=folium.Tooltip(
                     f"""
                     <div style="
-                        background: rgba(255, 255, 255, 0.97);
-                        border: 1px solid rgba(0, 0, 0, 0.08);
-                        border-top: 3px solid {color};
-                        border-radius: 10px;
-                        padding: 8px 12px;
-                        color: #2b303a;
+                        background: rgba(43, 48, 58, 0.92);
+                        color: #FFFFFF;
+                        border-radius: 8px;
+                        padding: 6px 10px;
                         font-family: 'Outfit', sans-serif;
-                        font-size: 12.5px;
-                        min-width: 180px;
-                        box-shadow: 0 4px 16px rgba(60, 50, 40, 0.1);
+                        font-size: 12px;
+                        font-weight: 600;
+                        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+                        white-space: nowrap;
                     ">
-                        <div style="font-weight: 700; color: #2b303a; margin-bottom: 4px;">📍 地區：{c_name}</div>
-                        <div>🌡️ 均溫：<b>{get_weather_icon(w['mint'], w['maxt'])[0]} {avg_t}°C</b> ({w['mint']}°C ~ {w['maxt']}°C)</div>
-                        <div>🌤️ 預報：{get_weather_icon(w['mint'], w['maxt'])[0]} {get_weather_icon(w['mint'], w['maxt'])[1]}</div>
+                        📍 {c_name} · <span style="color: #ffd166;">{avg_t}°C</span> ({w['mint']}°~{w['maxt']}°) · {condition}
                     </div>
                     """,
-                    sticky=True
+                    sticky=False
                 )
             ).add_to(m)
 
-        map_state = st_folium(m, width="stretch", height=500, returned_objects=["last_active_drawing"])
-        if map_state and map_state.get("last_active_drawing"):
-            last_props = map_state["last_active_drawing"].get("properties", {})
-            clicked_c = last_props.get("COUNTYNAME") or last_props.get("name")
-            if clicked_c:
-                for r in sorted_regions:
-                    if r == clicked_c or r.replace("臺", "台") == clicked_c.replace("臺", "台"):
-                        if st.session_state.get("selected_region") != r:
-                            st.session_state["selected_region"] = r
-                            st.rerun()
-                        break
+        st_folium(m, width="stretch", height=500, returned_objects=[], key="temp_folium_map")
 
         # 底部 4 階色階標尺與圖例說明 (Morandi Light Palette)
         st.markdown("""
@@ -2118,51 +2095,62 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                     cat = get_uv_category(val)
                     props["tooltip_card"] = f"""
                     <div style="
-                        background: rgba(255, 255, 255, 0.97);
-                        backdrop-filter: blur(12px);
-                        -webkit-backdrop-filter: blur(12px);
-                        border: 1px solid rgba(0, 0, 0, 0.08);
-                        border-top: 3.5px solid {cat['color']};
-                        border-radius: 12px;
-                        padding: 10px 14px;
-                        min-width: 220px;
-                        box-shadow: 0 6px 20px rgba(60, 50, 40, 0.1);
+                        background: rgba(43, 48, 58, 0.92);
+                        backdrop-filter: blur(8px);
+                        -webkit-backdrop-filter: blur(8px);
+                        color: #FFFFFF;
+                        padding: 5px 11px;
+                        border-radius: 8px;
                         font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
-                        color: #2b303a;
-                        line-height: 1.5;
+                        font-size: 12px;
+                        font-weight: 600;
+                        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+                        white-space: nowrap;
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 6px;
+                        pointer-events: none;
                     ">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); padding-bottom: 5px;">
-                            <span style="font-size: 15px; font-weight: 700; color: #2b303a;">📍 地區：{c_name}</span>
-                            <span style="font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: {cat['color']}18; color: {cat['color']}; border: 1px solid {cat['color']}44;">{cat['icon']} {cat['level']}</span>
-                        </div>
-                        <div style="font-size: 13.5px; margin-bottom: 3px; display: flex; align-items: baseline; gap: 4px;">
-                            <span style="color: #6c757d;">☀️ 預測指數：</span>
-                            <b style="color: {cat['color']}; font-size: 16px; font-weight: 700;">{val} UVI</b>
-                            <span style="color: #6c757d; font-size: 11.5px;">({cat['range']})</span>
-                        </div>
-                        <div style="font-size: 12.5px; color: #6c757d; margin-bottom: 4px;">
-                            ⏱️ <b>致傷時間：</b>{cat['sunburn_time']}
-                        </div>
-                        <div style="font-size: 12px; color: #2b303a; background: #f8f6f0; border-radius: 6px; padding: 5px 8px; margin-top: 4px;">
-                            🛡️ <b>防護指引：</b>{cat['advice']}
-                        </div>
-                        <div style="font-size: 11px; color: #5c7c8a; font-weight: 600; margin-top: 6px; border-top: 1px dashed rgba(0, 0, 0, 0.08); padding-top: 4px; text-align: right;">
-                            點擊在地圖切換一週預報 👆
-                        </div>
+                        <span>📍 {c_name}</span>
+                        <span style="color: #ffd166; font-weight: 800;">{val} UVI</span>
+                        <span style="background: {cat['color']}; padding: 1px 6px; border-radius: 999px; font-size: 10.5px;">{cat['icon']} {cat['level']}</span>
+                        <span style="color: #cbd5e1; font-weight: 400; font-size: 11px;">(點擊開啟資訊卡)</span>
                     </div>
                     """
                     props["popup_card"] = f"""
-                    <div style="font-family: 'Outfit', sans-serif; padding: 6px 2px; color: #2b303a; line-height: 1.5;">
-                        <h4 style="margin: 0 0 6px 0; color: #2b303a;">📍 {c_name} 紫外線預報</h4>
-                        <p style="margin: 3px 0;">指數數值：<b>{val} UVI ({cat['level']})</b></p>
-                        <p style="margin: 3px 0;">致傷時間：<b>{cat['sunburn_time']}</b></p>
-                        <p style="margin: 3px 0;">建議防護：<b>{cat['spf_advice']}</b></p>
+                    <div style="
+                        font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+                        min-width: 250px;
+                        color: #2b303a;
+                        padding: 6px 4px;
+                        line-height: 1.55;
+                    ">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid rgba(0, 0, 0, 0.08); padding-bottom: 6px; margin-bottom: 8px;">
+                            <span style="font-size: 16px; font-weight: 800; color: #2b303a;">📍 {c_name} 紫外線預報</span>
+                            <span style="font-size: 11px; font-weight: 700; padding: 2.5px 8px; border-radius: 999px; background: {cat['color']}22; color: {cat['color']}; border: 1px solid {cat['color']}55;">
+                                {cat['icon']} {cat['level']}
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px;">
+                            <span style="font-size: 13px; color: #6c757d;">預測指數：</span>
+                            <b style="color: {cat['color']}; font-size: 19px; font-weight: 800;">{val} UVI</b>
+                            <span style="color: #6c757d; font-size: 12px;">({cat['range']})</span>
+                        </div>
+                        <div style="font-size: 13px; margin-bottom: 5px; color: #2b303a;">
+                            ⏱️ <b>致傷時間：</b>{cat['sunburn_time']}
+                        </div>
+                        <div style="font-size: 13px; margin-bottom: 6px; color: #2b303a;">
+                            🧴 <b>建議防護：</b><b style="color: #5c7c8a;">{cat['spf_advice']}</b>
+                        </div>
+                        <div style="background: #fdfbf7; border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: #495057; line-height: 1.45; margin-top: 5px;">
+                            🛡️ <b>防曬指引：</b>{cat['advice']}
+                        </div>
                     </div>
                     """
                 else:
                     props["tooltip_card"] = f"""
-                    <div style="background: rgba(255, 255, 255, 0.95); border-radius: 8px; padding: 8px 12px; color: #6c757d; font-size: 13px;">
-                        📍 地區：{c_name} | 暫無紫外線資料
+                    <div style="background: rgba(43, 48, 58, 0.9); border-radius: 6px; padding: 5px 9px; color: #ffffff; font-size: 12px;">
+                        📍 {c_name} | 暫無資料
                     </div>
                     """
                     props["popup_card"] = props["tooltip_card"]
@@ -2196,7 +2184,7 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                 tooltip=folium.GeoJsonTooltip(
                     fields=["tooltip_card"],
                     labels=False,
-                    sticky=True,
+                    sticky=False,
                     style="background: transparent; border: none; padding: 0; box-shadow: none;"
                 ),
                 popup=folium.GeoJsonPopup(
@@ -2239,50 +2227,37 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
                 tooltip=folium.Tooltip(
                     f"""
                     <div style="
-                        background: rgba(255, 255, 255, 0.97);
-                        border: 1px solid rgba(0, 0, 0, 0.08);
-                        border-top: 3px solid {st_color};
-                        border-radius: 10px;
-                        padding: 8px 12px;
-                        color: #2b303a;
+                        background: rgba(43, 48, 58, 0.92);
+                        color: #FFFFFF;
+                        border-radius: 8px;
+                        padding: 6px 10px;
                         font-family: 'Outfit', sans-serif;
-                        font-size: 12.5px;
-                        min-width: 180px;
-                        box-shadow: 0 4px 16px rgba(60, 50, 40, 0.1);
+                        font-size: 12px;
+                        font-weight: 600;
+                        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+                        white-space: nowrap;
                     ">
-                        <div style="font-weight: 700; color: #2b303a; margin-bottom: 3px;">📍 CWA 測站：{st_name} ({st_item['county']} {st_item['town']})</div>
-                        <div>☀️ 紫外線實測：<b style="color: {st_color}; font-size: 14px;">{st_val} UVI</b> ({st_item['level']})</div>
-                        <div style="font-size: 11.5px; color: #6c757d; margin-top: 2px;">⏱️ {st_item['sunburn_time']}</div>
+                        📍 測站：{st_name} · <span style="color: #ffd166;">{st_val} UVI</span> ({st_item['level']}) · (點擊查看測站卡)
                     </div>
                     """,
-                    sticky=True
+                    sticky=False
                 ),
                 popup=folium.Popup(
                     f"""
-                    <div style="font-family: 'Outfit', sans-serif; padding: 6px; color: #2b303a;">
-                        <h4 style="margin: 0 0 6px 0;">📍 {st_name} 氣象測站</h4>
-                        <p style="margin: 2px 0;">站碼: <b>{st_item['station_id']}</b></p>
-                        <p style="margin: 2px 0;">行政區: <b>{st_item['county']} {st_item['town']}</b></p>
-                        <p style="margin: 2px 0;">當日實測最大: <b style="color: {st_color};">{st_val} UVI</b></p>
-                        <p style="margin: 2px 0;">分級等級: <b>{st_item['level']}</b></p>
-                        <p style="margin: 2px 0;">建議防護: <b>{st_item['spf_advice']}</b></p>
+                    <div style="font-family: 'Outfit', sans-serif; min-width: 200px; padding: 6px 4px; color: #2b303a; line-height: 1.5;">
+                        <h4 style="margin: 0 0 6px 0; color: #2b303a; border-bottom: 1.5px solid rgba(0,0,0,0.07); padding-bottom: 4px;">📍 {st_name} 氣象測站實測</h4>
+                        <p style="margin: 3px 0; font-size: 13px;">站碼：<b>{st_item['station_id']}</b></p>
+                        <p style="margin: 3px 0; font-size: 13px;">行政區：<b>{st_item['county']} {st_item['town']}</b></p>
+                        <p style="margin: 3px 0; font-size: 13px;">當日最大實測：<b style="color: {st_color}; font-size: 16px;">{st_val} UVI</b> ({st_item['level']})</p>
+                        <p style="margin: 3px 0; font-size: 12.5px; color: #6c757d;">⏱️ {st_item['sunburn_time']}</p>
+                        <p style="margin: 3px 0; font-size: 13px;">建議防護：<b>{st_item['spf_advice']}</b></p>
                     </div>
                     """,
-                    max_width=250
+                    max_width=260
                 )
             ).add_to(m_uv)
 
-        map_uv_state = st_folium(m_uv, width="stretch", height=500, returned_objects=["last_active_drawing"])
-        if map_uv_state and map_uv_state.get("last_active_drawing"):
-            last_props = map_uv_state["last_active_drawing"].get("properties", {})
-            clicked_c = last_props.get("COUNTYNAME") or last_props.get("name")
-            if clicked_c:
-                for r in sorted_regions:
-                    if r == clicked_c or r.replace("臺", "台") == clicked_c.replace("臺", "台"):
-                        if st.session_state.get("selected_uv_region") != r:
-                            st.session_state["selected_uv_region"] = r
-                            st.rerun()
-                        break
+        st_folium(m_uv, width="stretch", height=500, returned_objects=[], key="uv_folium_map")
 
         # 底部色階標尺與圖例說明
         st.markdown("""
