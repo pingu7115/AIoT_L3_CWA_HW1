@@ -2679,8 +2679,8 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
     col_hum_map, col_hum_details = st.columns([1.65, 1.35])
 
     with col_hum_map:
-        st.markdown("### 🗺️ 全台 22 縣市即時濕度熱力與測站觀測圖")
-        st.caption("縣市面狀顏色依當前實測平均濕度渲染，懸停顯示即時濕度卡片；圓點為 CWA 局屬氣象測站即時實測值。")
+        st.markdown("### 🗺️ 全台 22 縣市即時平均濕度熱力圖")
+        st.caption("縣市面狀顏色依當前實測平均濕度渲染，每個縣市直接標註其即時平均相對濕度；點擊或懸停可查看該縣市完整體感與除濕指引。")
 
         # 建立地圖實例
         m_hum = folium.Map(
@@ -2922,66 +2922,77 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
                 )
             ).add_to(m_hum)
 
-        # 疊加局屬 31 處代表性氣象測站標籤 (客製化水滴膠囊標記)
-        primary_station_ids = set(UV_STATIONS_META.keys())
-        for s in all_hum_stations:
-            if s.get("is_offline") or s.get("rh") is None:
+        # 疊加全台 22 縣市即時平均相對濕度懸浮標籤 (一個縣市一個，比照氣溫圖層樣式)
+        for c_name, coords in COUNTY_CENTROIDS.items():
+            if c_name.endswith("地區"):
                 continue
+            h_info = resolve_hum(c_name)
+            if not h_info:
+                continue
+            avg_rh = h_info["rh"]
+            cat = h_info["category"]
+            color = cat["color"]
+            is_cur = (c_name == selected_hum_region or (c_name and c_name.replace("臺", "台") == selected_hum_region.replace("臺", "台")))
+            
+            badge_border = "2px solid #2b303a" if is_cur else "1.5px solid #FFFFFF"
+            icon_html = f"""
+            <div style="
+                background: {color};
+                color: #FFFFFF;
+                font-weight: 800;
+                font-size: 11px;
+                padding: 2px 7px;
+                border-radius: 999px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 3px;
+                white-space: nowrap;
+                box-shadow: 0 2px 8px rgba(60, 50, 40, 0.25);
+                border: {badge_border};
+                min-width: 52px;
+                margin-left: -26px;
+                margin-top: -10px;
+                cursor: pointer;
+                letter-spacing: -0.2px;
+            "><span style="font-size: 10.5px; line-height: 1;">💧</span><span>{avg_rh}%</span></div>
+            """
 
-            is_primary = s.get("station_id") in primary_station_ids
-            if is_primary:
-                st_color = s["category"]["color"]
-                st_val = s["rh"]
-                st_name = s["name"]
-                st_temp = f"{s['temp']}°C" if s.get("temp") is not None else ""
-
-                st_icon_html = f"""
-                <div style="
-                    background: {st_color};
-                    color: #FFFFFF;
-                    font-weight: 800;
-                    font-size: 11px;
-                    padding: 2px 7px;
-                    border-radius: 999px;
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 3px;
-                    white-space: nowrap;
-                    box-shadow: 0 2px 8px rgba(60, 50, 40, 0.3);
-                    border: 1.5px solid #FFFFFF;
-                    cursor: pointer;
-                    line-height: 1.2;
-                ">
-                    <span>💧</span>
-                    <span>{st_val}%</span>
-                    <span style="font-size: 9.5px; opacity: 0.9; font-weight: 500;">{st_name}</span>
-                </div>
-                """
-
-                folium.Marker(
-                    location=[s["lat"], s["lon"]],
-                    icon=folium.DivIcon(
-                        html=st_icon_html,
-                        icon_size=(78, 22),
-                        icon_anchor=(39, 11)
-                    ),
-                    popup=folium.Popup(
-                        f"""
-                        <div style="font-family: 'Outfit', sans-serif; min-width: 210px; padding: 6px 4px; color: #2b303a; line-height: 1.5;">
-                            <h4 style="margin: 0 0 4px 0; color: #2b303a; border-bottom: 1.5px solid rgba(0,0,0,0.07); padding-bottom: 4px;">📍 {st_name} 氣象測站【即時實測】</h4>
-                            <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px;">觀測時間：{obs_date}</div>
-                            <p style="margin: 3px 0; font-size: 13px;">站碼：<b>{s['station_id']}</b></p>
-                            <p style="margin: 3px 0; font-size: 13px;">行政區：<b>{s['county']} {s['town']}</b></p>
-                            <p style="margin: 3px 0; font-size: 13px;">相對濕度：<b style="color: {st_color}; font-size: 16px;">{st_val}% RH</b> ({s['category']['name']})</p>
-                            <p style="margin: 3px 0; font-size: 13px;">即時氣溫：<b>{s.get('temp', '無')} °C</b> ｜ 露點：<b>{s.get('dew_point', '無')} °C</b></p>
-                            <p style="margin: 3px 0; font-size: 13px;">溫濕體感：<b>{s.get('thi_text', '舒適')}</b> (THI {s.get('thi', '無')})</p>
-                            <p style="margin: 3px 0; font-size: 12.5px; color: #6c757d;">💨 {s['category']['dehumidifier_advice']}</p>
-                        </div>
-                        """,
-                        max_width=260
-                    )
-                ).add_to(m_hum)
+            folium.Marker(
+                location=coords,
+                icon=folium.DivIcon(html=icon_html),
+                tooltip=folium.Tooltip(
+                    f"""
+                    <div style="
+                        background: rgba(43, 48, 58, 0.92);
+                        color: #FFFFFF;
+                        border-radius: 8px;
+                        padding: 5px 10px;
+                        font-size: 12px;
+                        font-weight: 600;
+                        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+                        white-space: nowrap;
+                        font-family: 'Outfit', sans-serif;
+                    ">
+                        📍 {c_name} · 即時平均濕度 {avg_rh}% ({cat['name']})
+                    </div>
+                    """,
+                    sticky=False
+                ),
+                popup=folium.Popup(
+                    f"""
+                    <div style="font-family: 'Outfit', sans-serif; min-width: 220px; padding: 6px 4px; color: #2b303a; line-height: 1.5;">
+                        <h4 style="margin: 0 0 4px 0; color: #2b303a; border-bottom: 1.5px solid rgba(0,0,0,0.07); padding-bottom: 4px;">📍 {c_name}【即時平均濕度】</h4>
+                        <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px;">觀測時間：{obs_date}</div>
+                        <p style="margin: 3px 0; font-size: 13px;">即時平均濕度：<b style="color: {color}; font-size: 16px;">{avg_rh}% RH</b> ({cat['name']})</p>
+                        <p style="margin: 3px 0; font-size: 13px;">平均氣溫：<b>{h_info.get('avg_temp', '無')} °C</b> ｜ 露點：<b>{h_info.get('dew_point', '無')} °C</b></p>
+                        <p style="margin: 3px 0; font-size: 13px;">體感舒適度：<b>{h_info.get('thi_text', '舒適')}</b> (THI {h_info.get('thi', '無')})</p>
+                        <p style="margin: 3px 0; font-size: 12.5px; color: #6c757d;">💨 {cat['dehumidifier_advice']}</p>
+                    </div>
+                    """,
+                    max_width=260
+                )
+            ).add_to(m_hum)
 
         st_folium(m_hum, width="stretch", height=500, returned_objects=[], key="hum_folium_map")
 
@@ -2990,7 +3001,7 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
         <div class="map-legend-panel">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                 <span style="font-size: 0.82rem; font-weight: 600; color: #2b303a;">💧 氣象署即時相對濕度與環境健康分級標尺</span>
-                <span style="font-size: 0.75rem; color: #6c757d;">人體最適區間為 40%~60% · 圓點代表 CWA 局屬測站即時實測值</span>
+                <span style="font-size: 0.75rem; color: #6c757d;">人體最適區間為 40%~60% · 膠囊標籤代表各縣市現場測站實測之平均相對濕度</span>
             </div>
             <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 4px;">
                 <div style="background: #e07a5f;" title="<40% 極度乾燥"></div>
