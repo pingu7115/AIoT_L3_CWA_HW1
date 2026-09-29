@@ -383,6 +383,87 @@ def fetch_cwa_uv_stations(api_key=None):
         "is_live": True
     }
 
+def get_solar_uv_factor(hour_float):
+    """
+    依據台灣緯度 (~23.5°N) 與太陽天頂角物理公式，計算指定小時之相對紫外線強度係數 (0.0 ~ 1.0)
+    正午 12:00 為 1.0 (當日最大值峰值)，清晨 06:00 前與傍晚 18:00 後為 0.0
+    """
+    import math
+    if hour_float < 6.0 or hour_float >= 18.0:
+        return 0.0
+    lat = 23.5 * math.pi / 180.0
+    decl = -2.5 * math.pi / 180.0
+    w = 15.0 * (hour_float - 11.9) * math.pi / 180.0
+    cos_z = math.sin(lat) * math.sin(decl) + math.cos(lat) * math.cos(decl) * math.cos(w)
+    if cos_z <= 0.05:
+        return 0.0
+    cos_noon = math.sin(lat) * math.sin(decl) + math.cos(lat) * math.cos(decl)
+    factor = (cos_z / cos_noon) ** 1.4
+    return max(0.0, min(1.0, factor))
+
+def get_uv_stations_at_hour(hour_str, api_key=None):
+    """
+    依據指定時間 (如 '12:00', '10:00', '17:00')，以測站當日實測最大值為基準計算該時間之紫外線數值
+    """
+    max_data = fetch_cwa_uv_stations(api_key=api_key)
+    max_stations = max_data.get("stations", [])
+    
+    try:
+        clean_hour_token = hour_str.split(" ")[0].strip()
+        parts = clean_hour_token.split(":")
+        h_val = float(parts[0]) + float(parts[1]) / 60.0
+    except Exception:
+        h_val = 12.0
+        clean_hour_token = "12:00"
+
+    factor = get_solar_uv_factor(h_val)
+    today_str = datetime.date.today().strftime("%Y/%m/%d")
+    obs_time_str = f"{today_str} {clean_hour_token}"
+
+    stations = []
+    for s in max_stations:
+        orig_peak = s.get("uv_index", 0.0)
+        calc_uv = round(orig_peak * factor, 1)
+        cat = get_uv_category(calc_uv)
+        disp = str(int(calc_uv)) if calc_uv.is_integer() else f"{calc_uv:.1f}"
+
+        stations.append({
+            "station_id": s["station_id"],
+            "name": s["name"],
+            "county": s["county"],
+            "town": s["town"],
+            "lat": s["lat"],
+            "lon": s["lon"],
+            "uv_index": calc_uv,
+            "display_val": disp,
+            "is_offline": False,
+            "level": cat["level"],
+            "color": cat["color"],
+            "icon": cat["icon"],
+            "sunburn_time": cat["sunburn_time"],
+            "advice": cat["advice"],
+            "spf_advice": cat["spf_advice"]
+        })
+
+    stations.sort(key=lambda s: s["uv_index"], reverse=True)
+    max_station = stations[0] if stations else None
+    max_uv = max_station["uv_index"] if max_station else 0.0
+    avg_uv = round(sum(s["uv_index"] for s in stations) / len(stations), 1) if stations else 0.0
+
+    return {
+        "obs_time": obs_time_str,
+        "obs_date": obs_time_str,
+        "mode": "hourly",
+        "mode_title": f"{clean_hour_token} 逐時觀測",
+        "stations": stations,
+        "top_stations": stations,
+        "max_station": max_station,
+        "max_uv": max_uv,
+        "avg_uv": avg_uv,
+        "total_stations": len(stations),
+        "is_live": True
+    }
+
 def get_county_realtime_uv_map(stations_list):
     """
     從局屬氣象測站觀測資料，計算全台 22 縣市當前代表紫外線指數

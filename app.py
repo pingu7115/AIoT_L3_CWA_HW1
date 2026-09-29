@@ -45,6 +45,8 @@ from rainfall_data import fetch_cwa_rainfall_data, get_rain_color
 from uv_data import (
     fetch_cwa_uv_live_observation,
     fetch_cwa_uv_stations,
+    get_uv_stations_at_hour,
+    get_solar_uv_factor,
     get_uv_category,
     get_uv_color,
     get_latest_uv_by_counties,
@@ -74,6 +76,11 @@ def get_cached_uv_live_stations():
 def get_cached_uv_max_stations():
     """快取 5 分鐘，從 O-A0005-001 取得全台測站當日最大紫外線數據"""
     return fetch_cwa_uv_stations()
+
+@st.cache_data(ttl=300)
+def get_cached_uv_hourly_stations(hour_str):
+    """快取指定時間的逐時紫外線模擬數據"""
+    return get_uv_stations_at_hour(hour_str)
 
 # -------------------------------------------------------------
 # 頁面配置 (Warm Beige Theme Default)
@@ -1874,42 +1881,91 @@ elif selected_layer == "🌀 颱風路徑動態":
 # 圖層 4: ☀️ 紫外線指數觀測與預報 (UV Index Observation & Forecast)
 # =============================================================
 elif selected_layer == "☀️ 紫外線指數觀測與預報":
-    # 模式切換：即時觀測 vs 今日最大值 (完全同款 CWA 官方雙頁籤切換)
-    mode_col1, mode_col2 = st.columns([1.3, 2.7])
+    # 模式與時間切換：即時觀測 vs 指定時間 (06:00~18:00) vs 今日最大值
+    mode_col1, mode_col2 = st.columns([1.5, 2.5])
     with mode_col1:
         uv_mode = st.radio(
             "觀測模式：",
-            options=["即時觀測", "今日最大值"],
+            options=["📡 即時觀測", "⏰ 指定時間", "☀️ 今日最大值"],
             index=0,
             horizontal=True,
             key="uv_obs_mode"
         )
 
     # 依據選擇的模式載入對應之 CWA 資料
-    if uv_mode == "即時觀測":
+    if uv_mode == "⏰ 指定時間":
+        hour_options = [
+            "06:00 (清晨日出 · 0.0 UVI)",
+            "07:00 (晨間初昇 · 1.8 UVI)",
+            "08:00 (上班通勤 · 4.3 UVI)",
+            "09:00 (陽光漸強 · 6.9 UVI)",
+            "10:00 (上午強光 · 9.1 UVI)",
+            "11:00 (正午臨近 · 10.6 UVI)",
+            "12:00 (正午最大 · 11.0 UVI)",
+            "13:00 (午後強烈 · 10.4 UVI)",
+            "14:00 (午後斜照 · 8.8 UVI)",
+            "15:00 (午後漸弱 · 6.4 UVI)",
+            "16:00 (傍晚前夕 · 3.8 UVI)",
+            "17:00 (日落黃昏 · 1.3 UVI)",
+            "18:00 (日落暮色 · 0.0 UVI)"
+        ]
+        with mode_col2:
+            selected_hour_opt = st.selectbox(
+                "⏰ 選擇指定時間：",
+                options=hour_options,
+                index=6,  # 預設 12:00
+                key="uv_selected_hour_opt"
+            )
+        hour_token = selected_hour_opt.split(" ")[0]
+        uv_stations_data = get_cached_uv_hourly_stations(hour_token)
+        mode_badge = f"{hour_token} 逐時演變"
+        mode_title = f"{hour_token} 指定時間"
+        mode_sub = f"依太陽天頂角與當日最大實測推估 {hour_token} 紫外線強度"
+        obs_date = uv_stations_data.get("obs_time", "")
+    elif uv_mode == "📡 即時觀測":
         with st.spinner("正在連線中央氣象署 API (O-A0003-001) 取得全台測站最新小時即時紫外線觀測數據..."):
             uv_stations_data = get_cached_uv_live_stations()
             mode_badge = "O-A0003-001 最新小時實測"
             mode_title = "即時觀測"
             mode_sub = "每小時同步 CWA 局屬氣象站現場實測儀器即時資料"
-    else:
+            obs_date = uv_stations_data.get("obs_time") or uv_stations_data.get("obs_date", "")
+        with mode_col2:
+            st.markdown(f"""
+            <div style="display: flex; align-items: center; justify-content: flex-end; height: 100%; gap: 10px; padding-top: 4px; flex-wrap: wrap;">
+                <span style="font-size: 1.02rem; font-weight: 700; color: #2b303a;">觀測時間: <span style="color: #2b82d9; font-weight: 800;">{obs_date}</span></span>
+                <span class="pill-badge green">{mode_badge}</span>
+                <span class="pill-badge">局屬 31 測站實時</span>
+            </div>
+            """, unsafe_allow_html=True)
+    else:  # 今日最大值
         with st.spinner("正在連線中央氣象署 API (O-A0005-001) 取得全台測站當日最大紫外線數據..."):
             uv_stations_data = get_cached_uv_max_stations()
             mode_badge = "O-A0005-001 當日最大值"
             mode_title = "今日最大值"
             mode_sub = "全台各測站當日瞬間測得最大值記錄"
+            obs_date = uv_stations_data.get("obs_time") or uv_stations_data.get("obs_date", "")
+        with mode_col2:
+            st.markdown(f"""
+            <div style="display: flex; align-items: center; justify-content: flex-end; height: 100%; gap: 10px; padding-top: 4px; flex-wrap: wrap;">
+                <span style="font-size: 1.02rem; font-weight: 700; color: #2b303a;">觀測時間: <span style="color: #2b82d9; font-weight: 800;">{obs_date}</span></span>
+                <span class="pill-badge green">{mode_badge}</span>
+                <span class="pill-badge">局屬 31 測站記錄</span>
+            </div>
+            """, unsafe_allow_html=True)
 
     county_live_uv = get_county_realtime_uv_map(uv_stations_data.get("stations", []))
     county_uv_map = get_latest_uv_by_counties()
-    obs_date = uv_stations_data.get("obs_time") or uv_stations_data.get("obs_date", "")
 
-    # 頂部即時狀態橫幅 (完全比照 CWA 官方 觀測時間: YYYY/MM/DD HH:mm 樣式)
-    with mode_col2:
+    if uv_mode == "⏰ 指定時間":
         st.markdown(f"""
-        <div style="display: flex; align-items: center; justify-content: flex-end; height: 100%; gap: 10px; padding-top: 4px; flex-wrap: wrap;">
-            <span style="font-size: 1.02rem; font-weight: 700; color: #2b303a;">觀測時間: <span style="color: #2b82d9; font-weight: 800;">{obs_date}</span></span>
-            <span class="pill-badge green">{mode_badge}</span>
-            <span class="pill-badge">局屬 31 測站連線</span>
+        <div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 10px; padding: 10px 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; box-shadow: 0 2px 8px rgba(60, 50, 40, 0.03);">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.1rem;">⏱️</span>
+                <span style="font-size: 0.9rem; font-weight: 700; color: #2b303a;">當前檢視時間：<span style="color: #2b82d9; font-size: 1.05rem; font-weight: 800;">{obs_date}</span></span>
+            </div>
+            <div style="font-size: 0.82rem; color: #6c757d;">
+                💡 太陽輻射強度係數：<b style="color: #2b82d9;">{int(get_solar_uv_factor(float(hour_token.split(':')[0]))*100)}%</b> · {mode_sub}
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
