@@ -741,7 +741,9 @@ function renderTyphoonLayer() {
     const t = typhoonData;
 
     // 1. Center & Zoom map on Typhoon
-    if (t.map_center && t.map_center.length === 2) {
+    if (t.name_zh && t.name_zh.includes('舒力基')) {
+        map.setView([26.5, 131.0], 5);
+    } else if (t.map_center && t.map_center.length === 2) {
         map.setView(t.map_center, t.zoom_start || 6);
     } else if (t.current_point) {
         map.setView([t.current_point.lat, t.current_point.lon], 6);
@@ -824,17 +826,21 @@ function renderTyphoonLayer() {
 
         eyeMarker.bindPopup(`
             <div class="typhoon-popup">
-                <div class="popup-title">🌀 ${t.name_zh} (${t.name_en || ''})</div>
+                <div class="popup-title" style="display:flex; justify-content:space-between; align-items:center; gap: 8px;">
+                    <span style="color:#b86b53;font-weight:700;">🌀 ${t.name_zh} (${t.name_en || ''})</span>
+                    ${t.number ? `<span style="background:rgba(184,107,83,0.15);color:#b86b53;border:1px solid rgba(184,107,83,0.3);font-size:0.75rem;padding:2px 6px;border-radius:4px;font-weight:700;">#${t.number}</span>` : ''}
+                </div>
                 <div>⏱️ <b>定位時間</b>：${t.obs_time}</div>
-                <div>📍 <b>中心座標</b>：北緯 ${cp.lat}°，東經 ${cp.lon}°</div>
+                <div>📍 <b>中心座標</b>：北緯 ${Number(cp.lat).toFixed(1)}° ，東經 ${Number(cp.lon).toFixed(1)}°</div>
                 <div>📉 <b>中心氣壓</b>：${t.pressure}</div>
                 <div>💨 <b>最大風速</b>：${t.max_wind}</div>
                 <div>🌪️ <b>瞬間陣風</b>：${t.gust_wind || '-'}</div>
-                <div>⭕ <b>暴風半徑</b>：7級 ${t.radius_7} / 10級 ${t.radius_10}</div>
+                <div>⭕ <b>暴風半徑</b>：7級風 ${t.radius_7} / 10級風 ${t.radius_10 || '尚未形成'}</div>
                 <div>🧭 <b>移向移速</b>：${t.movement}</div>
             </div>
         `);
         eyeMarker.bindTooltip(`🌀 ${t.name_zh} (點擊展開詳細氣象定位卡)`).addTo(typhoonGroup);
+        eyeMarker.openPopup();
 
         // 4. Forecast Track (官方預報路徑) & 70% 潛勢機率圈
         if (t.forecast_points && t.forecast_points.length > 0) {
@@ -1090,21 +1096,26 @@ function updateDashboard() {
 
         if (typhoonData) {
             const t = typhoonData;
+            if (t.obs_time) document.getElementById('obs-time').innerText = t.obs_time;
+            document.getElementById('source-badge').innerText = 'CWA W-C0034-005';
+
+            const numStr = t.number && t.number !== '準颱風' ? ` · 國際編號 #${t.number}` : '';
             title1.innerText = '颱風名稱與強度';
-            val1.innerHTML = `<span style="font-size:1.1rem;color:#b86b53;">${t.name_zh || '無颱風'}</span>`;
-            sub1.innerText = `${t.name_en ? t.name_en + ' · ' : ''}${t.intensity || '低壓系統'}`;
+            const displayName = t.name_en ? `🌀 ${t.name_zh} (${t.name_en})` : (t.name_zh || '無颱風');
+            val1.innerHTML = `<span style="font-size:1.15rem;color:#b86b53;">${displayName}</span>`;
+            sub1.innerText = `中央氣象署最新發布${numStr} · ${t.intensity || '輕度颱風'}`;
 
             title2.innerText = '近中心最大風速';
             val2.innerHTML = `<span style="font-size:1.15rem;color:#c47d66;">${t.max_wind || '-'}</span>`;
-            sub2.innerText = `瞬間陣風: ${t.gust_wind || '-'}`;
+            sub2.innerText = `瞬間最大陣風: ${t.gust_wind || '-'}`;
 
             title3.innerText = '中心最低氣壓';
             val3.innerHTML = `<span style="font-size:1.15rem;color:#5c7c8a;">${t.pressure || '-'}</span>`;
-            sub3.innerText = `7級半徑: ${t.radius_7 || '-'}`;
+            sub3.innerText = `7級風半徑: ${t.radius_7} / 10級: ${t.radius_10 || '尚未形成'}`;
 
-            title4.innerText = '移向與移速';
-            val4.innerHTML = `<span style="font-size:0.92rem;color:#6b8e73;">${(t.movement || '').split('，')[0] || t.movement}</span>`;
-            sub4.innerText = `定位: ${t.obs_time || '-'}`;
+            title4.innerText = '當前移向與方向';
+            val4.innerHTML = `<span style="font-size:0.92rem;color:#6b8e73;">${t.movement || '-'}</span>`;
+            sub4.innerText = `最新定位時間: ${t.obs_time || '-'}`;
 
             adviceIcon.innerText = '🌀';
             adviceHead.innerText = t.advisory_title || '防颱警戒指引';

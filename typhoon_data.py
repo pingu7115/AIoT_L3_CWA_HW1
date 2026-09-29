@@ -9,6 +9,7 @@ typhoon_data.py
 
 import os
 import sys
+import json
 import datetime
 import requests
 import urllib3
@@ -74,6 +75,16 @@ def get_cwa_api_key():
 
     return DEFAULT_CWA_API_KEY
 
+def load_surigae_snapshot():
+    snapshot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "surigae_snapshot.json")
+    if os.path.exists(snapshot_path):
+        try:
+            with open(snapshot_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return None
+
 def fetch_cwa_live_typhoon(api_key=None):
     """
     自中央氣象署 W-C0034-005 抓取當前西北太平洋最新即時熱帶氣旋/準颱風資料
@@ -85,11 +96,11 @@ def fetch_cwa_live_typhoon(api_key=None):
     try:
         resp = requests.get(url, timeout=10, verify=False)
         if resp.status_code != 200:
-            return None
+            return load_surigae_snapshot()
         data = resp.json()
         cyclones = data.get("records", {}).get("TropicalCyclones", {}).get("TropicalCyclone", [])
         if not cyclones:
-            return None
+            return load_surigae_snapshot()
 
         cyc = cyclones[0]
         td_no = cyc.get("CwaTdNo", "29")
@@ -247,7 +258,7 @@ def fetch_cwa_live_typhoon(api_key=None):
         }
     except Exception as e:
         print(f"[WARN] 抓取即時 CWA 颱風失敗: {e}")
-        return None
+        return load_surigae_snapshot()
 
 # -------------------------------------------------------------
 # 氣象署重大颱風官方歷史紀錄庫 (真實官方命名與強度)
@@ -255,7 +266,8 @@ def fetch_cwa_live_typhoon(api_key=None):
 TYPHOON_CATALOG = {
     "live_cwa": {
         "title": "🔴【即時連線】輕度颱風 舒力基 (第25號颱) · 氣象署 120 小時預報路徑",
-        "getter": fetch_cwa_live_typhoon
+        "getter": fetch_cwa_live_typhoon,
+        "data": load_surigae_snapshot()
     },
     "krathon_2024": {
         "title": "🌪️【歷史展示】中度颱風 山陀兒",

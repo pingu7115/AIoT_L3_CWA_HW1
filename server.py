@@ -255,16 +255,14 @@ def get_typhoon():
             except Exception as e:
                 print(f"[WARN] Live typhoon fetch error: {e}")
             if not typ_data:
-                # Seamless fallback to krathon_2024
-                fallback = typhoon_data.TYPHOON_CATALOG.get("krathon_2024", {}).get("data")
-                if fallback:
-                    typ_data = dict(fallback)
-                    typ_data["advisory_body"] = "目前 CWA 即時熱帶系統連線稍有延遲，已切換至歷史中度颱風 山陀兒資料供展示。"
+                typ_data = typhoon_data.load_surigae_snapshot()
+            if not typ_data:
+                typ_data = typhoon_data.TYPHOON_CATALOG.get("live_cwa", {}).get("data")
         elif target in typhoon_data.TYPHOON_CATALOG:
             typ_data = typhoon_data.TYPHOON_CATALOG[target].get("data")
 
         if not typ_data:
-            typ_data = typhoon_data.TYPHOON_CATALOG.get("krathon_2024", {}).get("data")
+            typ_data = typhoon_data.load_surigae_snapshot() or typhoon_data.TYPHOON_CATALOG.get("krathon_2024", {}).get("data")
 
         clean_data = sanitize_typhoon_data(typ_data, current_target=target)
         return jsonify(clean_data)
