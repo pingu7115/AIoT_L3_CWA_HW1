@@ -2668,9 +2668,9 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
             """, unsafe_allow_html=True)
         with k4:
             st.markdown(f"""
-            <div class="glass-card" style="border-top: 3px solid #e07a5f;">
+            <div class="glass-card" style="border-top: 3px solid #d90429;">
                 <div class="metric-title">🥵 全台悶熱中暑警戒</div>
-                <div class="metric-value" style="color: #e07a5f;">{high_thi_count} <span style="font-size: 1.1rem; font-weight: 600;">縣市</span></div>
+                <div class="metric-value" style="color: #d90429;">{high_thi_count} <span style="font-size: 1.1rem; font-weight: 600;">縣市</span></div>
                 <div class="metric-caption">THI ≥ 75 建議開啟冷氣空調</div>
             </div>
             """, unsafe_allow_html=True)
@@ -2832,17 +2832,17 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
                     </div>
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <span style="width: 11px; height: 11px; background: #e07a5f; border-radius: 3px; display: inline-block;"></span>
+                            <span style="width: 11px; height: 11px; background: #d90429; border-radius: 3px; display: inline-block;"></span>
                             <span style="color: #2b303a;">75 - 79.9</span>
                         </div>
-                        <span style="color: #e07a5f; font-weight: 700;">🟠 悶熱稍黏</span>
+                        <span style="color: #d90429; font-weight: 700;">🔴 悶熱稍黏</span>
                     </div>
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <span style="width: 11px; height: 11px; background: #c94a4a; border-radius: 3px; display: inline-block;"></span>
+                            <span style="width: 11px; height: 11px; background: #7b2cbf; border-radius: 3px; display: inline-block;"></span>
                             <span style="color: #2b303a;">≥ 80</span>
                         </div>
-                        <span style="color: #c94a4a; font-weight: 700;">🔴 極度悶熱</span>
+                        <span style="color: #7b2cbf; font-weight: 700;">🟣 極度悶熱</span>
                     </div>
                 </div>
             </div>
@@ -3264,15 +3264,15 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
                     <div style="background: #457b9d;" title="<65 涼爽舒適"></div>
                     <div style="background: #2a9d8f;" title="65-69.9 舒適宜人"></div>
                     <div style="background: #e5a93c;" title="70-74.9 稍暖適中"></div>
-                    <div style="background: #e07a5f;" title="75-79.9 悶熱稍黏"></div>
-                    <div style="background: #c94a4a;" title="≥80 極度悶熱"></div>
+                    <div style="background: #d90429;" title="75-79.9 悶熱稍黏"></div>
+                    <div style="background: #7b2cbf;" title="≥80 極度悶熱"></div>
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 0.76rem; margin-top: 6px; flex-wrap: wrap; gap: 4px;">
                     <span style="color: #457b9d; font-weight: 600;">🍃 &lt; 65 (涼爽)</span>
                     <span style="color: #2a9d8f; font-weight: 600;">🟢 65-70 (舒適)</span>
                     <span style="color: #e5a93c; font-weight: 600;">🟡 70-75 (稍暖)</span>
-                    <span style="color: #e07a5f; font-weight: 600;">🟠 75-80 (悶熱)</span>
-                    <span style="color: #c94a4a; font-weight: 600;">🔴 ≥ 80 (酷熱)</span>
+                    <span style="color: #d90429; font-weight: 600;">🔴 75-80 (悶熱)</span>
+                    <span style="color: #7b2cbf; font-weight: 600;">🟣 ≥ 80 (酷熱)</span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -3419,7 +3419,7 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
 
                 sub_col1, sub_col2 = st.columns(2)
                 with sub_col1:
-                    st.markdown("<span style='font-size: 0.85rem; font-weight: 700; color: #c94a4a;'>🔥 Top 10 最悶熱測站 (THI 最高)</span>", unsafe_allow_html=True)
+                    st.markdown("<span style='font-size: 0.85rem; font-weight: 700; color: #d90429;'>🔥 Top 10 最悶熱測站 (THI 最高)</span>", unsafe_allow_html=True)
                     if top_hot:
                         df_hot = pd.DataFrame([
                             {
@@ -3555,7 +3555,7 @@ elif selected_layer == "💧 全台即時濕度與體感舒適度":
             if is_thi_mode:
                 st.markdown("""
                 <div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 12px; padding: 14px 18px; box-shadow: 0 4px 12px rgba(60, 50, 40, 0.05); font-size: 0.82rem; color: #2b303a; line-height: 1.6;">
-                    <div style="font-weight: 700; font-size: 0.92rem; color: #c94a4a; margin-bottom: 6px;">
+                    <div style="font-weight: 700; font-size: 0.92rem; color: #d90429; margin-bottom: 6px;">
                         💡 溫濕度舒適度指數 (THI) 科學原理與防中暑指南：
                     </div>
                     <ul style="margin: 0; padding-left: 20px; color: #495057;">

@@ -177,8 +177,8 @@ THI_LEVELS = [
         "range_max": 79.9,
         "name": "悶熱稍黏",
         "level": "悶熱稍黏 (75 - 79.9)",
-        "color": "#e07a5f",       # 警示磚橘色
-        "icon": "🟠",
+        "color": "#d90429",       # 警報紅色
+        "icon": "🔴",
         "feeling": "排汗不順 · 黏膩悶重",
         "description": "高溫與高濕相互疊加，汗水不易自然蒸發，易產生疲倦與燥熱感。",
         "cooling_advice": "建議開啟空調或除濕機降溫除濕 (設定 26°C)",
@@ -189,8 +189,8 @@ THI_LEVELS = [
         "range_max": 100,
         "name": "極度悶熱",
         "level": "極度悶熱 (≥ 80)",
-        "color": "#c94a4a",       # 警報紅色
-        "icon": "🔴",
+        "color": "#7b2cbf",       # 高危紫色
+        "icon": "🟣",
         "feeling": "酷熱難耐 · 中暑警戒",
         "description": "溫濕度指數已達高度熱衰竭風險區間！體溫散熱受阻，極易發生熱痙攣或中暑。",
         "cooling_advice": "⚠️ 室內務必開啟冷氣空調降溫，避免密閉高溫環境",
