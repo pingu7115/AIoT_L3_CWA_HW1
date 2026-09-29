@@ -1,10 +1,11 @@
 # Taiwan Weather GIS Dashboard
 ### AIoT L3 — CWA HW1
-**CWA Open Data → Database → Taiwan GIS → GitHub → Deployment**  
+**CWA Open Data → Database → Taiwan GIS → GitHub → Vercel**  
 **Repository:** [https://github.com/pingu7115/AIoT_L3_CWA_HW1](https://github.com/pingu7115/AIoT_L3_CWA_HW1)  
-**Live local dashboard:** `http://localhost:8501`
+**Live demo website (Vercel):** `https://aiot-l3-cwa-hw1.vercel.app` (依 Vercel 部署網址為準)  
+**Live local dashboard:** `http://localhost:8501` (Streamlit) / `http://127.0.0.1:5000` (Flask)
 
-本作業以中央氣象署（CWA）真實 Open Data 為資料來源，從 API 資料取得開始，經過 ETL 清洗與 SQLite 儲存，再建立本機 Taiwan GIS Web 互動儀表板，最後推送 GitHub 並支援雲端部署。
+本作業以中央氣象署（CWA）真實 Open Data 為資料來源，從 API 資料取得開始，經過 ETL 清洗與 SQLite 儲存，再建立本機 Taiwan GIS Web 互動儀表板，最後推送 GitHub 並由 Vercel 自動部署。
 
 ---
 
@@ -89,24 +90,24 @@ records.Locations[0].Location[]
 - **驗證日期**：2026-09-29
 - **資料庫檔案**：`data.db` (SQLite)
 - **資料表**：
-  - `TemperatureForecasts`: 儲存全台各縣市與分區氣溫預報 `(id, regionName, dataDate, mint, maxt, created_at)`
-  - `UVForecasts`: 儲存全台紫外線預報 `(id, regionName, dataDate, uvi, exposureLevel, created_at)`
+  - `weather_forecasts`：標準作業資料表，儲存全台 22 縣市各 14 個 12 小時區段之 7 天預報資料。
+  - `TemperatureForecasts` & `UVForecasts`：擴充資料表，支援 6 大地理分區與紫外線指數。
 - **Duplicate Strategy**：
-  - 設計 `UNIQUE(regionName, dataDate)` 複合唯一約束。
-  - 採用 `INSERT ... ON CONFLICT(regionName, dataDate) DO UPDATE SET` 冪等性策略，重複執行管線不造成資料膨脹，自動更新最新數值與時間戳。
+  - `weather_forecasts`：採用 `UNIQUE(location_name, forecast_start)` 與 `INSERT OR REPLACE` 策略。
+  - `TemperatureForecasts` / `UVForecasts`：採用 `UNIQUE(regionName, dataDate)` 與 `ON CONFLICT DO UPDATE`。
 
 ### Gate 2 驗證結果 (SQL SELECT)：
-執行 `python database.py --verify` 驗證：
-- 氣溫預報紀錄共 **364 筆**（涵蓋全台 22 縣市與 6 大地理分區）。
-- 紫外線預報紀錄共 **196 筆**。
-- `DISTINCT regionName` 共 **28 個區域**，完整通過防重複寫入（Idempotency）驗證。
+執行 `python gate2_database.py` 與 `python database.py --verify` 驗證：
+- `weather_forecasts` 成功插入/更新 **308 筆**預報紀錄，涵蓋所有 **22 縣市**，精準符合 7 天 (14 個 12 小時區段) 資料量 ($22 \times 14 = 308$)。
+- 擴充資料表氣溫共 **364 筆**、紫外線共 **196 筆**，DISTINCT 涵蓋 **28 個區域**。
+- 完整通過防重複寫入（Idempotency）與冪等性檢驗。
 
 ### Gate 2 PASS Checklist：
-- [x] [PASS] Read JSON output from Gate 1
-- [x] [PASS] SQLite schema configured (`TemperatureForecasts`, `UVForecasts`)
-- [x] [PASS] Duplicate strategy (`ON CONFLICT DO UPDATE`) implemented
-- [x] [PASS] ETL process successful (`python main.py` 一鍵自動化管線)
-- [x] [PASS] Verified via SQL SELECT (`python database.py --verify`)
+- [x] [PASS] Read JSON output from Gate 1 (`gate1_output.json`)
+- [x] [PASS] SQLite schema configured (`weather_forecasts`, `UNIQUE(location_name, forecast_start)`)
+- [x] [PASS] Duplicate strategy (`INSERT OR REPLACE` / `ON CONFLICT`) implemented
+- [x] [PASS] ETL process successful (`python gate2_database.py`)
+- [x] [PASS] Verified via SQL SELECT (308 筆資料驗證成功)
 - [x] [PASS] No GIS work started (維持資料庫層與呈現層嚴格解耦)
 
 ---
@@ -114,47 +115,48 @@ records.Locations[0].Location[]
 ## Gate 3 — Local Taiwan GIS Web ✅ PASS
 
 - **驗證日期**：2026-09-29
-- **Web App 技術**：Python Streamlit + Folium (`streamlit-folium`) + Custom CSS Glassmorphism + GeoJSON (`taiwan_counties.geojson`)
-- **核心檔案**：
-  - 前端與儀表板：[`app.py`](app.py)
-  - 資料庫與 SQL 介面：[`database.py`](database.py)
-  - 專屬模組：[`uv_data.py`](uv_data.py), [`humidity_data.py`](humidity_data.py), [`rainfall_data.py`](rainfall_data.py), [`typhoon_data.py`](typhoon_data.py)
-  - 台灣邊界向量檔：[`taiwan_counties.geojson`](taiwan_counties.geojson)
+- **Web App 技術**：
+  1. **標準 Vercel 部署架構**：Python Flask (REST API) + Vanilla JS / Leaflet + Custom Glassmorphism CSS
+  2. **進階互動分析架構**：Python Streamlit + Folium + Altair
+- **標準版核心檔案（Vercel 專用）**：
+  - 前端靜態資源：[`static/index.html`](static/index.html), [`static/style.css`](static/style.css), [`static/script.js`](static/script.js)
+  - 後端 API：[`server.py`](server.py)
+- **進階版核心檔案（本機儀表板）**：
+  - 應用程式：[`app.py`](app.py), [`taiwan_counties.geojson`](taiwan_counties.geojson)
 
 ### 依據專案設計順序與要求實作完成：
-1. **Taiwan Map & GeoJSON**：
-   - 載入 CartoDB Positron / Dark 高質感底圖，置中對齊全台（23.8°N, 121.0°E）。
-   - 整合 `taiwan_counties.geojson` 向量邊界，精確對齊台灣本島與外島共 22 縣市。
-2. **Glassmorphism UI**：
-   - 實作深色磨砂半透明玻璃質感 Sidebar、浮動圖例卡片（Floating Legend）、指標 Card。
-3. **五大專業 GIS 互動圖層**：
-   - 🌡️ **全台即時氣溫與預報圖層**：依氣溫梯度平滑著色、雙溫指標卡片、逐 12hr / 7 天折線圖。
-   - 🌧️ **全台即時雨量監控圖層**：串接 CWA 1,300+ 測站即時雨量、日累積雨量等級色標、超大豪雨警示、Top 10 排行榜。
-   - 🌀 **即時颱風警報動態圖層**：暴風圈半徑半透明圓形渲染、120 小時路徑預報節點、海陸警報動態提醒。
-   - ☀️ **全台紫外線即時觀測與預報圖層**：
-     - 提供 3 大模式：📡 即時觀測（全台 31 局屬測站實測）、⏰ 指定時間逐時推估、☀️ 今日最大值。
-     - WHO 5 級防護色標與防曬指引。
-     - **即時縣市外框高亮**：點選縣市時，地圖即時以加粗深色外框高亮該縣市邊界。
-   - 💧 **全台即時濕度與體感舒適度圖層**：
-     - 提供 2 大模式：💧 相對濕度 RH %、🌡️ 溫濕舒適度指數 THI。
-     - 地圖各縣市中央顯示專屬膠囊數值標籤（Badge）。
-     - 精確色標：RH 60-74% 黃色；THI 悶熱稍黏標記紅色 (`#d90429`)、極度悶熱標記紫色 (`#7b2cbf`)。
-     - **即時縣市外框高亮**：點選縣市時，地圖即時以加粗深色外框高亮該縣市邊界。
-4. **Database Integration**：
-   - 嚴格遵循要求，歷史預報資料 100% 由 `database.py` 透過純 SQL 從 `data.db` 讀取，沒有任何前端直連或 hard-code 偽造資料。
+1. **Taiwan Map:**
+   - 載入 Carto Dark 與 OpenStreetMap 雙底圖切換，置中對齊全台（23.7°N, 121.0°E）。
+   - 支援快速點擊「📌 重新定位全台」。
+2. **Glassmorphism UI:**
+   - 實作深色磨砂半透明玻璃質感 Sidebar、頂部統計面板與浮動圖例（Floating Legend）。
+3. **Multiple Locations & Marker:**
+   - 精確標示全台 22 縣市經緯度，自訂膠囊 Pill Marker。
+   - 支援圖層切換：🌡️ 氣溫 vs 🌧️ 降雨機率標籤動態切換。
+4. **Weather Popup:**
+   - 點擊 Marker 顯示地點、天氣現象、最高溫、最低溫與降雨機率。
+5. **Database Integration:**
+   - 嚴格遵循規範，資料 100% 由 Flask 後端 `/api/weather` 透過純 SQL 從 `data.db` 的 `weather_forecasts` 取出，無任何 hard-code 偽造資料。
+6. **進階擴充功能（Streamlit `app.py`）**：
+   - 支援「全台即時氣溫」、「全台即時雨量」、「颱風即時路徑」、「紫外線 3 模式 + 縣市即時外框高亮」、「濕度與 THI 舒適度 + 縣市即時外框高亮」5 大專業 GIS 圖層。
 
 ### 執行方式：
 ```bash
+# 1. 執行標準 Flask Web GIS (Vercel 本機預覽)
+python server.py
+# 開啟 http://127.0.0.1:5000
+
+# 2. 執行進階 Streamlit 互動儀表板
 python -m streamlit run app.py
-# 然後開啟 http://localhost:8501
+# 開啟 http://localhost:8501
 ```
 
 ### Gate 3 PASS Checklist：
-- [x] [PASS] Local Map displaying Taiwan (CartoDB / OpenStreetMap)
-- [x] [PASS] Locations matched and parsed to map via GeoJSON
-- [x] [PASS] Popups showing correct Weather, Temperature, Rainfall, UV & Humidity
-- [x] [PASS] Data successfully read from SQLite Gate 2 DB (嚴格禁止前端直接呼叫外部 API)
-- [x] [PASS] Streamlit Interactive map fully built with 5 major layers & real-time county highlighting
+- [x] [PASS] Local Map displaying Taiwan (Carto Dark / OSM)
+- [x] [PASS] Locations matched and parsed to map (22 縣市座標全匹配)
+- [x] [PASS] Popups showing correct Weather, Temp & Rain
+- [x] [PASS] Data successfully read from SQLite Gate 2 DB (`/api/weather` 純 SQL 查詢)
+- [x] [PASS] Interactive map fully built with Glassmorphism UI & Layer switcher
 
 ---
 
