@@ -1896,18 +1896,18 @@ elif selected_layer == "🌀 颱風路徑動態":
 # =============================================================
 elif selected_layer == "☀️ 紫外線指數觀測與預報":
     # 模式與時間切換：即時觀測 vs 指定時間 (06:00~18:00) vs 今日最大值
-    mode_col1, mode_col2 = st.columns([1.5, 2.5])
+    mode_col1, mode_col2 = st.columns([1.8, 2.2])
     with mode_col1:
         uv_mode = st.radio(
             "觀測模式：",
-            options=["📡 即時觀測", "⏰ 指定時間", "☀️ 今日最大值"],
+            options=["📡 即時觀測", "⏰ 指定時間 (預先規劃參考)", "☀️ 今日最大值"],
             index=0,
             horizontal=True,
             key="uv_obs_mode"
         )
 
     # 依據選擇的模式載入對應之 CWA 資料
-    if uv_mode == "⏰ 指定時間":
+    if uv_mode.startswith("⏰ 指定時間"):
         hour_options = [
             "06:00 (清晨日出 · 0.0 UVI)",
             "07:00 (晨間初昇 · 1.8 UVI)",
@@ -1971,7 +1971,7 @@ elif selected_layer == "☀️ 紫外線指數觀測與預報":
     county_live_uv = get_county_realtime_uv_map(uv_stations_data.get("stations", []))
     county_uv_map = get_latest_uv_by_counties()
 
-    if uv_mode == "⏰ 指定時間":
+    if uv_mode.startswith("⏰ 指定時間"):
         st.markdown(f"""
         <div style="background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: 10px; padding: 10px 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; box-shadow: 0 2px 8px rgba(60, 50, 40, 0.03);">
             <div style="display: flex; align-items: center; gap: 8px;">
