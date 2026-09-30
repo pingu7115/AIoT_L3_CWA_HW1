@@ -16,13 +16,23 @@ import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-DEFAULT_CWA_API_KEY = "CWA-7972D004-9010-40DF-AD11-4FCB6E5AD5BA"
+DEFAULT_CWA_API_KEY = ""
 
 def get_cwa_api_key():
-    """取得 CWA API Key (依序嘗試環境變數、.env 檔案、預設授權碼)"""
+    """取得 CWA API Key (依序嘗試環境變數、Streamlit Secrets、.env 檔案)"""
     key = os.environ.get("CWA_API_KEY") or os.environ.get("CWB_API_KEY")
     if key and key.strip():
         return key.strip()
+
+    # 嘗試自 Streamlit Secrets 讀取 (供 Streamlit Cloud 安全注入)
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and "CWA_API_KEY" in st.secrets:
+            val = str(st.secrets["CWA_API_KEY"]).strip()
+            if val:
+                return val
+    except Exception:
+        pass
 
     # 嘗試以絕對路徑讀取專案根目錄之 .env
     env_paths = [

@@ -60,18 +60,37 @@ UV_STATIONS_META = {
 }
 
 def get_cwa_api_key():
-    """優先自環境變數或 .env 取得 CWA API Key"""
-    key = os.environ.get("CWA_API_KEY")
+    """優先自環境變數、Streamlit Secrets 或 .env 取得 CWA API Key"""
+    key = os.environ.get("CWA_API_KEY") or os.environ.get("CWB_API_KEY")
     if key and key.strip():
         return key.strip()
-    env_file = os.path.join(os.path.dirname(__file__), ".env")
-    if os.path.exists(env_file):
-        with open(env_file, "r", encoding="utf-8") as f:
-            for line in f:
-                if line.startswith("CWA_API_KEY="):
-                    val = line.split("=", 1)[1].strip()
-                    if val:
-                        return val
+
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and "CWA_API_KEY" in st.secrets:
+            val = str(st.secrets["CWA_API_KEY"]).strip()
+            if val:
+                return val
+    except Exception:
+        pass
+
+    env_paths = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"),
+        ".env"
+    ]
+    for env_path in env_paths:
+        if os.path.exists(env_path):
+            try:
+                with open(env_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line_str = line.strip()
+                        if line_str.startswith("CWA_API_KEY="):
+                            val = line_str.split("=", 1)[1].strip().strip('"').strip("'")
+                            if val:
+                                return val
+            except Exception:
+                pass
     return ""
 
 def get_uv_category(uv_val):
