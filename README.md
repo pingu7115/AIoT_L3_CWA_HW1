@@ -1,9 +1,13 @@
 # Taiwan Weather GIS Dashboard
 ### AIoT L3 — CWA HW1
-**CWA Open Data → Database → Taiwan GIS → GitHub → Vercel**  
-**Repository:** [https://github.com/pingu7115/AIoT_L3_CWA_HW1](https://github.com/pingu7115/AIoT_L3_CWA_HW1)  
-**Live demo website (Vercel):** `https://aiot-l3-cwa-hw1.vercel.app` (依 Vercel 部署網址為準)  
-**Live local dashboard:** `http://localhost:8501` (Streamlit) / `http://127.0.0.1:5000` (Flask)
+**CWA Open Data → Database → Taiwan GIS → GitHub → Vercel & Streamlit Cloud**  
+
+* 📦 **GitHub Repository:** [https://github.com/pingu7115/AIoT_L3_CWA_HW1](https://github.com/pingu7115/AIoT_L3_CWA_HW1)  
+* 🎈 **Streamlit 雲端公開網址 (Live Streamlit App):** [https://aiot-cwa-hw1.streamlit.app/](https://aiot-cwa-hw1.streamlit.app/)  
+* ⚡ **Vercel 雲端公開網址 (Live Vercel Web Dashboard):** [https://aiot-l3-cwa-hw1.vercel.app](https://aiot-l3-cwa-hw1.vercel.app)  
+* 💻 **本機端執行 (Local Live Dashboards):**
+  * Streamlit 應用程式: `http://localhost:8501`
+  * Flask GIS 互動儀表板: `http://127.0.0.1:5000`
 
 本作業以中央氣象署（CWA）真實 Open Data 為資料來源，從 API 資料取得開始，經過 ETL 清洗與 SQLite 儲存，再建立本機 Taiwan GIS Web 互動儀表板，最後推送 GitHub 並由 Vercel 自動部署。
 
