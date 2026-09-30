@@ -16,7 +16,34 @@ import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-DEFAULT_CWA_API_KEY = ""
+DEFAULT_CWA_API_KEY = "CWA-7972D004-9010-40DF-AD11-4FCB6E5AD5BA"
+
+def get_cwa_api_key():
+    """取得 CWA API Key (依序嘗試環境變數、.env 檔案、預設授權碼)"""
+    key = os.environ.get("CWA_API_KEY") or os.environ.get("CWB_API_KEY")
+    if key and key.strip():
+        return key.strip()
+
+    # 嘗試以絕對路徑讀取專案根目錄之 .env
+    env_paths = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"),
+        ".env"
+    ]
+    for env_path in env_paths:
+        if os.path.exists(env_path):
+            try:
+                with open(env_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line_str = line.strip()
+                        if line_str.startswith("CWA_API_KEY="):
+                            val = line_str.split("=", 1)[1].strip().strip('"').strip("'")
+                            if val:
+                                return val
+            except Exception:
+                pass
+
+    return DEFAULT_CWA_API_KEY
 
 # 氣象署官方颱風英文代碼至中文譯名對照表 (確保氣象署官方中文譯名始終優先)
 WMO_TO_CWA_ZH = {
@@ -56,24 +83,6 @@ WMO_TO_CWA_ZH = {
     "NYATOH": "妮亞圖",
     "RAI": "雷伊"
 }
-
-def get_cwa_api_key():
-    """取得 CWA API Key (依序嘗試環境變數、.env 檔案、預設授權碼)"""
-    key = os.environ.get("CWA_API_KEY") or os.environ.get("CWB_API_KEY")
-    if key:
-        return key
-
-    if os.path.exists(".env"):
-        try:
-            with open(".env", "r", encoding="utf-8") as f:
-                for line in f:
-                    line_str = line.strip()
-                    if line_str.startswith("CWA_API_KEY="):
-                        return line_str.split("=", 1)[1].strip().strip('"').strip("'")
-        except Exception:
-            pass
-
-    return DEFAULT_CWA_API_KEY
 
 def load_surigae_snapshot():
     snapshot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "surigae_snapshot.json")

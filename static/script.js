@@ -58,6 +58,7 @@ document.getElementById('btn-recenter').addEventListener('click', () => {
 const markerGroup = L.layerGroup().addTo(map);
 const highlightGroup = L.layerGroup().addTo(map);
 const typhoonGroup = L.layerGroup().addTo(map);
+const rainOverlayGroup = L.layerGroup().addTo(map);
 
 let showLabels = true;
 document.getElementById('toggle-marker-labels').addEventListener('change', (e) => {
@@ -666,6 +667,7 @@ function setupSubmodes() {
 function renderCurrentLayer() {
     markerGroup.clearLayers();
     typhoonGroup.clearLayers();
+    rainOverlayGroup.clearLayers();
 
     if (activeTab === 'temp') {
         renderTempMarkers();
@@ -735,28 +737,62 @@ function renderUVMarkers() {
 }
 
 function renderRainMarkers() {
-    if (!rainfallData || !rainfallData.stations) return;
+    if (!rainfallData) return;
 
-    // 依據氣象署測站即時雨量繪製 Morandi 圓點標記 (僅標記有雨量地區，無降雨地區保持乾淨)
+    // 1. 疊加氣象署官方透明日累積雨量色斑熱力圖 (O-A0040-003.kmz)
+    if (rainfallData.overlay_data_url) {
+        const bounds = rainfallData.overlay_bounds || [[21.523313, 119.188024], [25.918078, 123.578233]];
+        const imgOverlay = L.imageOverlay(rainfallData.overlay_data_url, bounds, {
+            opacity: 0.82,
+            interactive: false
+        });
+        imgOverlay.addTo(rainOverlayGroup);
+    }
+
+    // 2. 繪製全台 22 縣市即時代表累積雨量膠囊標籤 (依據 O-A0003-001 實測)
+    if (rainfallData.counties) {
+        Object.entries(rainfallData.counties).forEach(([cname, cinfo]) => {
+            const coords = COORDINATES[cname];
+            if (!coords) return;
+
+            const val = Number(cinfo.rain_today || 0);
+            const disp = `${val.toFixed(1)} mm`;
+            const color = cinfo.color || getRainColor(val);
+            const popup = `
+                <div style="font-size: 12px; line-height: 1.55; min-width: 190px;">
+                    <div style="font-weight: 800; font-size: 13px; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px;">
+                        🌧️ ${cname} 本日累積雨量
+                    </div>
+                    <div>🌧️ <b>累積雨量</b>：<b style="color: ${color}; font-size: 13.5px;">${disp}</b> (${cinfo.status})</div>
+                    <div>⏱️ <b>過去 1 小時</b>：${Number(cinfo.past1hr || 0).toFixed(1)} mm</div>
+                    <div>📅 <b>過去 24 小時</b>：${Number(cinfo.past24hr || val).toFixed(1)} mm</div>
+                    <div>📡 <b>代表測站</b>：${cinfo.primary_station} ${cinfo.primary_town ? '(' + cinfo.primary_town + ')' : ''}</div>
+                    <div style="color: #64748b; font-size: 10.5px; margin-top: 5px; border-top: 1px dashed #e2e8f0; padding-top: 3px;">
+                        資料來源：CWA 局屬氣象站 O-A0003-001
+                    </div>
+                </div>
+            `;
+            const marker = createPillMarker(coords, cname, disp, color, popup);
+            marker.addTo(markerGroup);
+        });
+    }
+
+    // 3. 依據測站即時實測，若有局部降雨 (>0mm) 加繪高精度測站圓點
     const stations = rainfallData.stations || [];
-    let rainyCount = 0;
-
     stations.forEach(s => {
         const val = Number(s.rain_today !== undefined ? s.rain_today : (s.rain24 !== undefined ? s.rain24 : 0)) || 0;
         if (val <= 0.0) return;
-        rainyCount++;
 
         const stName = s.name || s.station_name || '測站';
         const county = s.county || '';
         const town = s.town || '';
         const color = getRainColor(val);
 
-        // 莫蘭迪階層半徑
-        let radius = 4.0;
+        let radius = 4.5;
         let gradeLabel = '小雨';
         if (val > 130.0) { radius = 9.0; gradeLabel = '豪雨'; }
         else if (val > 50.0) { radius = 7.0; gradeLabel = '大雨'; }
-        else if (val > 10.0) { radius = 5.0; gradeLabel = '中雨'; }
+        else if (val > 10.0) { radius = 5.5; gradeLabel = '中雨'; }
 
         const circle = L.circleMarker([s.lat, s.lon], {
             radius: radius,
@@ -764,7 +800,7 @@ function renderRainMarkers() {
             weight: 1.5,
             fill: true,
             fillColor: color,
-            fillOpacity: 0.85
+            fillOpacity: 0.88
         });
 
         circle.bindTooltip(`
@@ -781,7 +817,7 @@ function renderRainMarkers() {
                 <div>🌧️ <b>本日累積雨量</b>：<b style="color: ${color}; font-size: 13.5px;">${val.toFixed(1)} mm</b></div>
                 <div>⏱️ <b>過去 1 小時</b>：${Number(s.past1hr || 0).toFixed(1)} mm</div>
                 <div>📅 <b>過去 24 小時</b>：${Number(s.past24hr || val).toFixed(1)} mm</div>
-                <div style="color: #64748b; font-size: 11px; margin-top: 5px; border-top: 1px dashed #e2e8f0; padding-top: 4px;">📡 自動雨量站代碼：${s.station_id || '-'}</div>
+                <div style="color: #64748b; font-size: 11px; margin-top: 5px; border-top: 1px dashed #e2e8f0; padding-top: 4px;">📡 來源：${s.source || 'CWA 即時實測'} (代碼: ${s.station_id || '-'})</div>
             </div>
         `);
 

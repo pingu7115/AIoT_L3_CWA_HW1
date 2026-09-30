@@ -72,20 +72,99 @@ def get_rain_advisory(max_rain):
         return "🌧️ 大雨特報等級", "#5c7c8a", "局部地區有大雨發生機率，外出請攜帶雨具並注意行車安全。"
     elif max_rain > 10:
         return "🌦️ 局部零星降雨", "#6b8e73", "局部山區或沿海有短暫陣雨，多數平地地區天氣大致穩定。"
+    elif max_rain > 0:
+        return "🌦️ 局部微量飄雨", "#6b8e73", "局部地區偶有微量零星飄雨，天氣整體穩定。"
     else:
-        return "🌤️ 全台大致晴朗/少雨", "#6b8e73", "今日全台各地水氣偏少，僅少數零星微量降雨或無顯著雨勢。"
+        return "🌤️ 全台大致晴朗/少雨", "#6b8e73", "今日全台各地水氣偏少，無顯著雨勢或普遍無降雨。"
+
+ALL_COUNTIES = [
+    "基隆市", "臺北市", "新北市", "桃園市", "新竹市", "新竹縣", "苗栗縣",
+    "臺中市", "彰化縣", "南投縣", "雲林縣", "嘉義市", "嘉義縣", "臺南市",
+    "高雄市", "屏東縣", "宜蘭縣", "花蓮縣", "臺東縣", "澎湖縣", "金門縣", "連江縣"
+]
+
+def calculate_county_rain_map(stations_list):
+    """
+    從全台氣象測站觀測資料，計算 22 縣市即時代表當日累積雨量
+    """
+    county_stations = {}
+    for st in stations_list:
+        c = st.get("county", "").replace("台北市", "臺北市").replace("台中市", "臺中市").replace("台南市", "臺南市").replace("台東縣", "臺東縣")
+        if c:
+            county_stations.setdefault(c, []).append(st)
+
+    NEIGHBOR_MAP = {
+        "新竹市": "新竹縣",
+        "嘉義市": "嘉義縣"
+    }
+
+    result = {}
+    for c in ALL_COUNTIES:
+        target_c = c
+        if target_c not in county_stations and target_c in NEIGHBOR_MAP:
+            target_c = NEIGHBOR_MAP[target_c]
+
+        st_list = county_stations.get(target_c, [])
+        if st_list:
+            best_st = max(st_list, key=lambda x: x.get("rain_today", 0.0))
+            rain_val = round(float(best_st.get("rain_today", 0.0)), 1)
+            past1hr_val = round(float(best_st.get("past1hr", 0.0)), 1)
+            past24hr_val = round(float(best_st.get("past24hr", rain_val)), 1)
+            color = get_rain_color(rain_val)
+            
+            if rain_val >= 200:
+                status_desc = "局部豪雨"
+            elif rain_val >= 80:
+                status_desc = "局部大雨"
+            elif rain_val >= 10:
+                status_desc = "短暫陣雨"
+            elif rain_val > 0:
+                status_desc = "微量零星"
+            else:
+                status_desc = "晴朗無雨"
+
+            result[c] = {
+                "county": c,
+                "rain_today": rain_val,
+                "past1hr": past1hr_val,
+                "past24hr": past24hr_val,
+                "color": color,
+                "status": status_desc,
+                "primary_station": best_st.get("name", "觀測站"),
+                "primary_town": best_st.get("town", ""),
+                "station_count": len(st_list),
+                "is_interpolated": (target_c != c)
+            }
+        else:
+            result[c] = {
+                "county": c,
+                "rain_today": 0.0,
+                "past1hr": 0.0,
+                "past24hr": 0.0,
+                "color": "#64748B",
+                "status": "晴朗無雨",
+                "primary_station": "暫無測站",
+                "primary_town": "",
+                "station_count": 0,
+                "is_interpolated": True
+            }
+    return result
 
 def fetch_cwa_rainfall_data(api_key=None):
     """
-    自中央氣象署抓取最新累積雨量圖與自動雨量站資料
+    自中央氣象署抓取最新累積雨量：
+    1. 優先從 O-A0003-001 (現在天氣觀測報告-局屬氣象站) 提取局屬站實測雨量 Now.Precipitation
+    2. 結合 O-A0002-001 (全台 1300+ 自動雨量站) 補齊全台高密度站點
+    3. 解析 O-A0040-003.kmz 提取去背景透明雨量色斑熱力圖供 Leaflet ImageOverlay 套疊
+    4. 彙整全台 22 縣市即時代表雨量分布 (Choropleth Map)
     """
     if not api_key:
         api_key = get_cwa_api_key()
 
     now_dt = datetime.datetime.now()
     default_period = f"{now_dt.strftime('%Y/%m/%d')} 00:00 ~ {now_dt.strftime('%H:00')}"
+    latest_obs_time = now_dt.strftime('%Y/%m/%d %H:%M')
     
-    # 官方預設日累積雨量圖小間距圖檔與透明 KMZ
     official_img_url = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0040-002.jpg"
     kmz_url = "https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Observation/O-A0040-003.kmz"
     
@@ -106,21 +185,65 @@ def fetch_cwa_rainfall_data(api_key=None):
     except Exception as e:
         print(f"[WARN] 抓取雨量 KMZ 失敗: {e}")
 
-    # 2. 抓取全台自動雨量站資料 (O-A0002-001)
-    stations_ranked = []
-    max_rain = 0.0
-    max_station = None
+    stations_map = {}
     total_rainy_stations = 0
 
+    # 2. 核心來源：O-A0003-001 (現在天氣觀測報告-局屬氣象站)
+    try:
+        url_oa3 = f"https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization={api_key}"
+        r3 = requests.get(url_oa3, timeout=12, verify=False)
+        if r3.status_code == 200:
+            d3 = r3.json()
+            raw_oa3 = d3.get("records", {}).get("Station", [])
+            for s in raw_oa3:
+                try:
+                    sid = s.get("StationId", "")
+                    we = s.get("WeatherElement", {})
+                    now_val = float(we.get("Now", {}).get("Precipitation", -99))
+                    past1hr = float(we.get("Past1hr", {}).get("Precipitation", 0.0))
+                    
+                    if now_val < 0:
+                        now_val = 0.0
+
+                    coords = s.get("GeoInfo", {}).get("Coordinates", [{}, {}])
+                    wgs = coords[1] if len(coords) > 1 and coords[1].get("CoordinateName") == "WGS84" else coords[0]
+                    lat = float(wgs.get("StationLatitude", 0))
+                    lon = float(wgs.get("StationLongitude", 0))
+                    if lat == 0 or lon == 0:
+                        continue
+
+                    ot = s.get("ObsTime", {}).get("DateTime", "")
+                    if ot and ot > latest_obs_time:
+                        latest_obs_time = ot.replace("T", " ")[:16].replace("-", "/")
+
+                    stations_map[sid] = {
+                        "name": s.get("StationName", "測站"),
+                        "station_id": sid,
+                        "county": s.get("GeoInfo", {}).get("CountyName", "未分區"),
+                        "town": s.get("GeoInfo", {}).get("TownName", ""),
+                        "lat": lat,
+                        "lon": lon,
+                        "rain_today": now_val,
+                        "past1hr": past1hr,
+                        "past24hr": now_val,
+                        "time": ot.replace("T", " ")[:16].replace("-", "/") if ot else default_period,
+                        "source": "O-A0003-001 (局屬站)"
+                    }
+                except Exception:
+                    continue
+    except Exception as e:
+        print(f"[WARN] 抓取 O-A0003-001 失敗: {e}")
+
+    # 3. 補充來源：O-A0002-001 (全台 1300+ 自動雨量站)
     try:
         url_stations = f"https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0002-001?Authorization={api_key}"
-        r_st = requests.get(url_stations, timeout=15, verify=False)
+        r_st = requests.get(url_stations, timeout=12, verify=False)
         if r_st.status_code == 200:
             st_data = r_st.json()
             raw_stations = st_data.get("records", {}).get("Station", [])
-            
             for s in raw_stations:
                 try:
+                    sid = s.get("StationId", "")
                     re = s.get("RainfallElement", {})
                     now_val = float(re.get("Now", {}).get("Precipitation", -99))
                     past1hr = float(re.get("Past1hr", {}).get("Precipitation", 0))
@@ -133,16 +256,16 @@ def fetch_cwa_rainfall_data(api_key=None):
                     wgs = coords[1] if len(coords) > 1 and coords[1].get("CoordinateName") == "WGS84" else coords[0]
                     lat = float(wgs.get("StationLatitude", 0))
                     lon = float(wgs.get("StationLongitude", 0))
-                    
                     if lat == 0 or lon == 0:
                         continue
 
-                    if now_val > 0:
-                        total_rainy_stations += 1
+                    ot = s.get("ObsTime", {}).get("DateTime", "")
+                    if ot and ot > latest_obs_time:
+                        latest_obs_time = ot.replace("T", " ")[:16].replace("-", "/")
 
-                    s_info = {
+                    stations_map[sid] = {
                         "name": s.get("StationName", "測站"),
-                        "station_id": s.get("StationId", ""),
+                        "station_id": sid,
                         "county": s.get("GeoInfo", {}).get("CountyName", "未分區"),
                         "town": s.get("GeoInfo", {}).get("TownName", ""),
                         "lat": lat,
@@ -150,62 +273,55 @@ def fetch_cwa_rainfall_data(api_key=None):
                         "rain_today": now_val,
                         "past1hr": past1hr,
                         "past24hr": past24hr,
-                        "time": s.get("ObsTime", {}).get("DateTime", "")
+                        "time": ot.replace("T", " ")[:16].replace("-", "/") if ot else default_period,
+                        "source": "O-A0002-001 (自動雨量站)"
                     }
-                    stations_ranked.append(s_info)
                 except Exception:
                     continue
-
-            stations_ranked.sort(key=lambda x: x["rain_today"], reverse=True)
-            if stations_ranked:
-                max_station = stations_ranked[0]
-                max_rain = max_station["rain_today"]
     except Exception as e:
-        print(f"[WARN] 抓取測站雨量失敗: {e}")
+        print(f"[WARN] 抓取 O-A0002-001 失敗: {e}")
 
-    # 若連線異常或無資料，自動切換至全台代表性測站快取備援資料
-    if not stations_ranked:
-        fallback_samples = [
-            {"name": "陽明山", "station_id": "C0A980", "county": "臺北市", "town": "北投區", "lat": 25.163, "lon": 121.545, "rain_today": 12.5, "past1hr": 2.0, "past24hr": 14.5, "time": default_period},
-            {"name": "鞍部", "station_id": "466910", "county": "臺北市", "town": "北投區", "lat": 25.183, "lon": 121.530, "rain_today": 8.0, "past1hr": 1.5, "past24hr": 9.5, "time": default_period},
-            {"name": "大坪林", "station_id": "C0A520", "county": "新北市", "town": "新店區", "lat": 24.982, "lon": 121.541, "rain_today": 2.5, "past1hr": 0.5, "past24hr": 3.0, "time": default_period},
-            {"name": "福山", "station_id": "C0A560", "county": "新北市", "town": "烏來區", "lat": 24.780, "lon": 121.503, "rain_today": 18.0, "past1hr": 4.0, "past24hr": 21.0, "time": default_period},
-            {"name": "拉拉山", "station_id": "C0C480", "county": "桃園市", "town": "復興區", "lat": 24.713, "lon": 121.411, "rain_today": 15.0, "past1hr": 3.0, "past24hr": 17.5, "time": default_period},
-            {"name": "新竹", "station_id": "467570", "county": "新竹市", "town": "東區", "lat": 24.828, "lon": 120.967, "rain_today": 0.0, "past1hr": 0.0, "past24hr": 0.0, "time": default_period},
-            {"name": "臺中", "station_id": "467490", "county": "臺中市", "town": "北區", "lat": 24.146, "lon": 120.684, "rain_today": 0.0, "past1hr": 0.0, "past24hr": 0.0, "time": default_period},
-            {"name": "日月潭", "station_id": "467650", "county": "南投縣", "town": "魚池鄉", "lat": 23.881, "lon": 120.908, "rain_today": 5.5, "past1hr": 1.0, "past24hr": 6.0, "time": default_period},
-            {"name": "阿里山", "station_id": "467530", "county": "嘉義縣", "town": "阿里山鄉", "lat": 23.508, "lon": 120.813, "rain_today": 22.0, "past1hr": 5.0, "past24hr": 26.5, "time": default_period},
-            {"name": "臺南", "station_id": "467410", "county": "臺南市", "town": "中西區", "lat": 22.993, "lon": 120.203, "rain_today": 0.0, "past1hr": 0.0, "past24hr": 0.0, "time": default_period},
-            {"name": "高雄", "station_id": "467440", "county": "高雄市", "town": "前鎮區", "lat": 22.566, "lon": 120.316, "rain_today": 0.0, "past1hr": 0.0, "past24hr": 0.0, "time": default_period},
-            {"name": "恆春", "station_id": "467590", "county": "屏東縣", "town": "恆春鎮", "lat": 22.004, "lon": 120.746, "rain_today": 3.0, "past1hr": 0.5, "past24hr": 3.5, "time": default_period},
-            {"name": "宜蘭", "station_id": "467080", "county": "宜蘭縣", "town": "宜蘭市", "lat": 24.764, "lon": 121.756, "rain_today": 16.5, "past1hr": 3.5, "past24hr": 19.0, "time": default_period},
-            {"name": "花蓮", "station_id": "466990", "county": "花蓮縣", "town": "花蓮市", "lat": 23.975, "lon": 121.613, "rain_today": 7.0, "past1hr": 1.0, "past24hr": 8.0, "time": default_period},
-            {"name": "臺東", "station_id": "467660", "county": "臺東縣", "town": "臺東市", "lat": 22.752, "lon": 121.155, "rain_today": 1.0, "past1hr": 0.0, "past24hr": 1.0, "time": default_period},
-        ]
-        stations_ranked = fallback_samples
-        total_rainy_stations = sum(1 for s in stations_ranked if s["rain_today"] > 0)
-        max_station = max(stations_ranked, key=lambda s: s["rain_today"])
-        max_rain = max_station["rain_today"]
+    stations_ranked = list(stations_map.values())
+    stations_ranked.sort(key=lambda x: x["rain_today"], reverse=True)
+    
+    total_rainy_stations = sum(1 for s in stations_ranked if s["rain_today"] > 0)
+    max_station = stations_ranked[0] if stations_ranked else None
+    max_rain = max_station["rain_today"] if max_station else 0.0
+
+    # 4. 計算 22 縣市即時代表雨量分布
+    county_rain_map = calculate_county_rain_map(stations_ranked)
 
     adv_title, adv_color, adv_desc = get_rain_advisory(max_rain)
 
     return {
-        "obs_period": default_period,
+        "obs_period": latest_obs_time,
+        "obs_time": latest_obs_time,
         "official_img_url": official_img_url,
+        "overlay_data_url": overlay_data_url,
+        "overlay_bounds": overlay_bounds,
         "max_rain": max_rain,
         "max_station": max_station,
         "total_rainy_stations": total_rainy_stations,
         "total_stations": len(stations_ranked),
+        "counties": county_rain_map,
         "stations": stations_ranked,
-        "top_stations": stations_ranked[:25],
+        "top_stations": stations_ranked[:30],
         "advisory_title": adv_title,
         "advisory_color": adv_color,
-        "advisory_desc": adv_desc
+        "advisory_desc": adv_desc,
+        "is_live": True,
+        "dataset_source": "CWA O-A0003-001 & O-A0002-001 & O-A0040-003"
     }
 
 if __name__ == "__main__":
     data = fetch_cwa_rainfall_data()
+    print("=" * 60)
     print("Fetched rainfall data successfully!")
+    print("Dataset source:", data["dataset_source"])
+    print("Total stations:", data["total_stations"])
     print("Max rain:", data["max_rain"], "mm")
-    print("Max station:", data["max_station"])
-    print("Official image URL:", data.get("official_img_url"))
+    print("Max station:", data["max_station"]["name"] if data["max_station"] else None)
+    print("Overlay present:", bool(data["overlay_data_url"]))
+    print("Counties mapped:", len(data["counties"]))
+    print("=" * 60)
+
